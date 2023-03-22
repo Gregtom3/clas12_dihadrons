@@ -13,6 +13,9 @@ HipoBankInterface::HipoBankInterface(const std::unique_ptr<clas12::clas12reader>
   _ilu_RECCal = _c12->getBankOrder(_idx_RECCal,"lu");
   _ilv_RECCal = _c12->getBankOrder(_idx_RECCal,"lv");
   _ilw_RECCal = _c12->getBankOrder(_idx_RECCal,"lw");
+  _im2u_RECCal = _c12->getBankOrder(_idx_RECCal,"m2u");
+  _im2v_RECCal = _c12->getBankOrder(_idx_RECCal,"m2v");
+  _im2w_RECCal = _c12->getBankOrder(_idx_RECCal,"m2w");
   _ilayer_RECCal = _c12->getBankOrder(_idx_RECCal,"layer");
   _isector_RECCal = _c12->getBankOrder(_idx_RECCal,"sector");
   _itime_RECCal = _c12->getBankOrder(_idx_RECCal,"time");
@@ -57,6 +60,9 @@ bool HipoBankInterface::loadBankData(const std::unique_ptr<clas12::clas12reader>
     float lu = _c12->getBank(_idx_RECCal)->getFloat(_ilu_RECCal,i);
     float lv = _c12->getBank(_idx_RECCal)->getFloat(_ilv_RECCal,i);
     float lw = _c12->getBank(_idx_RECCal)->getFloat(_ilw_RECCal,i);
+    float m2u = _c12->getBank(_idx_RECCal)->getFloat(_im2u_RECCal,i);
+    float m2v = _c12->getBank(_idx_RECCal)->getFloat(_im2v_RECCal,i);
+    float m2w = _c12->getBank(_idx_RECCal)->getFloat(_im2w_RECCal,i);
     float x = _c12->getBank(_idx_RECCal)->getFloat(_ix_RECCal,i);
     float y = _c12->getBank(_idx_RECCal)->getFloat(_iy_RECCal,i);
     float z = _c12->getBank(_idx_RECCal)->getFloat(_iz_RECCal,i);
@@ -88,6 +94,10 @@ bool HipoBankInterface::loadBankData(const std::unique_ptr<clas12::clas12reader>
       _lv_Cal[calidx]=lv;
       _lw_Cal[calidx]=lw;
 
+      _m2u_Cal[calidx]=m2u;
+      _m2v_Cal[calidx]=m2v;
+      _m2w_Cal[calidx]=m2w;
+        
       _sector_Cal[calidx]=sectorCal;
       _time_Cal[calidx]=timeCal;
       _path_Cal[calidx]=pathCal;
@@ -146,6 +156,10 @@ bool HipoBankInterface::importDataToParticle(part &particle)
   particle.pcal_e = _Ele_PCAL_e;
   particle.ecin_e = _Ele_ECIN_e;
   particle.ecout_e = _Ele_ECOUT_e;
+  
+  particle.pcal_m2u = _m2u_Cal[0];
+  particle.pcal_m2v = _m2v_Cal[0];
+  particle.pcal_m2w = _m2w_Cal[0];
     
   particle.pcal_x = _x_Cal[0];
   particle.ecin_x = _x_Cal[1];
@@ -212,6 +226,9 @@ void HipoBankInterface::clear(){
     _x_Cal[i]=0;
     _y_Cal[i]=0;
     _z_Cal[i]=0;
+    _m2u_Cal[i]=0;
+    _m2v_Cal[i]=0;
+    _m2w_Cal[i]=0;
     _lu_Cal[i]=0;
     _lv_Cal[i]=0;
     _lw_Cal[i]=0;

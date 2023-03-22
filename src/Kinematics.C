@@ -33,6 +33,17 @@ double Kinematics::Pt(double Px, double Py){
   return pow(Px*Px + Py*Py,0.5);
 }
 
+
+double Kinematics::Pt(TLorentzVector q, TLorentzVector p, TLorentzVector init_target){
+  TLorentzVector com = q+init_target;
+  TVector3 comBOOST = com.BoostVector();
+  TLorentzVector qq = q;
+  TLorentzVector pp = p;
+  qq.Boost(-comBOOST);
+  pp.Boost(-comBOOST);
+  return pp.Pt(qq.Vect());
+}
+
 double Kinematics::P(double Px, double Py, double Pz){
   return pow(Px*Px + Py*Py + Pz*Pz,0.5);
 }
@@ -73,6 +84,22 @@ double Kinematics::phi(double Px, double Py){
 double Kinematics::phi_h(TLorentzVector Q, TLorentzVector L, TLorentzVector p1, TLorentzVector p2){
   TLorentzVector ph = p1 + p2;
   TLorentzVector r = 0.5*(p1-p2);
+
+  TVector3 q(Q.Px(), Q.Py(), Q.Pz());
+  TVector3 l(L.Px(), L.Py(), L.Pz());
+  TVector3 Ph(ph.Px(), ph.Py(), ph.Pz());
+
+  TVector3 qcrossl = q.Cross(l);
+  TVector3 qcrossPh = q.Cross(Ph);
+
+  double factor1 = (qcrossl*Ph)/abs(qcrossl*Ph);
+  double factor2 = (qcrossl*qcrossPh)/qcrossl.Mag()/qcrossPh.Mag();
+
+  return factor1*acos(factor2);
+}
+
+double Kinematics::phi_h(TLorentzVector Q, TLorentzVector L, TLorentzVector p){
+  TLorentzVector ph = p;
 
   TVector3 q(Q.Px(), Q.Py(), Q.Pz());
   TVector3 l(L.Px(), L.Py(), L.Pz());
@@ -150,4 +177,9 @@ double Kinematics::com_th(TLorentzVector P1, TLorentzVector P2){
   Ptotal.Boost(-comBOOST);
   P1.Boost(-comBOOST);
   return P1.Angle(comBOOST);
+}
+
+
+double Kinematics::z(TLorentzVector init_target, TLorentzVector part, TLorentzVector q){
+  return (init_target*part)/(init_target*q);
 }

@@ -34,14 +34,24 @@ def create_dirs(outdir="",
 
 # This function imports a model from a given directory
 # based on the model type and suffix
+def import_model(*args):
+    if(len(args)==1):
+        model_path=args[0]
+        # Split model path into parts
+        model_parts = model_path.split("/")
 
-# Define function parameters
-# savedir --> Directory where model is stored
-# model_type --> Type of model (gbt/xgb)
-# suffix --> One of the headers in utils/subdata.json
-def import_model(savedir="",
-                 model_type="",
-                 suffix=""):
+        # Get savedir
+        savedir = "/".join(model_parts[:-1])
+
+        # Get model_type and suffix
+        model_filename = model_parts[-1]
+        model_filename_parts = model_filename.split("_")
+        model_type = model_filename_parts[0]
+        suffix = '_'.join(model_filename_parts[2:])
+    elif(len(args)==3):
+        savedir=args[0]
+        model_type=args[1]
+        suffix=args[2]
     
     # Check if model type is GBT
     if(model_type=="gbt"):
@@ -93,7 +103,8 @@ def make_predictions(model=0,
         print("Unknown model type",model_type,"...returning -1...")
         return -1
     
-
+# This function saves the feature importances of a given model, such as random forest, gradient boosting tree, or XGBoost, into a csv file. 
+# It takes in the model object, the model type (rf, gbt, or xgb), the feature names, the savedir, and a suffix as parameters.
 def save_feature_importance(model=0,
                             model_type="",
                             feature_names=[],
@@ -109,6 +120,35 @@ def save_feature_importance(model=0,
     
     # Save feature importance to dataframe
     dfPars = pd.DataFrame(data={"Parameter": feature_names,"Importance": importances})
+    # Sort by most important
     dfPars = dfPars.sort_values(by="Importance",ascending=False)
+    # Save to csv
     dfPars.to_csv(f"{savedir}/param_importance_{suffix}.csv",index=False)
     
+    
+
+#Function to get the branch name    
+def get_branchname(model_path):
+    #Split the file path to get the directory path
+    directory_path = os.path.dirname(model_path)
+    
+    #Get a list of all files in the directory
+    files_in_directory = os.listdir(directory_path)
+    
+    #Loop through all the files in the directory
+    for file in files_in_directory:
+        #Check if the filename matches the pattern
+        if file.startswith("model_params"):
+            #Open the file and read the first line
+            with open(os.path.join(directory_path, file)) as f:
+                first_line = f.readline()
+                branchname=first_line.strip()
+    
+    #Check if the model_path has calo or track
+    if("/calo/" in model_path):
+        branchname+="_calo"
+    elif("/track/" in model_path):
+        branchname+="_track"
+    
+    #Return the branchname
+    return branchname

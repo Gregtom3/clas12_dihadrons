@@ -5,6 +5,7 @@ import yaml
 import json
 import os
 from sklearn.model_selection import train_test_split
+from tqdm import tqdm
 
 # This function processes a dictionary to determine the keys, original keys, and neighbor parameters of the dictionary. It returns a list of keys, a list of original keys, and a list of neighbor parameters.
 # Input: uproot TTree
@@ -59,7 +60,7 @@ def load_data(rootfiles=[""],
               version="train",
               split_ratio = 0.75,
               random_seed = 42):
-    assert(version=="train" or version=="evaluate")
+    assert(version=="train" or version=="predict")
     
     if(type(rootfiles)!=list):
         rootfiles=[rootfiles]
@@ -67,7 +68,11 @@ def load_data(rootfiles=[""],
     
     df=0
     # Loop over rootfiles
-    for ifile,rootfile in enumerate(rootfiles):
+    if(version=="train"):
+        enu=enumerate(tqdm(rootfiles))
+    else:
+        enu=enumerate(rootfiles)
+    for ifile,rootfile in enu:
         # Open the file in uproot
         u = uproot.open(rootfile)
         u = u[ttree]
@@ -94,8 +99,8 @@ def load_data(rootfiles=[""],
         df=pd.concat([df,tmp_df], ignore_index=True,axis=0)
     # Create dataset for training/evaluation
     X = df.drop("flag",axis=1)
-    if(version=="evaluate"):
-        return [X,0],[0,0]
+    if(version=="predict"):
+        return X
     else:
         y=df["flag"]
         X_train, X_validation, y_train, y_validation = train_test_split(X, y, train_size=split_ratio, random_state=random_seed)
@@ -138,7 +143,7 @@ def load_params(inyaml=""):
 #If the SUBDATA parameter is not set to "all", the function checks if the file name contains any of the runs for that SUBDATA and only appends if it does.
 #Finally, the function prints the amount of files found and returns the root_files list.
 def load_files(rootdir="",
-               SUBDATA="MC_inbending",
+               SUBDATA="",
                test=0):
     
     if(test==1):
@@ -151,7 +156,7 @@ def load_files(rootdir="",
     root_files = []
 
     for file in os.listdir(rootdir):
-        if (file.endswith(".root") and "MC" in file):
+        if (file.endswith(".root")):
             foundFile=False
             if(SUBDATA!="all"):
                 for RUN in JSON[SUBDATA]["Runs"]:
