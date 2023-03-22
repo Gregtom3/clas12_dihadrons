@@ -1,9 +1,10 @@
 import os
 import pickle
 import numpy as np
+import pandas as pd
 from catboost import CatBoostClassifier
 from xgboost.sklearn import XGBClassifier
-
+from sklearn.ensemble import RandomForestClassifier
 
 #This function creates directories in the given output directory.
 def create_dirs(outdir="",
@@ -91,3 +92,23 @@ def make_predictions(model=0,
     else:
         print("Unknown model type",model_type,"...returning -1...")
         return -1
+    
+
+def save_feature_importance(model=0,
+                            model_type="",
+                            feature_names=[],
+                            savedir="",
+                            suffix=""):
+    # Get feature importances
+    if(model_type=="rf"):
+        importances = model.feature_importances_
+    elif(model_type=="gbt"):
+        importances = model.get_feature_importance()
+    elif(model_type=="xgb"):
+        importances = model.feature_importances_
+    
+    # Save feature importance to dataframe
+    dfPars = pd.DataFrame(data={"Parameter": feature_names,"Importance": importances})
+    dfPars = dfPars.sort_values(by="Importance",ascending=False)
+    dfPars.to_csv(f"{savedir}/param_importance_{suffix}.csv",index=False)
+    

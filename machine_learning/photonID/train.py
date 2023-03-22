@@ -12,18 +12,18 @@ from xgb.train import train as xgb_train
 # from sklearn.metrics import roc_curve, auc, confusion_matrix
 
 
-def train(rootdir = "/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas12_dihadrons/projects/ana_v1/data/raw/pi0_pi0",
+def train(rootdir = "/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas12_dihadrons/projects/ana_v1/data/raw/piplus_pi0",
           SUBDATA="MC_RGA_inbending",
-          yamlfile = "params.yaml",
-          nn_type  = "track", # calo or track (use either calorimeter info or track info to determine nearest neighbors)
+          yamlfile = "model_params.yaml",
+          nn_type  = "calo", # calo or track (use either calorimeter info or track info to determine nearest neighbors)
           outdir   = "./test"):
     
     
     # Load the parameters from the yamlfile
-    yamlfile = "params.yaml"
     models = load_params(yamlfile)
     
     # Create the output directories to store the models
+    # Sets outdir=outdir/nn_type
     outdir=create_dirs(outdir = outdir,
                        nn_type = nn_type,
                        models = models)
@@ -101,5 +101,9 @@ def train(rootdir = "/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas1
         # Create plots and save them to the model directories
         make_plots(X_validation,y_validation,predictions,savedir,SUBDATA)
         
+        # Save the parameter importances
+        feature_names=X_validation.keys()
+        save_feature_importance(trained_model,model_type,feature_names,savedir,SUBDATA)
+
 if __name__ == "__main__":
     train()

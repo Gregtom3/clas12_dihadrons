@@ -15,6 +15,9 @@ def make_plots(x,y,ypred,savedir,suffix):
     y=np.array(y,dtype=float)
     ypred=np.array(ypred,dtype=float)
     
+    # Plot ROC curve
+    plot_roc_curve(y,ypred,savedir,suffix)
+    
     # Plot multiple confusion matrices 
     categories = ['Bkg','Signal']
     for p in [0.5,0.75,0.9]:
@@ -31,8 +34,7 @@ def make_plots(x,y,ypred,savedir,suffix):
                       savedir=savedir,
                       suffix=suffix)
     
-    # Plot ROC curve
-    plot_roc_curve(y,ypred,savedir,suffix)
+    
 
         
 def plot_confusion_matrix(cf,

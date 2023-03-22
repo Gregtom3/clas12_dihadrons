@@ -98,7 +98,8 @@ int photonML(const char * input_file = "/volatile/clas12/users/gmat/clas12analys
     int Nmax;
     double E[kNmax], th[kNmax], phi[kNmax], trueE[kNmax], pcal_e[kNmax], pcal_m2u[kNmax], pcal_m2v[kNmax];
     double pid[kNmax], pcal_x[kNmax],pcal_y[kNmax],pcal_z[kNmax];
-
+    double ecin_x[kNmax],ecin_y[kNmax],ecin_z[kNmax];
+    double ecout_x[kNmax],ecout_y[kNmax],ecout_z[kNmax];
     //Set the address of the branches in EventTree
     EventTree->SetBranchAddress("Nmax", &Nmax);
     EventTree->SetBranchAddress("E", E);
@@ -110,6 +111,12 @@ int photonML(const char * input_file = "/volatile/clas12/users/gmat/clas12analys
     EventTree->SetBranchAddress("pcal_x",pcal_x);
     EventTree->SetBranchAddress("pcal_y",pcal_y);
     EventTree->SetBranchAddress("pcal_z",pcal_z);
+    EventTree->SetBranchAddress("ecin_x",ecin_x);
+    EventTree->SetBranchAddress("ecin_y",ecin_y);
+    EventTree->SetBranchAddress("ecin_z",ecin_z);
+    EventTree->SetBranchAddress("ecout_x",ecout_x);
+    EventTree->SetBranchAddress("ecout_y",ecout_y);
+    EventTree->SetBranchAddress("ecout_z",ecout_z);
     EventTree->SetBranchAddress("pcal_e",pcal_e);
     EventTree->SetBranchAddress("pcal_m2u",pcal_m2u);
     EventTree->SetBranchAddress("pcal_m2v",pcal_m2v);
@@ -165,20 +172,66 @@ int photonML(const char * input_file = "/volatile/clas12/users/gmat/clas12analys
             //Skip the same particle
             if (ipart == jpart) continue;
 
-            //Calculate R 
+            //Calculate R
+            //Declare two TVector3 objects
             TVector3 v_1;
             TVector3 v_2;
+            //Check if method is 0
             if(method==0){
-                v_1.SetXYZ(pcal_x[ipart],pcal_y[ipart],pcal_z[ipart]);
-                v_2.SetXYZ(pcal_x[jpart],pcal_y[jpart],pcal_z[jpart]);
+                //Declare and set x, y, and z coordinates for each TVector3
+                double x1,x2,y1,y2,z1,z2;
+                //Check if the particle has values in pcal
+                if(pcal_x[ipart]==-999){
+                    //Check if the particle has values in ecin
+                    if(ecin_x[ipart]==-999){
+                        //If not, set coordinates for v_1 to values in ecout
+                        x1=ecout_x[ipart]; 
+                        y1=ecout_y[ipart]; 
+                        z1=ecout_z[ipart];
+                    } 
+                    //Otherwise set coordinates for v_1 to values in ecin
+                    else{
+                        x1=ecin_x[ipart]; 
+                        y1=ecin_y[ipart]; 
+                        z1=ecin_z[ipart];
+                    }
+                } 
+                //Otherwise set coordinates for v_1 to values in pcal
+                else{
+                    x1=pcal_x[ipart]; 
+                    y1=pcal_y[ipart]; 
+                    z1=pcal_z[ipart];  
+                }
+                //Repeat for jpart
+                if(pcal_x[jpart]==-999){
+                    if(ecin_x[jpart]==-999){
+                        x2=ecout_x[jpart]; 
+                        y2=ecout_y[jpart]; 
+                        z2=ecout_z[jpart];
+                    } else{
+                        x2=ecin_x[jpart]; 
+                        y2=ecin_y[jpart]; 
+                        z2=ecin_z[jpart];
+                    }
+                } else{
+                    x2=pcal_x[jpart]; 
+                    y2=pcal_y[jpart]; 
+                    z2=pcal_z[jpart];  
+                }
+                //Set coordinates for each TVector3
+                v_1.SetXYZ(x1,y1,z1);
+                v_2.SetXYZ(x2,y2,z2);
             }
+            //Otherwise, if method is 1
             else if(method==1){
+                //Set coordinates for each TVector3 using th and phi
                 v_1.SetMagThetaPhi(1,th[ipart],phi[ipart]);
                 v_2.SetMagThetaPhi(1,th[jpart],phi[jpart]);
             }
-              
+            //Calculate the angle between the two TVector3 objects and store in R
             float R = v_1.Angle(v_2);
             
+              
             if(pid[jpart]==22){
                 //Count the number of photons within R<0.1, R<0.2, R<0.35
                 if (R < 0.1) num_photons_0_1++;
@@ -258,7 +311,7 @@ int photonML(const char * input_file = "/volatile/clas12/users/gmat/clas12analys
             
           }
 
-          //Fill the MLInput TTree
+          //Fill the MLInput TTree for each photon found
           MLInput->Fill();
         }
       }
