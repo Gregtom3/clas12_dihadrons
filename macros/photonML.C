@@ -1,6 +1,6 @@
 
-int photonML(const char * input_file = "/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas12_dihadrons/projects/ana_v1/data/raw/pi0_pi0/MC_3051_0.root",
-             int method=1){
+int photonML(const char * input_file = "/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas12_dihadrons/projects/ana_v0/data/raw/pi0_pi0/nSidis_5032.root",
+             int method=0){
 
     // method
     // 0 --> use the calorimeter locations to determine "R"

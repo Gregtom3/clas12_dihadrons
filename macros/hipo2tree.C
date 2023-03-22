@@ -7,13 +7,13 @@
 
 
 int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2018/torus-1/pass1/v1/dst/train/nSidis/nSidis_005032.hipo",
-              const char * outputFile = "test.root",
+              const char * outputFile = "/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas12_dihadrons/projects/ana_v0/data/raw/pi0_pi0/nSidis_5032.root",
               const double _electron_beam_energy = 10.6,
-              const int pid_h1=211,
-              const int pid_h2=-211,
-              const int maxEvents = 1000,
+              const int pid_h1=111,
+              const int pid_h2=111,
+              const int maxEvents = 100000000,
               bool hipo_is_mc = false){
-  //0.3490775
+ 
   // Open TTree and declare branches
   // -------------------------------------
   TFile *fOut = new TFile(outputFile,"RECREATE");

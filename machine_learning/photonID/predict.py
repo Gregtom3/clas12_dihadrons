@@ -33,7 +33,6 @@ def predict(rootdir="/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas1
     # For loop over each file
     for ifile,rootfile in enumerate(tqdm(rootfiles)):
         
-        #print("Processing TTree for",rootfile,f"{ifile+1}/{len(rootfiles)}",end='')
         # Load MLInput data
         X=load_data(rootfiles=[rootfile],
                     ttree=ttree,
@@ -65,12 +64,10 @@ def predict(rootdir="/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas1
                     k+=1
                 else:
                     weights[j]=1
-            weight_branch.Fill() # Fill the branch, not the tree!
+            weight_branch.Fill() # Fill the branch
         
-        # Write the TBranch
-        weight_branch.Write()
         # Write the TTree and close the TFile
-        tree.Write()
+        tree.Write("EventTree",1) # the "1" forces an overwrite of the previous ttree
         tfile.Close()
         
 if __name__ == "__main__":
