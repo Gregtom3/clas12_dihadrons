@@ -12,7 +12,7 @@ void getPIDs(std::string filename, int& pid_h1, int& pid_h2);
 // The program uses the input_file name to determine what hadrons to build. If pi0's are built, then the "weight_branch" tells the program which machine learning model
 // is to be used to save photon classification values. The "weight_branch" in the "EventTree" is created by the program "machine_learning/photonID/predict.py"
 
-int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas12_dihadrons/projects/ana_v1/data/raw/pi0_pi0/MC_3051_0.root",
+int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas12_dihadrons/projects/ana_v0/data/raw/pi0_pi0/MC_3051_0.root",
                     const char *weight_branch="gbt_0_calo",
                     const double _electron_beam_energy=10.6){
     
