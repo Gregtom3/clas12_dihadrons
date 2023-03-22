@@ -21,7 +21,8 @@ int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2
     
   int run;
   // Reconstructed variables
-  double x, y, W, nu, hel,Pol,Q2;
+  double x, y, W, nu,Pol,Q2;
+  int hel;
   double s=pow(Mp,2)+pow(Me,2)+2*Mp*_electron_beam_energy;
 
   // Monte Carlo Info
@@ -32,15 +33,18 @@ int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2
   int pindex[Nmax], status[Nmax];
   double px[Nmax], py[Nmax], pz[Nmax], p[Nmax], E[Nmax], pid[Nmax],m[Nmax];
   double vx[Nmax], vy[Nmax], vz[Nmax], chi2[Nmax], beta[Nmax];
-  double truepx[Nmax], truepy[Nmax], truepz[Nmax], truep[Nmax], trueE[Nmax], truepid[Nmax], trueparentid[Nmax], trueparentpid[Nmax];
+  double truepx[Nmax], truepy[Nmax], truepz[Nmax], truep[Nmax], trueE[Nmax], truepid[Nmax], trueparentid[Nmax], trueparentpid[Nmax], trueparentparentid[Nmax], trueparentparentpid[Nmax];
   double theta[Nmax], eta[Nmax], phi[Nmax], truept[Nmax], truem[Nmax], truetheta[Nmax], trueeta[Nmax], truephi[Nmax], truevx[Nmax], truevy[Nmax], truevz[Nmax];
   int pcal_sector[Nmax], ecin_sector[Nmax], ecout_sector[Nmax];
+  double pcal_x[Nmax], pcal_y[Nmax], pcal_z[Nmax];
+  double ecin_x[Nmax], ecin_y[Nmax], ecin_z[Nmax];
+  double ecout_x[Nmax], ecout_y[Nmax], ecout_z[Nmax];
   double pcal_e[Nmax], pcal_lu[Nmax], pcal_lv[Nmax], pcal_lw[Nmax], pcal_m2u[Nmax], pcal_m2v[Nmax], pcal_m2w[Nmax];
   double ecin_e[Nmax], ecin_lu[Nmax], ecin_lv[Nmax], ecin_lw[Nmax], ecin_m2u[Nmax], ecin_m2v[Nmax], ecin_m2w[Nmax];
   double ecout_e[Nmax], ecout_lu[Nmax], ecout_lv[Nmax], ecout_lw[Nmax], ecout_m2u[Nmax], ecout_m2v[Nmax], ecout_m2w[Nmax];
   int sector[Nmax];
   double traj_x1[Nmax], traj_y1[Nmax], traj_z1[Nmax], traj_x2[Nmax], traj_y2[Nmax], traj_z2[Nmax], traj_x3[Nmax], traj_y3[Nmax], traj_z3[Nmax];
-
+ 
   // Set branches
   tree->Branch("run",&run,"run/I");
   tree->Branch("Pol",&Pol,"Pol/D");
@@ -96,9 +100,14 @@ int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2
   tree->Branch("truepid", truepid, "truepid[Nmax]/D");
   tree->Branch("trueparentid", trueparentid, "trueparentid[Nmax]/I");
   tree->Branch("trueparentpid", trueparentpid, "trueparentpid[Nmax]/I");
-
+  tree->Branch("trueparentparentid", trueparentparentid, "trueparentparentid[Nmax]/I");
+  tree->Branch("trueparentparentpid", trueparentparentpid, "trueparentparentpid[Nmax]/I");
+    
   tree->Branch("pcal_sector", pcal_sector, "pcal_sector[Nmax]/I");
   tree->Branch("pcal_e", pcal_e, "pcal_e[Nmax]/D");
+  tree->Branch("pcal_x", pcal_x, "pcal_x[Nmax]/D");
+  tree->Branch("pcal_y", pcal_y, "pcal_y[Nmax]/D");
+  tree->Branch("pcal_z", pcal_z, "pcal_z[Nmax]/D");
   tree->Branch("pcal_lu", pcal_lu, "pcal_lu[Nmax]/D");
   tree->Branch("pcal_lv", pcal_lv, "pcal_lv[Nmax]/D");
   tree->Branch("pcal_lw", pcal_lw, "pcal_lw[Nmax]/D");
@@ -108,6 +117,9 @@ int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2
 
   tree->Branch("ecin_sector", ecin_sector, "ecin_sector[Nmax]/I");
   tree->Branch("ecin_e", ecin_e, "ecin_e[Nmax]/D");
+  tree->Branch("ecin_x", ecin_x, "ecin_x[Nmax]/D");
+  tree->Branch("ecin_y", ecin_y, "ecin_y[Nmax]/D");
+  tree->Branch("ecin_z", ecin_z, "ecin_z[Nmax]/D");
   tree->Branch("ecin_lu", ecin_lu, "ecin_lu[Nmax]/D");
   tree->Branch("ecin_lv", ecin_lv, "ecin_lv[Nmax]/D");
   tree->Branch("ecin_lw", ecin_lw, "ecin_lw[Nmax]/D");
@@ -117,6 +129,9 @@ int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2
 
   tree->Branch("ecout_sector", ecout_sector, "ecout_sector[Nmax]/I");
   tree->Branch("ecout_e", ecout_e, "ecout_e[Nmax]/D");
+  tree->Branch("ecout_x", ecout_x, "ecout_x[Nmax]/D");
+  tree->Branch("ecout_y", ecout_y, "ecout_y[Nmax]/D");
+  tree->Branch("ecout_z", ecout_z, "ecout_z[Nmax]/D");
   tree->Branch("ecout_lu", ecout_lu, "ecout_lu[Nmax]/D");
   tree->Branch("ecout_lv", ecout_lv, "ecout_lv[Nmax]/D");
   tree->Branch("ecout_lw", ecout_lw, "ecout_lw[Nmax]/D");
@@ -184,7 +199,7 @@ int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2
     if(whileidx%10000==0 && whileidx!=0){
       std::cout << whileidx << " events read | " << _ievent*100.0/whileidx << "% passed event selection" << std::endl;
     }
-      
+
     auto event = _c12->event();
       
     whileidx++;
@@ -259,11 +274,10 @@ int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2
 	x=_kin.x(Q2,s,y);
       }
       _hipoInterface.loadBankData(_c12,partstruct);
-          
       vec_particles.push_back(partstruct);
           
     }
-      
+
     // Apply the cuts to make a new vec_particles
     // Calls the CutManager which parses through the vector
     // and makes relevant cuts for each particle
@@ -316,6 +330,8 @@ int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2
 
       partstruct.trueparentid = mcparticles->getParent(idx)-1;
       partstruct.trueparentpid = mcparticles->getParent(partstruct.trueparentid)-1;
+      partstruct.trueparentparentid = mcparticles->getParent(partstruct.trueparentid)-1;
+      partstruct.trueparentparentpid = mcparticles->getPid(partstruct.trueparentparentid);
         
       if(partstruct.pid==11 && partstruct.trueparentid==0){ // scattered electron
         trueQ2=_kin.Q2(_electron_beam_energy,partstruct.trueE,_kin.cth(partstruct.truepx,partstruct.truepy,partstruct.truepz));
@@ -399,8 +415,13 @@ int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2
       truepid[i] = par.truepid;
       trueparentid[i] = par.trueparentid;
       trueparentpid[i] = par.trueparentpid;
+      trueparentparentid[i] = par.trueparentparentid;
+      trueparentparentpid[i] = par.trueparentparentpid;
       pcal_sector[i] = par.pcal_sector;
       pcal_e[i] = par.pcal_e;
+      pcal_x[i] = par.pcal_x;
+      pcal_y[i] = par.pcal_y;
+      pcal_z[i] = par.pcal_z;
       pcal_lu[i] = par.pcal_lu;
       pcal_lv[i] = par.pcal_lv;
       pcal_lw[i] = par.pcal_lw;
@@ -409,6 +430,9 @@ int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2
       pcal_m2w[i] = par.pcal_m2w;
       ecin_sector[i] = par.ecin_sector;
       ecin_e[i] = par.ecin_e;
+      ecin_x[i] = par.ecin_x;
+      ecin_y[i] = par.ecin_y;
+      ecin_z[i] = par.ecin_z;
       ecin_lu[i] = par.ecin_lu;
       ecin_lv[i] = par.ecin_lv;
       ecin_lw[i] = par.ecin_lw;
@@ -417,6 +441,9 @@ int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2
       ecin_m2w[i] = par.ecin_m2w;
       ecout_sector[i] = par.ecout_sector;
       ecout_e[i] = par.ecout_e;
+      ecout_x[i] = par.ecout_x;
+      ecout_y[i] = par.ecout_y;
+      ecout_z[i] = par.ecout_z;
       ecout_lu[i] = par.ecout_lu;
       ecout_lv[i] = par.ecout_lv;
       ecout_lw[i] = par.ecout_lw;

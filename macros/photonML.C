@@ -1,6 +1,11 @@
 
-int photonML(const char * input_file = "/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas12_dihadrons/projects/ana_v1/data/raw/pi0_pi0/MC_3051_0.root"){
+int photonML(const char * input_file = "/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas12_dihadrons/projects/ana_v1/data/raw/pi0_pi0/MC_3051_0.root",
+             int method=1){
 
+    // method
+    // 0 --> use the calorimeter locations to determine "R"
+    // 1 --> use the particle tracks to determine "R"
+    
     //Define the variables "m_g" , "m_ch" , "m_nh" 
     int m_g = 3; // Number of neighboring gammas
     int m_ch = 2; // Number of neighboring charged hadrons (protons, pions, kaons)
@@ -12,11 +17,16 @@ int photonML(const char * input_file = "/volatile/clas12/users/gmat/clas12analys
     //Read the TTree
     TTree *EventTree = (TTree*)f->Get("EventTree");
 
-    //If MLInput tree already exists, remove it
-    if (f->Get("MLInput")) f->Delete("MLInput;*");
-
     //Create the new TTree
-    TTree *MLInput = new TTree("MLInput","Nearest neighbor information");
+    TString treename="";
+    if(method==0) treename="MLInput_calo";
+    else if(method==1) treename="MLInput_track";
+    else return -1;
+        
+    //If MLInput tree already exists, remove it
+    if (f->Get(treename)) f->Delete("MLInput*;*");
+
+    TTree *MLInput = new TTree(treename,"Nearest neighbor information");
 
     //Define the branches in MLInput: POI (photon-of-interest)
     //                                Nearest neighbor gammas, charged hadrons, neutral hadrons, electron
@@ -86,13 +96,14 @@ int photonML(const char * input_file = "/volatile/clas12/users/gmat/clas12analys
     //Define variables to read from EventTree
     const int kNmax = 500;
     int Nmax;
-    double E[kNmax], th[kNmax], trueE[kNmax], pcal_e[kNmax], pcal_m2u[kNmax], pcal_m2v[kNmax];
+    double E[kNmax], th[kNmax], phi[kNmax], trueE[kNmax], pcal_e[kNmax], pcal_m2u[kNmax], pcal_m2v[kNmax];
     double pid[kNmax], pcal_x[kNmax],pcal_y[kNmax],pcal_z[kNmax];
 
     //Set the address of the branches in EventTree
     EventTree->SetBranchAddress("Nmax", &Nmax);
     EventTree->SetBranchAddress("E", E);
     EventTree->SetBranchAddress("theta", th);
+    EventTree->SetBranchAddress("phi", phi);
     EventTree->SetBranchAddress("trueE", trueE);
     EventTree->SetBranchAddress("theta", th);
     EventTree->SetBranchAddress("pid", pid);
@@ -155,8 +166,17 @@ int photonML(const char * input_file = "/volatile/clas12/users/gmat/clas12analys
             if (ipart == jpart) continue;
 
             //Calculate R 
-            TVector3 v_1(pcal_x[ipart],pcal_y[ipart],pcal_z[ipart]);
-            TVector3 v_2(pcal_x[jpart],pcal_y[jpart],pcal_z[jpart]);
+            TVector3 v_1;
+            TVector3 v_2;
+            if(method==0){
+                v_1.SetXYZ(pcal_x[ipart],pcal_y[ipart],pcal_z[ipart]);
+                v_2.SetXYZ(pcal_x[jpart],pcal_y[jpart],pcal_z[jpart]);
+            }
+            else if(method==1){
+                v_1.SetMagThetaPhi(1,th[ipart],phi[ipart]);
+                v_2.SetMagThetaPhi(1,th[jpart],phi[jpart]);
+            }
+              
             float R = v_1.Angle(v_2);
             
             if(pid[jpart]==22){
