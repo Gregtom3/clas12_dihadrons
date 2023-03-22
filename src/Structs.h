@@ -81,10 +81,14 @@ struct part{
   int truepid=-999;
   int trueparentid=-999;
   int trueparentpid=-999;
-    
+  int trueparentparentid=-999;
+  int trueparentparentpid=-999;
   // Calorimeter Info
   int    pcal_sector=-999;
   double pcal_e=-999;
+  double pcal_x=-999;
+  double pcal_y=-999;
+  double pcal_z=-999;
   double pcal_lu=-999;
   double pcal_lv=-999;
   double pcal_lw=-999;
@@ -94,6 +98,9 @@ struct part{
     
   int    ecin_sector=-999;
   double ecin_e=-999;
+  double ecin_x=-999;
+  double ecin_y=-999;
+  double ecin_z=-999;
   double ecin_lu=-999;
   double ecin_lv=-999;
   double ecin_lw=-999;
@@ -103,6 +110,9 @@ struct part{
 
   int    ecout_sector=-999;
   double ecout_e=-999;
+  double ecout_x=-999;
+  double ecout_y=-999;
+  double ecout_z=-999;
   double ecout_lu=-999;
   double ecout_lv=-999;
   double ecout_lw=-999;

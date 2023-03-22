@@ -19,6 +19,9 @@ class HipoBankInterface{
   
   int _idx_RECCal;
   int _ipindex_RECCal;
+  int _ix_RECCal;
+  int _iy_RECCal; 
+  int _iz_RECCal;
   int _ilu_RECCal;
   int _ilv_RECCal;
   int _ilw_RECCal;
@@ -41,6 +44,9 @@ class HipoBankInterface{
   int _sector_Cal[3]={0,0,0};
   float _time_Cal[3]={0,0,0};
   float _path_Cal[3]={0,0,0};
+  float _x_Cal[3]={0,0,0};
+  float _y_Cal[3]={0,0,0};
+  float _z_Cal[3]={0,0,0};
   float _lu_Cal[3]={0,0,0};
   float _lv_Cal[3]={0,0,0};
   float _lw_Cal[3]={0,0,0};

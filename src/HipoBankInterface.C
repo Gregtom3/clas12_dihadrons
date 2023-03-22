@@ -7,6 +7,9 @@ HipoBankInterface::HipoBankInterface(const std::unique_ptr<clas12::clas12reader>
   // Add REC::Cal info
   _idx_RECCal = _c12->addBank("REC::Calorimeter");
   _ipindex_RECCal = _c12->getBankOrder(_idx_RECCal,"pindex");
+  _ix_RECCal  = _c12->getBankOrder(_idx_RECCal,"x");
+  _iy_RECCal  = _c12->getBankOrder(_idx_RECCal,"y");
+  _iz_RECCal  = _c12->getBankOrder(_idx_RECCal,"z");
   _ilu_RECCal = _c12->getBankOrder(_idx_RECCal,"lu");
   _ilv_RECCal = _c12->getBankOrder(_idx_RECCal,"lv");
   _ilw_RECCal = _c12->getBankOrder(_idx_RECCal,"lw");
@@ -54,6 +57,9 @@ bool HipoBankInterface::loadBankData(const std::unique_ptr<clas12::clas12reader>
     float lu = _c12->getBank(_idx_RECCal)->getFloat(_ilu_RECCal,i);
     float lv = _c12->getBank(_idx_RECCal)->getFloat(_ilv_RECCal,i);
     float lw = _c12->getBank(_idx_RECCal)->getFloat(_ilw_RECCal,i);
+    float x = _c12->getBank(_idx_RECCal)->getFloat(_ix_RECCal,i);
+    float y = _c12->getBank(_idx_RECCal)->getFloat(_iy_RECCal,i);
+    float z = _c12->getBank(_idx_RECCal)->getFloat(_iz_RECCal,i);
     int layerCal = _c12->getBank(_idx_RECCal)->getInt(_ilayer_RECCal,i);
     int calidx = -1; //Array index for lu, lv, lw
 
@@ -74,6 +80,10 @@ bool HipoBankInterface::loadBankData(const std::unique_ptr<clas12::clas12reader>
     
     // If there was a pindex attached to one of the calo layers...
     if(calidx!=-1){
+      _x_Cal[calidx]=x;
+      _y_Cal[calidx]=y;
+      _z_Cal[calidx]=z;
+    
       _lu_Cal[calidx]=lu;
       _lv_Cal[calidx]=lv;
       _lw_Cal[calidx]=lw;
@@ -81,6 +91,7 @@ bool HipoBankInterface::loadBankData(const std::unique_ptr<clas12::clas12reader>
       _sector_Cal[calidx]=sectorCal;
       _time_Cal[calidx]=timeCal;
       _path_Cal[calidx]=pathCal;
+    
     }
   }
 
@@ -135,7 +146,18 @@ bool HipoBankInterface::importDataToParticle(part &particle)
   particle.pcal_e = _Ele_PCAL_e;
   particle.ecin_e = _Ele_ECIN_e;
   particle.ecout_e = _Ele_ECOUT_e;
+    
+  particle.pcal_x = _x_Cal[0];
+  particle.ecin_x = _x_Cal[1];
+  particle.ecout_x = _x_Cal[2];
 
+  particle.pcal_y = _y_Cal[0];
+  particle.ecin_y = _y_Cal[1];
+  particle.ecout_y = _y_Cal[2];
+
+  particle.pcal_z = _z_Cal[0];
+  particle.ecin_z = _z_Cal[1];
+  particle.ecout_z = _z_Cal[2];
   particle.pcal_lu = _lu_Cal[0];
   particle.ecin_lu = _lu_Cal[1];
   particle.ecout_lu = _lu_Cal[2];
@@ -187,6 +209,9 @@ void HipoBankInterface::clear(){
     _sector_Cal[i]=0;
     _time_Cal[i]=0;
     _path_Cal[i]=0;
+    _x_Cal[i]=0;
+    _y_Cal[i]=0;
+    _z_Cal[i]=0;
     _lu_Cal[i]=0;
     _lv_Cal[i]=0;
     _lw_Cal[i]=0;
