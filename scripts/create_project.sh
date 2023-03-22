@@ -235,8 +235,9 @@ EOF
                     echo "clas12root -b -q $PWD/macros/hipo2tree.C\(\\\"${hipo}\\\",\\\"${outfile}\\\",$beamE,$pid1,$pid2,$nEvents,$hipo_is_mc\)" >> $slurmshell
                     j=$((j+1))
                 done
-
-                sbatch $slurmslurm
+                
+                echo "Submitting slurm job for $hipo"
+                sbatch --quiet $slurmslurm
             done
         done
     done
