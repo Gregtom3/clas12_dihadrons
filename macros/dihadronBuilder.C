@@ -73,7 +73,7 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
     EventTree->SetBranchAddress("trueeta",&trueeta);
     EventTree->SetBranchAddress("truephi",&truephi);
     EventTree->SetBranchAddress("truepid",truepid);
-    
+    EventTree->SetBranchAddress(weight_branch,weight);
     
     //Create the new TTree
     TString treename="dihadron";
