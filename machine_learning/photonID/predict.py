@@ -33,7 +33,7 @@ def predict(rootdir="/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas1
     
     # For loop over each file
     for ifile,rootfile in enumerate(tqdm(rootfiles)):
-        
+
         # Load MLInput data
         X=load_data(rootfiles=[rootfile],
                     ttree=ttree,
