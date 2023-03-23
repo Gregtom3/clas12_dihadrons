@@ -30,7 +30,7 @@ def make_plots(x,y,ypred,savedir,suffix):
                       cbar=False,
                       figsize=(4,3),
                       count=False,
-                      title=f"Confusion Matrix\n on validation set (p>={p})",
+                      title=f"Confusion Matrix\n on validation set (p$>$={p})",
                       savedir=savedir,
                       suffix=suffix)
     
