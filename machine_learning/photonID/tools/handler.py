@@ -13,7 +13,7 @@ def create_dirs(outdir="",
                 models=[]):
     
     if not os.path.exists(outdir):
-        os.mkdir(outdir)
+        os.makedirs(outdir)
         print("Making directory",outdir)
     
     outdir=outdir+"/"+nn_type
