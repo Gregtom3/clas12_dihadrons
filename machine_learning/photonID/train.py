@@ -12,11 +12,11 @@ from xgb.train import train as xgb_train
 # from sklearn.metrics import roc_curve, auc, confusion_matrix
 
 
-def train(rootdir = "/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas12_dihadrons/projects/ana_v1/data/raw/piplus_pi0",
+def train(rootdir = "/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas12_dihadrons/projects/ana_v0/data/raw/piplus_pi0",
           SUBDATA="MC_RGA_inbending",
           yamlfile = "model_params.yaml",
           nn_type  = "calo", # calo or track (use either calorimeter info or track info to determine nearest neighbors)
-          outdir   = "./test"):
+          outdir   = "/work/clas12/users/gmat/clas12/clas12_dihadrons/projects/ana_v0/models"):
     
     
     # Load the parameters from the yamlfile
@@ -32,8 +32,8 @@ def train(rootdir = "/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas1
     # SUBDATA --> see utils/subdata.json
     #         --> Must be one of the headers (ex: MC_RGA_inbending)
     rootfiles = load_files(rootdir=rootdir,
-                           SUBDATA=SUBDATA,
-                           test=1)
+                           SUBDATA=SUBDATA)
+    print(len(rootfiles),"found for training")
     
     # Split the data into a training and validation set
     if(nn_type=="calo"):
@@ -43,6 +43,9 @@ def train(rootdir = "/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas1
     else:
         print("Unknown nn_type",nn_type,"...defaulting to MLInput_calo...")
         ttree="MLInput_calo"
+    
+    # Load in data
+    print("Loading data for",len(rootfiles),"root files")
     train_pool, validation_pool = load_data(rootfiles = rootfiles,
                                             ttree     = ttree,
                                             version="train",
@@ -50,6 +53,7 @@ def train(rootdir = "/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas1
                                             random_seed = 42)
     
     # For each of the models in the yamlfile, perform the training
+    print("Starting training")
     for model in models:
         model_name = model[0]
         model_type = model[1]
@@ -87,6 +91,7 @@ def train(rootdir = "/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas1
         
         # Write the model parameters to a text file in the dictionary
         with open(savedir+"/model_params.txt", "w") as f:
+            f.write(model_name+"\n")
             for key, value in model_params.items():
                 f.write(key + ": " + str(value) + "\n")
 
