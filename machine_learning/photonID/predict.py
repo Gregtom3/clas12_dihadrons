@@ -1,3 +1,4 @@
+import sys
 import ROOT
 import numpy as np
 import array
@@ -71,7 +72,8 @@ def predict(rootdir="/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas1
         tfile.Close()
         
 if __name__ == "__main__":
-    predict()        
+    args = [arg for arg in sys.argv[1:]]
+    predict(*args)    
         
         
             

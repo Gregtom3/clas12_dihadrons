@@ -1,5 +1,6 @@
 import os
 import pickle
+import random
 import numpy as np
 import pandas as pd
 from catboost import CatBoostClassifier
@@ -152,3 +153,16 @@ def get_branchname(model_path):
     
     #Return the branchname
     return branchname
+
+# Generate a random sorting of the data if the user wants to only train on a fraction of the sample
+def reindex(pool,percent):
+    assert(percent>0 and percent<=1)
+    X=np.array(pool[0])
+    y=np.array(pool[1])
+    N=len(X)
+    if(percent==1):
+        return [X,y]
+    else:
+        num_points = int(np.ceil(N*percent)) # Number of data points to keep (n)
+        idxs = random.sample(range(len(X)),num_points)  # Get (n) random indecies from 0 to N-1 
+        return [ X[idxs] , y[idxs] ]

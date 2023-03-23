@@ -1,3 +1,4 @@
+import sys
 from tools.dataloader import *
 from tools.handler import *
 from tools.plotter import *
@@ -14,7 +15,7 @@ from xgb.train import train as xgb_train
 
 def train(rootdir = "/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas12_dihadrons/projects/ana_v0/data/raw/piplus_pi0",
           SUBDATA="MC_RGA_inbending",
-          yamlfile = "model_params.yaml",
+          yamlfile = "params_folder/model_params.yaml",
           nn_type  = "calo", # calo or track (use either calorimeter info or track info to determine nearest neighbors)
           outdir   = "/work/clas12/users/gmat/clas12/clas12_dihadrons/projects/ana_v0/models"):
     
@@ -57,31 +58,37 @@ def train(rootdir = "/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas1
     for model in models:
         model_name = model[0]
         model_type = model[1]
-        model_params = model[2]
+        model_percentage = model[2]
+        model_params = model[3]
         
         # Define savedir
         savedir=outdir+"/"+model_type
         
         print("\n\nProcessing model",model_name,"with type",model_type,"\n\n")
         
+        # Based on the model percentage, only train on a fraction of the data
+        tpool = reindex(train_pool,model_percentage)
+        vpool = reindex(validation_pool,model_percentage)
+        
         # Determine which architecture to train with
         # The model is saved to "savedir" which can be imported later
         if(model_type=="gbt"):
-            gbt_train(train_pool,
-                      validation_pool,
+            gbt_train(tpool,
+                      vpool,
                       model_params,
                       savedir,
                       SUBDATA)
         
         elif(model_type=="xgb"):
-            xgb_train(train_pool,
-                      validation_pool,
+            xgb_train(tpool,
+                      vpool,
                       model_params,
                       savedir,
                       SUBDATA)
+        
         elif(model_type=="rf"):
-            rf_train(train_pool,
-                     validation_pool,
+            rf_train(tpool,
+                     vpool,
                      model_params,
                      savedir,
                      SUBDATA)
@@ -111,4 +118,5 @@ def train(rootdir = "/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas1
         save_feature_importance(trained_model,model_type,feature_names,savedir,SUBDATA)
 
 if __name__ == "__main__":
-    train()
+    args = [arg for arg in sys.argv[1:]]
+    train(*args)

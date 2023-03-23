@@ -94,11 +94,11 @@ for file in $files; do
 #SBATCH --account=clas12
 #SBATCH --partition=production
 #SBATCH --mem-per-cpu=2000
-#SBATCH --job-name=job_photonML_$ana_$runNumber
+#SBATCH --job-name=job_photonML_$file
 #SBATCH --cpus-per-task=2
 #SBATCH --time=24:00:00
-#SBATCH --output=$FARMOUT_DIR/log/photonML_$ana_$runNumber.out
-#SBATCH --error=$FARMOUT_DIR/err/photonML_$ana_$runNumber.err
+#SBATCH --output=$FARMOUT_DIR/log/photonML_$file.out
+#SBATCH --error=$FARMOUT_DIR/err/photonML_$file.err
 $slurmshell
 EOF
 

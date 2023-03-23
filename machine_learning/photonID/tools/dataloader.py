@@ -97,6 +97,7 @@ def load_data(rootfiles=[""],
         
         # Concatenate with main dataframe
         df=pd.concat([df,tmp_df], ignore_index=True,axis=0)
+
     # Create dataset for training/evaluation
     X = df.drop("flag",axis=1)
     if(version=="predict"):
@@ -122,16 +123,17 @@ def load_params(inyaml=""):
     for name,model in yaml_dict.items():
         #Create a new empty dictionary to store the parameters
         model_params = dict()
-        #Store the type of each item in a variable
+        #Store the type and percent of each item in a variable
         _type = model["type"]
         _type = _type.strip()
+        _percent = model["percent"]
         #Loop through the other key-value pairs in the dictionary
         for key, value in model.items():
-                #If the key is not 'type', store the key-value pair in the model_params dictionary
-                if key != 'type':
+                #If the key is not 'type' or 'percent', store the key-value pair in the model_params dictionary
+                if key != 'type' and key != 'percent':
                     model_params[key] = value
-        #Add the name, type and parameters of each item to the model_params_list
-        model_params_list.append([name,_type,model_params])
+        #Add the name, type, percent and parameters of each item to the model_params_list
+        model_params_list.append([name,_type,_percent,model_params])
     
     #Return the list of parameters
     return model_params_list
@@ -149,7 +151,7 @@ def load_files(rootdir="",
     if(test==1):
         return [rootdir+"/MC_3051_0.root"]
     
-    fjs = open ('../../utils/subdata.json', "r")
+    fjs = open ('/work/clas12/users/gmat/clas12/clas12_dihadrons/utils/subdata.json', "r")
     JSON = json.loads(fjs.read())
     SUBDATA_KEYS=[key for key in JSON.keys()]
     
