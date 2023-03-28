@@ -77,7 +77,7 @@ fi
 
 
 VOLATILE_DIR="$volatile/clas12_dihadrons/projects/$PROJECT_NAME"
-DATA_DIR="$VOLATILE_DIR/data/raw"
+DATA_DIR="$VOLATILE_DIR/data"
 FARMOUT_DIR="$farmout"
 
 # Create folders within FARMOUT_DIR

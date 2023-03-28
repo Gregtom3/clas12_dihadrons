@@ -59,17 +59,27 @@ VOLATILE_DIR="$volatile/clas12_dihadrons/projects/$PROJECT_NAME"
 DATA_DIR="$VOLATILE_DIR/data"
 FARMOUT_DIR="$farmout"
 
-# Create pion pid pairs for the ML portion
-pion_pairs=("piplus_pi0" "piminus_pi0" "pi0_pi0")
+
+# Create pion pid pairs
+pion_pairs=("piplus_piplus" "piplus_pi0" "piminus_pi0" "piminus_piminus" "pi0_pi0" "piplus_piminus")
 declare -A pion_pairs_pids
 pion_pairs_pids[0,0]=211
-pion_pairs_pids[0,1]=111
+pion_pairs_pids[0,1]=211
 
-pion_pairs_pids[1,0]=-211
+pion_pairs_pids[1,0]=211
 pion_pairs_pids[1,1]=111
 
-pion_pairs_pids[2,0]=111
+pion_pairs_pids[2,0]=-211
 pion_pairs_pids[2,1]=111
+
+pion_pairs_pids[3,0]=-211
+pion_pairs_pids[3,1]=-211
+
+pion_pairs_pids[4,0]=111
+pion_pairs_pids[4,1]=111
+
+pion_pairs_pids[5,0]=211
+pion_pairs_pids[5,1]=-211
 
 # Create folders within FARMOUT_DIR
 mkdir_green "$FARMOUT_DIR/log"
@@ -78,12 +88,34 @@ mkdir_green "$FARMOUT_DIR/slurm"
 mkdir_green "$FARMOUT_DIR/shell"
 
 # Determine the file names
-files=$(ls $DATA_DIR/${pion_pairs[0]} | sort -V)
+files=$(ls $DATA_DIR/${pion_pairs[1]} | sort -V)
 
-printblue "Analyzing $(echo $files | wc -w)"
+did_look_up=0
 for file in $files; do
-    slurmshell=$FARMOUT_DIR/shell/photonML_$file.sh
-    slurmslurm=$FARMOUT_DIR/slurm/photonML_$file.slurm
+    if [[ $did_look_up == 0 ]]; then
+        
+        echo "Looking up photon ML branches for first file..."
+        branches=$(python $PWD/utils/read_ml_tbranches.py $DATA_DIR/${pion_pairs[1]}/$file)
+            
+        # Prompt the user for which TBranch to analyze
+        echo "Which photon ML TBranch should be used for analysis?"
+        echo $branches
+        read selectedBranch
+
+        # Check if the selected TBranch is in the list of branches
+        if ! echo "$branches" | grep -q "^$selectedBranch$"; then
+            echo "Error: $selectedBranch is not in the list of branches."
+            exit 1
+        fi
+        
+        printblue "Analyzing $(echo $files | wc -w)"
+        
+        did_look_up=1
+    fi
+    
+
+    slurmshell=$FARMOUT_DIR/shell/dihadron_$file.sh
+    slurmslurm=$FARMOUT_DIR/slurm/dihadron_$file.slurm
 
     touch -f $slurmshell
     touch -f $slurmslurm
@@ -94,11 +126,11 @@ for file in $files; do
 #SBATCH --account=clas12
 #SBATCH --partition=production
 #SBATCH --mem-per-cpu=2000
-#SBATCH --job-name=job_photonML_$file
+#SBATCH --job-name=job_dihadron_$file
 #SBATCH --cpus-per-task=2
 #SBATCH --time=24:00:00
-#SBATCH --output=$FARMOUT_DIR/log/photonML_$file.out
-#SBATCH --error=$FARMOUT_DIR/err/photonML_$file.err
+#SBATCH --output=$FARMOUT_DIR/log/dihadron_$file.out
+#SBATCH --error=$FARMOUT_DIR/err/dihadron_$file.err
 $slurmshell
 EOF
 
@@ -110,11 +142,10 @@ EOF
     j=0
     for pair in "${pion_pairs[@]}"; do
         FILE="$DATA_DIR/$pair/$file"
-        echo "clas12root -b -q $PWD/macros/photonML.C\(\\\"${FILE}\\\",0\)" >> $slurmshell
-        echo "clas12root -b -q $PWD/macros/photonML.C\(\\\"${FILE}\\\",1\)" >> $slurmshell
+        echo "clas12root -b -q $PWD/macros/dihadronBuilder.C\(\\\"${FILE}\\\",\\\"${selectedBranch}\\\"\)" >> $slurmshell
         j=$((j+1))
     done
     
     echo "Submitting slurm job for $file"
-    sbatch --quiet $slurmslurm
+    #sbatch --quiet $slurmslurm
 done

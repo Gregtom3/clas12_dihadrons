@@ -3,6 +3,39 @@
 
 void getPIDs(std::string filename, int& pid_h1, int& pid_h2);
 
+void generate_combinations(std::vector<int>& input, int num, int start_idx, std::vector<int>& curr_combination, std::vector<std::vector<int>>& result) {
+    if (num == 0) {
+        result.push_back(curr_combination);
+        return;
+    }
+    for (int i = start_idx; i <= input.size() - num; i++) {
+        curr_combination.push_back(input[i]);
+        generate_combinations(input, num - 1, i + 1, curr_combination, result);
+        curr_combination.pop_back();
+    }
+}
+
+std::vector<std::vector<int>> unique_combinations(std::vector<int> input, int num) {
+    std::vector<std::vector<int>> result;
+    std::vector<int> curr_combination;
+    std::sort(input.begin(), input.end());
+    generate_combinations(input, num, 0, curr_combination, result);
+    return result;
+}
+
+std::vector<std::vector<int>> remove_duplicates(std::vector<std::vector<int>> input) {
+    std::vector<std::vector<int>> output;
+    
+    // Sort each inner vector and remove duplicates
+    for (auto& v : input) {
+        std::sort(v.begin(), v.end());
+    }
+    std::sort(input.begin(), input.end());
+    input.erase(std::unique(input.begin(), input.end()), input.end());
+    
+    return input;
+}
+
 
 // This program reads in a root file containing data from CLAS12 collisions and the corresponding particles produced. 
 // It then uses the information to construct dihadrons (two hadrons) from the particles. 
@@ -13,8 +46,7 @@ void getPIDs(std::string filename, int& pid_h1, int& pid_h2);
 // is to be used to save photon classification values. The "weight_branch" in the "EventTree" is created by the program "machine_learning/photonID/predict.py"
 
 int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas12_dihadrons/projects/ana_v0/data/raw/pi0_pi0/nSidis_5032.root",
-                    const char *weight_branch="gbt_0_calo",
-                    const double _electron_beam_energy=10.6){
+                    const char *weight_branch="gbt_0_calo"){
     
     // Declare pid_h1 and pid_h2
     int pid_h1=0;
@@ -73,7 +105,8 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
     EventTree->SetBranchAddress("trueeta",&trueeta);
     EventTree->SetBranchAddress("truephi",&truephi);
     EventTree->SetBranchAddress("truepid",truepid);
-    EventTree->SetBranchAddress(weight_branch,weight);
+    if(pid_h1==111||pid_h2==111)
+        EventTree->SetBranchAddress(weight_branch,weight);
     
     //Create the new TTree
     TString treename="dihadron";
@@ -162,13 +195,20 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
     Kinematics kin;
   
     // Initial particles
-    TLorentzVector init_electron(0,0,sqrt(_electron_beam_energy*_electron_beam_energy-Me*Me),_electron_beam_energy);
+    TLorentzVector init_electron(0,0,0,0); // To be set one run is found
     TLorentzVector init_target(0,0,0,Mp);
     
     
     // for loop over all events
     int N = EventTree->GetEntries();
+    std::vector<int> h1_idxs;
+    std::vector<int> h2_idxs;
+    std::vector<std::vector<int>> dihadron_idxs;    
     for (int ev=0; ev<N; ev++){
+        h1_idxs.clear();
+        h2_idxs.clear();
+        dihadron_idxs.clear();
+        
         if((ev+1)%100==0 || ev==N-1){
             if(ev!=N-1){
                 cout << "Progress: " << ev+1 << "/" << N << "\r";
@@ -178,7 +218,13 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
                 cout << "Progress: " << ev+1 << "/" << N << endl ;
         }
         
+
         EventTree->GetEntry(ev);
+        
+        if(ev==0){
+            init_electron.SetE(runBeamEnergy(run));
+            init_electron.SetPz(sqrt(init_electron.E()*init_electron.E()-Me*Me));
+        }
         //Loop over all particles in the event to find electron
         TLorentzVector electron;
         TLorentzVector trueelectron;
@@ -194,200 +240,198 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
             }
         }
         
-        //Loop over all particles in the event to build hadrons
-        for (int i=0; i<Nmax; i++){
-            // Indecies to prevent duplicating photons/hadrons in dihadron building
-            int phot_idx1=-1;
-            int phot_idx2=-1;
-            int h_idx1=-1;
-            bool found_h1=false;
+        //Loop over all particles in the event to determine hadron indecies
+
+        for(int i = 0; i<Nmax; i++){
+            if(pid[i]==pid_h1 || (pid[i]==22 && pid_h1==111)) h1_idxs.push_back(i);
+            if(pid[i]==pid_h2 || (pid[i]==22 && pid_h2==111)) h2_idxs.push_back(i);
+        }
+        //Now form all possible dihadron index pairs
+
+        if(pid_h1==pid_h2 && pid_h1!=111){dihadron_idxs=unique_combinations(h1_idxs,2);}
+        else if(pid_h1==pid_h2 && pid_h1==111){dihadron_idxs=unique_combinations(h1_idxs,4);}
+        else if(pid_h1!=pid_h2 && pid_h1==111 && pid_h2 != 111){
+            for(int i = 0 ; i < h2_idxs.size(); i++){
+                for(int j = 0 ; j < h1_idxs.size(); j++){
+                    for(int k = j+1 ; k < h1_idxs.size(); k++){
+                        std::vector<int> dihadron_idx = {h1_idxs.at(j),h1_idxs.at(k),h2_idxs.at(i)}; // 2 photons at start
+                        dihadron_idxs.push_back(dihadron_idx);
+                    }
+                }
+            }
+        }
+        else if(pid_h1!=pid_h2 && pid_h1!=111 && pid_h2 == 111){
+            for(int i = 0 ; i < h1_idxs.size(); i++){
+                for(int j = 0 ; j < h2_idxs.size(); j++){
+                    for(int k = j+1 ; k < h2_idxs.size(); k++){
+                        std::vector<int> dihadron_idx = {h1_idxs.at(i),h2_idxs.at(j),h2_idxs.at(k)}; // 2 photons at end
+                        dihadron_idxs.push_back(dihadron_idx);
+                    }
+                }
+            }
+        }
+        else{
+            for(int i = 0 ; i < h1_idxs.size(); i++){
+                for(int j = 0 ; j < h2_idxs.size(); j++){
+                    std::vector<int> dihadron_idx = {h1_idxs.at(i), h2_idxs.at(j)};
+                    dihadron_idxs.push_back(dihadron_idx);
+                }
+            }
+        }
+        // Remove any instance of duplicate dihadrons
+        dihadron_idxs = remove_duplicates(dihadron_idxs);
+        // Now loop over all dihadrons
+        for(int a = 0 ; a < dihadron_idxs.size() ; a++){
+            std::vector<int> dihadron_idx = dihadron_idxs.at(a);
+            int i=0;
+            int ii=0;
+            int j=0;
+            int jj=0;
+            if(pid_h1==111){
+                i=dihadron_idx.at(0);
+                ii=dihadron_idx.at(1);
+            }else{
+                i=dihadron_idx.at(0);
+            }
+            if(pid_h2==111&&pid_h1!=111){
+                j=dihadron_idx.at(1);
+                jj=dihadron_idx.at(2);
+            }else if(pid_h2==111&&pid_h1==111){
+                j=dihadron_idx.at(2);
+                jj=dihadron_idx.at(3);
+            }else if(pid_h1==111){
+                j=dihadron_idx.at(2);
+            }else{
+                j=dihadron_idx.at(1);
+            }
             
             TLorentzVector h1;
             TLorentzVector trueh1;
-
-            
-            
-            // BUILD THE FIRST HADRON
-            // Check if we need a first pi0
-            // ----------------------------------------
+            TLorentzVector h2;
+            TLorentzVector trueh2;
+            TLorentzVector dihadron;
+            TLorentzVector truedihadron;
             if(pid_h1==111){
-                if(pid[i]==22){ // found a photon
-                    phot_idx1=i;
-                    p_11=weight[i];
-                    for(int j=0;j<Nmax;j++){
-                        if(j==phot_idx1) continue; // skip replica photon
-                        if(pid[j]==22){
-                            phot_idx2=j;
-                            p_12=weight[j];
-                            h1.SetPxPyPzE(px[i]+px[j],py[i]+py[j],pz[i]+pz[j],E[i]+E[j]);
-                            trueh1.SetPxPyPzE(truepx[i]+truepx[j],truepy[i]+truepy[j],truepz[i]+truepz[j],trueE[i]+trueE[j]);
-                            truepid_11=truepid[i];
-                            truepid_12=truepid[i];
-                            if(parentID[i]==parentID[j] && parentID[i]!=-999){
-                                trueparentid_1=parentID[i];
-                                trueparentpid_1=parentPID[i];
-                                trueparentparentid_1=parentparentID[i];
-                                trueparentparentpid_1=parentparentPID[i];
-                            } else {
-                               trueparentid_1=-999;
-                               trueparentpid_1=-999;
-                               trueparentparentid_1=-999;
-                               trueparentparentpid_1=-999;
-                            }
-                            found_h1=true;
-                            break; // leave the j for loop, we built our first pi0
-                        }
-                    }
-                }
-            // No need for a pi0
-            // ----------------------------------------
-            } else {
-                if(pid[i]==pid_h1){ // found a hadron
-                    h_idx1=i;
-                    found_h1=true;
-                    h1.SetPxPyPzE(px[i],py[i],pz[i],E[i]);
-                    trueh1.SetPxPyPzE(truepx[i],truepy[i],truepz[i],trueE[i]);
-                    truepid_1=truepid[i];
+                p_11 = weight[i];
+                p_12 = weight[ii];
+                h1.SetPxPyPzE(px[i]+px[ii],py[i]+py[ii],pz[i]+pz[ii],E[i]+E[ii]);
+                trueh1.SetPxPyPzE(truepx[i]+truepx[ii],truepy[i]+truepy[ii],truepz[i]+truepz[ii],trueE[i]+trueE[ii]);
+                truepid_11=truepid[i];
+                truepid_12=truepid[i];
+                if(parentID[i]==parentID[ii] && parentID[i]!=-999){
                     trueparentid_1=parentID[i];
                     trueparentpid_1=parentPID[i];
                     trueparentparentid_1=parentparentID[i];
                     trueparentparentpid_1=parentparentPID[i];
+                } else {
+                   trueparentid_1=-999;
+                   trueparentpid_1=-999;
+                   trueparentparentid_1=-999;
+                   trueparentparentpid_1=-999;
+                }
+            }else{
+                h1.SetPxPyPzE(px[i],py[i],pz[i],E[i]);
+                trueh1.SetPxPyPzE(truepx[i],truepy[i],truepz[i],trueE[i]);
+                truepid_1=truepid[i];
+                trueparentid_1=parentID[i];
+                trueparentpid_1=parentPID[i];
+                trueparentparentid_1=parentparentID[i];
+                trueparentparentpid_1=parentparentPID[i];
+            }
+            if(pid_h2==111){
+                p_21 = weight[j];
+                p_22 = weight[jj];
+                h2.SetPxPyPzE(px[j]+px[jj],py[j]+py[jj],pz[j]+pz[jj],E[j]+E[jj]);
+                trueh2.SetPxPyPzE(truepx[j]+truepx[jj],truepy[j]+truepy[jj],truepz[j]+truepz[jj],trueE[j]+trueE[jj]);
+                truepid_21=truepid[j];
+                truepid_22=truepid[j];
+                if(parentID[j]==parentID[jj] && parentID[j]!=-999){
+                    trueparentid_2=parentID[j];
+                    trueparentpid_2=parentPID[j];
+                    trueparentparentid_2=parentparentID[j];
+                    trueparentparentpid_2=parentparentPID[j];
+                } else {
+                   trueparentid_2=-999;
+                   trueparentpid_2=-999;
+                   trueparentparentid_2=-999;
+                   trueparentparentpid_2=-999;
                 }
             }
-            
-            // If we didn't find our first hadron, skip
-            if(found_h1==false)
-                continue;
-            // BUILD THE SECOND HADRON
-            // Check if we need a second pi0
-            // ----------------------------------------
-            for(int j=0; j<Nmax;j++){
-                TLorentzVector h2;
-                TLorentzVector trueh2;
-                int phot_idx3=-1;
-                int phot_idx4=-1;
-                int h_idx2=-1;
-                bool found_h2=false;
-                if(pid_h2==111){
-                    if(pid[j]==22){ // found a photon
-                        if(j==phot_idx1 || j==phot_idx2) continue; // don't use previously used photons
-                        phot_idx3=j;
-                        p_21=weight[j];
-                        for(int k=0;k<Nmax;k++){
-                            if(k==phot_idx1 || k==phot_idx2 || k==phot_idx3) continue; // skip replica photons
-                            if(pid[k]==22){
-                                phot_idx4=k;
-                                p_22=weight[k];
-                                h2.SetPxPyPzE(px[j]+px[k],py[j]+py[k],pz[j]+pz[k],E[j]+E[k]);
-                                trueh2.SetPxPyPzE(truepx[j]+truepx[k],truepy[j]+truepy[k],truepz[j]+truepz[k],trueE[j]+trueE[k]);
-                                truepid_21=truepid[j];
-                                truepid_22=truepid[j];
-                                if(parentID[j]==parentID[k] && parentID[j]!=-999){
-                                    trueparentid_2=parentID[j];
-                                    trueparentpid_2=parentPID[j];
-                                    trueparentparentid_2=parentparentID[j];
-                                    trueparentparentpid_2=parentparentPID[j];
-                                } else {
-                                   trueparentid_2=-999;
-                                   trueparentpid_2=-999;
-                                   trueparentparentid_2=-999;
-                                   trueparentparentpid_2=-999;
-                                }
-                                found_h2=true;
-                                break; // leave the k for loop, we built our first pi0
-                            }
-                        }
-                    }
-                // No need for a pi0
-                // ----------------------------------------
-                } else {
-                    if(pid[j]==pid_h2){ // found a hadron
-                        if(j==h_idx1) continue; // don't create duplicate hadron
-                        h_idx2=j;
-                        found_h2=true;
-                        h2.SetPxPyPzE(px[j],py[j],pz[j],E[j]);
-                        trueh2.SetPxPyPzE(truepx[j],truepy[j],truepz[j],trueE[j]);
-                        truepid_2=truepid[j];
-                        trueparentid_2=parentID[j];
-                        trueparentpid_2=parentPID[j];
-                        trueparentparentid_2=parentparentID[j];
-                        trueparentparentpid_2=parentparentPID[j];
-                    }
-                }
-                
-                // If we didn't find our second hadron, skip
-                if(found_h2==false)
-                    continue;
-                TLorentzVector dihadron;
-                TLorentzVector truedihadron;
-                
-                // Build the dihadron
-                dihadron = h1+h2;
-                truedihadron = trueh1+trueh2;
-                // fill results
-                M1 = h1.M();
-                M2 = h2.M();
-                Mh = dihadron.M();
-                phi_h = kin.phi_h(q,init_electron,h1,h2);
-                phi_h1 = kin.phi_h(q,init_electron,h1);
-                phi_h2 = kin.phi_h(q,init_electron,h2);
-                delta_phi_h = phi_h1-phi_h2;
-                if(delta_phi_h>PI){
-                    delta_phi_h-=2*PI;
-                }else if(delta_phi_h<-PI){
-                    delta_phi_h+=2*PI;
-                }
-                pT_1 = kin.Pt(q,h1,init_target);
-                pT_2 = kin.Pt(q,h2,init_target);
-                pT_tot = kin.Pt(q,dihadron,init_target);
+            else{
+                h2.SetPxPyPzE(px[j],py[j],pz[j],E[j]);
+                trueh2.SetPxPyPzE(truepx[j],truepy[j],truepz[j],trueE[j]);
+                truepid_2=truepid[j];
+                trueparentid_2=parentID[j];
+                trueparentpid_2=parentPID[j];
+                trueparentparentid_2=parentparentID[j];
+                trueparentparentpid_2=parentparentPID[j];
+            }
+            // Build the dihadron
+            dihadron = h1+h2;
+            truedihadron = trueh1+trueh2;
+            // fill results
+            M1 = h1.M();
+            M2 = h2.M();
+            Mh = dihadron.M();
+            phi_h = kin.phi_h(q,init_electron,h1,h2);
+            phi_h1 = kin.phi_h(q,init_electron,h1);
+            phi_h2 = kin.phi_h(q,init_electron,h2);
+            delta_phi_h = phi_h1-phi_h2;
+            if(delta_phi_h>PI){
+                delta_phi_h-=2*PI;
+            }else if(delta_phi_h<-PI){
+                delta_phi_h+=2*PI;
+            }
+            pT_1 = kin.Pt(q,h1,init_target);
+            pT_2 = kin.Pt(q,h2,init_target);
+            pT_tot = kin.Pt(q,dihadron,init_target);
 
-                phi_R0 = kin.phi_R(q,init_electron,h1,h2,0);
-                phi_R1 = kin.phi_R(q,init_electron,h1,h2,1);
-                th     = kin.com_th(h1,h2);
-                xF1 = kin.xF(q,h1,init_target,W);
-                xF2 = kin.xF(q,h2,init_target,W);
-                xF     = kin.xF(q,dihadron,init_target,W);
-                z1 = kin.z(init_target,h1,q);
-                z2 = kin.z(init_target,h2,q);
-                z = z1+z2;
-                Mx = (init_electron+init_target-electron-dihadron).M();
-                
-                
-                trueM1 = trueh1.M();
-                trueM2 = trueh2.M();
-                trueMh = truedihadron.M();
-                truephi_h = kin.phi_h(trueq,init_electron,trueh1,trueh2);
-                truephi_h1 = kin.phi_h(trueq,init_electron,trueh1);
-                truephi_h2 = kin.phi_h(trueq,init_electron,trueh2);
-                truedelta_phi_h = truephi_h1-truephi_h2;
-                if(truedelta_phi_h>PI){
-                    truedelta_phi_h-=2*PI;
-                }else if(truedelta_phi_h<-PI){
-                    truedelta_phi_h+=2*PI;
-                }
-                truepT_1 = kin.Pt(trueq,trueh1,init_target);
-                truepT_2 = kin.Pt(trueq,trueh2,init_target);
-                truepT_tot = kin.Pt(trueq,truedihadron,init_target);
+            phi_R0 = kin.phi_R(q,init_electron,h1,h2,0);
+            phi_R1 = kin.phi_R(q,init_electron,h1,h2,1);
+            th     = kin.com_th(h1,h2);
+            xF1 = kin.xF(q,h1,init_target,W);
+            xF2 = kin.xF(q,h2,init_target,W);
+            xF     = kin.xF(q,dihadron,init_target,W);
+            z1 = kin.z(init_target,h1,q);
+            z2 = kin.z(init_target,h2,q);
+            z = z1+z2;
+            Mx = (init_electron+init_target-electron-dihadron).M();
 
-                truephi_R0 = kin.phi_R(trueq,init_electron,trueh1,trueh2,0);
-                truephi_R1 = kin.phi_R(trueq,init_electron,trueh1,trueh2,1);
-                trueth     = kin.com_th(trueh1,trueh2);
-                truexF1 = kin.xF(trueq,trueh1,init_target,trueW);
-                truexF2 = kin.xF(trueq,trueh2,init_target,trueW);
-                truexF     = kin.xF(trueq,truedihadron,init_target,trueW);
-                truez1 = kin.z(init_target,trueh1,trueq);
-                truez2 = kin.z(init_target,trueh2,trueq);
-                truez = truez1+truez2;
-                trueMx = (init_electron+init_target-trueelectron-truedihadron).M();
-                
-                MCmatch=0;
-                if(trueelectron.E()>0&&trueh1.E()>0&&trueh2.E()>0) MCmatch=1;
-                
-                outtree->Fill();
-            } // loop second hadron
-        } // loop first hadron
-    } // loop event
-    
+
+            trueM1 = trueh1.M();
+            trueM2 = trueh2.M();
+            trueMh = truedihadron.M();
+            truephi_h = kin.phi_h(trueq,init_electron,trueh1,trueh2);
+            truephi_h1 = kin.phi_h(trueq,init_electron,trueh1);
+            truephi_h2 = kin.phi_h(trueq,init_electron,trueh2);
+            truedelta_phi_h = truephi_h1-truephi_h2;
+            if(truedelta_phi_h>PI){
+                truedelta_phi_h-=2*PI;
+            }else if(truedelta_phi_h<-PI){
+                truedelta_phi_h+=2*PI;
+            }
+            truepT_1 = kin.Pt(trueq,trueh1,init_target);
+            truepT_2 = kin.Pt(trueq,trueh2,init_target);
+            truepT_tot = kin.Pt(trueq,truedihadron,init_target);
+
+            truephi_R0 = kin.phi_R(trueq,init_electron,trueh1,trueh2,0);
+            truephi_R1 = kin.phi_R(trueq,init_electron,trueh1,trueh2,1);
+            trueth     = kin.com_th(trueh1,trueh2);
+            truexF1 = kin.xF(trueq,trueh1,init_target,trueW);
+            truexF2 = kin.xF(trueq,trueh2,init_target,trueW);
+            truexF     = kin.xF(trueq,truedihadron,init_target,trueW);
+            truez1 = kin.z(init_target,trueh1,trueq);
+            truez2 = kin.z(init_target,trueh2,trueq);
+            truez = truez1+truez2;
+            trueMx = (init_electron+init_target-trueelectron-truedihadron).M();
+            MCmatch=0;
+            if(trueelectron.E()>0&&trueh1.E()>0&&trueh2.E()>0) MCmatch=1;
+
+            outtree->Fill();
+        } // end dihadron loop
+    }// end event loop
+
+   
     cout << "Writing TTree with " << outtree->GetEntries() << " entries" << endl;
     outtree->Write();
     f->Close();

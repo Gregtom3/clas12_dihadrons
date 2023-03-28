@@ -37,6 +37,9 @@ int photonML(const char * input_file = "/volatile/clas12/users/gmat/clas12analys
     double gm2u=0; // Photon shower shape
     double gm2v=0; // Photon shower shape
     
+    double R_e;
+    double dE_e;
+    
     double R_gamma[m_g]; // Angular distance between calo shower centers
     double dE_gamma[m_g]; // Energy difference
     double Epcal_gamma[m_g]; // Energy deposited in the pcal
@@ -70,6 +73,9 @@ int photonML(const char * input_file = "/volatile/clas12/users/gmat/clas12analys
     MLInput->Branch("gTheta",&gTheta,"gTheta/D");
     MLInput->Branch("gm2u",&gm2u,"gm2u/D");
     MLInput->Branch("gm2v",&gm2v,"gm2v/D");
+    
+    MLInput->Branch("R_e",&R_e,"R_e/D");
+    MLInput->Branch("dE_e",&dE_e,"dE_e/D");
     
     MLInput->Branch("R_gamma",R_gamma,"R_gamma[m_g]/D");
     MLInput->Branch("dE_gamma",dE_gamma,"dE_gamma[m_g]/D");
@@ -128,6 +134,8 @@ int photonML(const char * input_file = "/volatile/clas12/users/gmat/clas12analys
       for (int ipart=0; ipart<Nmax; ++ipart) {
         //Check if the particle is a photon
         if (pid[ipart] == 22) {
+          R_e = 0;
+          dE_e = 0;
           //Initialize the arrays
           for (int i=0; i<m_g; ++i) {
             R_gamma[i] = 0;
@@ -150,7 +158,7 @@ int photonML(const char * input_file = "/volatile/clas12/users/gmat/clas12analys
             m2u_nh[i] = 0;
             m2v_nh[i] = 0;
           }
-
+    
           //Set the number of photons within R<0.1, R<0.2, R<0.35
           num_photons_0_1 = 0;
           num_photons_0_2 = 0;
@@ -303,6 +311,10 @@ int photonML(const char * input_file = "/volatile/clas12/users/gmat/clas12analys
                     break;
                   }
                 }
+            }
+            else if(pid[jpart]==11){
+                R_e = R;
+                dE_e = E[ipart] - E[jpart];
             }
             else{
                 continue;

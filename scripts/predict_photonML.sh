@@ -69,7 +69,7 @@ fi
 
 
 VOLATILE_DIR="$volatile/clas12_dihadrons/projects/$PROJECT_NAME"
-DATA_DIR="$VOLATILE_DIR/data/raw"
+DATA_DIR="$VOLATILE_DIR/data"
 FARMOUT_DIR="$farmout"
 
 # Create folders within FARMOUT_DIR
@@ -176,7 +176,7 @@ for pion_pair in ${pion_pairs[@]}; do
 /u/apps/python3/3.9.7/bin/python3 $PWD/machine_learning/photonID/predict.py "${DATA_DIR}/${pion_pair}" "$dataset" "$model"
 EOF
                 echo "Submitting slurm job for ${pion_pair} , ${dataset}"
-                #sbatch --quiet $slurmslurm
+                sbatch --quiet $slurmslurm
             fi
         done
     done

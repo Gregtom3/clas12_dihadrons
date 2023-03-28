@@ -63,10 +63,7 @@ mkdir_green "$PROJECT_DIR/plots"
 
 # Create folders within VOLATILE_DIR
 mkdir_green "$VOLATILE_DIR/data"
-mkdir_green "$VOLATILE_DIR/data/raw"
-mkdir_green "$VOLATILE_DIR/data/MLinput"
-mkdir_green "$VOLATILE_DIR/data/MLoutput"
-mkdir_green "$VOLATILE_DIR/data/postprocess"
+
 # Create pion pid pairs
 pion_pairs=("piplus_piplus" "piplus_pi0" "piminus_pi0" "piminus_piminus" "pi0_pi0" "piplus_piminus")
 declare -A pion_pairs_pids
@@ -88,12 +85,9 @@ pion_pairs_pids[4,1]=111
 pion_pairs_pids[5,0]=211
 pion_pairs_pids[5,1]=-211
 
-# Create subdirectories for each pion pair in the "raw" directory
+# Create subdirectories for each pion pair in the data directory
 for pair in "${pion_pairs[@]}"; do
-    mkdir_green "$VOLATILE_DIR/data/raw/$pair" 1
-    mkdir_green "$VOLATILE_DIR/data/MLinput/$pair" 1
-    mkdir_green "$VOLATILE_DIR/data/MLoutput/$pair" 1
-    mkdir_green "$VOLATILE_DIR/data/postprocess/$pair" 1
+    mkdir_green "$VOLATILE_DIR/data/$pair" 1
 done
 
 # Create folders within FARMOUT_DIR
@@ -229,7 +223,7 @@ EOF
                 # For loop over each dihadron pair
                 j=0
                 for pair in "${pion_pairs[@]}"; do
-                    outfile="$VOLATILE_DIR/data/raw/$pair/${ana}_${runNumber}.root"
+                    outfile="$VOLATILE_DIR/data/$pair/${ana}_${runNumber}.root"
                     pid1=${pion_pairs_pids[${j},0]}
                     pid2=${pion_pairs_pids[${j},1]}
                     echo "clas12root -b -q $PWD/macros/hipo2tree.C\(\\\"${hipo}\\\",\\\"${outfile}\\\",$beamE,$pid1,$pid2,$nEvents,$hipo_is_mc\)" >> $slurmshell
