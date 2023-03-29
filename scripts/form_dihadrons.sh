@@ -42,8 +42,11 @@ PROJECT_DIR=$PWD/projects
 echo "Available projects"
 ls $PROJECT_DIR
 
-read -p "Please enter a project name: " PROJECT_NAME
-
+if [[ -n "$1" ]]; then
+    PROJECT_NAME=$1
+else
+    read -p "Please enter a project name: " PROJECT_NAME
+fi
 # Check if the project exists in the project directory
 if [ -d "$PROJECT_DIR/$PROJECT_NAME" ]; then
   echo "Project exists"
@@ -100,7 +103,11 @@ for file in $files; do
         # Prompt the user for which TBranch to analyze
         echo "Which photon ML TBranch should be used for analysis?"
         echo $branches
-        read selectedBranch
+        if [[ -n "$2" ]]; then
+            selectedBranch=$2
+        else
+            read selectedBranch
+        fi
 
         # Check if the selected TBranch is in the list of branches
         if ! echo "$branches" | grep -q "^$selectedBranch$"; then

@@ -22,8 +22,8 @@ def create_dirs(outdir="",
         print("Making directory",outdir)
     
     for model in models:
-        model_type = model[1]
-        subdir=outdir+"/"+model_type
+        model_name = model[0]
+        subdir=outdir+"/"+model_name
         if not os.path.exists(subdir):
             os.mkdir(subdir)
             os.mkdir(subdir+"/eval_plots")

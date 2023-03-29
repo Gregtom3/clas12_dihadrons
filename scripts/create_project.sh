@@ -26,6 +26,16 @@ mkdir_green () {
     printgreen "mkdir $1"
 }
 
+
+rmdir_red () {
+    if [ -n "$2" ]; then
+        printf "\t%.s" $(seq 1 "$2")
+    fi
+    printred "Waiting 10 seconds before...rm -r $1"
+    sleep 10
+    rm -r $1
+}
+
 # Assign the variable PWD the value of the current working directory
 PWD=`pwd`
 
@@ -38,8 +48,11 @@ if [ $(basename $(pwd)) != "clas12_dihadrons" ]; then
 fi
 
 # Prompt the user for a project name
-read -p "Please enter a project name: " PROJECT_NAME
-
+if [[ -n "$2" ]]; then
+    PROJECT_NAME=$2
+else
+    read -p "Please enter a project name: " PROJECT_NAME
+fi
 
 # Check if the -o flag is not used
 if [[ $* != *-o* ]]; then
@@ -49,9 +62,24 @@ if [[ $* != *-o* ]]; then
       exit
     fi
 fi
+
+if [[ -z "$PROJECT_NAME" ]]; then
+  echo "Error: PROJECT_NAME is empty. Please provide a project name."
+  exit 1
+fi
+
 # Make the directory and call the location to the directory PROJECT_DIR
 PROJECT_DIR="$PWD/projects/$PROJECT_NAME"
 VOLATILE_DIR="$volatile/clas12_dihadrons/projects/$PROJECT_NAME"
+
+if [ -d "$PROJECT_DIR" ]; then
+    rmdir_red "$PROJECT_DIR"
+fi
+
+if [ -d "$VOLATILE_DIR" ]; then
+    rmdir_red "$VOLATILE_DIR"
+fi
+
 FARMOUT_DIR="$farmout"
 mkdir_green "$PROJECT_DIR"
 mkdir_green "$VOLATILE_DIR"
@@ -103,11 +131,18 @@ ln -snf $FARMOUT_DIR $PROJECT_DIR/farmout
 
 
 # Take the user's input
-read -p "Please enter the number of files: " nFiles
+if [[ -n "$3" ]]; then
+    nFiles=$3
+else
+    read -p "Please enter the number of files: " nFiles
+fi
 
 # Take the user's input
-read -p "Please enter the number of events per file: " nEvents
-
+if [[ -n "$4" ]]; then
+    nEvents=$4
+else
+    read -p "Please enter the number of events per file: " nEvents
+fi
 
 # Define a function that returns the hipo files for analysis
 get_hipo_dirs()

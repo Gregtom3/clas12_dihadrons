@@ -7,7 +7,7 @@
 
 
 int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2018/torus-1/pass1/v1/dst/train/nSidis/nSidis_005032.hipo",
-              const char * outputFile = "/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas12_dihadrons/projects/ana_v0/data/raw/pi0_pi0/nSidis_5032.root",
+              const char * outputFile = "/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas12_dihadrons/projects/ana_v0/data/pi0_pi0/nSidis_5032.root",
               const double _electron_beam_energy = 10.6,
               const int pid_h1=111,
               const int pid_h2=111,
@@ -34,6 +34,7 @@ int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2
   double px[Nmax], py[Nmax], pz[Nmax], p[Nmax], E[Nmax], pid[Nmax],m[Nmax];
   double vx[Nmax], vy[Nmax], vz[Nmax], chi2[Nmax], beta[Nmax];
   double truepx[Nmax], truepy[Nmax], truepz[Nmax], truep[Nmax], trueE[Nmax], truepid[Nmax], trueparentid[Nmax], trueparentpid[Nmax], trueparentparentid[Nmax], trueparentparentpid[Nmax];
+  int is_CFR[Nmax];
   double theta[Nmax], eta[Nmax], phi[Nmax], truept[Nmax], truem[Nmax], truetheta[Nmax], trueeta[Nmax], truephi[Nmax], truevx[Nmax], truevy[Nmax], truevz[Nmax];
   int pcal_sector[Nmax], ecin_sector[Nmax], ecout_sector[Nmax];
   double pcal_x[Nmax], pcal_y[Nmax], pcal_z[Nmax];
@@ -97,6 +98,7 @@ int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2
   tree->Branch("truevy", truevy, "truevy[Nmax]/D");
   tree->Branch("truevz", truevz, "truevz[Nmax]/D");
   tree->Branch("trueE", trueE, "trueE[Nmax]/D");
+  tree->Branch("is_CFR", is_CFR, "is_CFR[Nmax]/I");
   tree->Branch("truepid", truepid, "truepid[Nmax]/D");
   tree->Branch("trueparentid", trueparentid, "trueparentid[Nmax]/I");
   tree->Branch("trueparentpid", trueparentpid, "trueparentpid[Nmax]/I");
@@ -329,9 +331,21 @@ int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2
       partstruct.truevz = mcparticles->getVz(idx);
 
       partstruct.trueparentid = mcparticles->getParent(idx)-1;
-      partstruct.trueparentpid = mcparticles->getParent(partstruct.trueparentid)-1;
+      partstruct.trueparentpid = mcparticles->getParent(partstruct.trueparentid);
       partstruct.trueparentparentid = mcparticles->getParent(partstruct.trueparentid)-1;
       partstruct.trueparentparentpid = mcparticles->getPid(partstruct.trueparentparentid);
+      
+      // for loop over the idxs until we find if this particle came from CFR
+      int parent_idx = mcparticles->getParent(idx)-1;
+      int parent_pid = 0;
+      while(parent_idx!=-1){
+          parent_pid = mcparticles->getParent(parent_idx);
+          if(6-abs(parent_pid)>=0){
+              partstruct.is_CFR=1;
+              break;
+          }
+          parent_idx = mcparticles->getParent(parent_idx)-1;
+      }
         
       if(partstruct.pid==11 && partstruct.trueparentid==0){ // scattered electron
         trueQ2=_kin.Q2(_electron_beam_energy,partstruct.trueE,_kin.cth(partstruct.truepx,partstruct.truepy,partstruct.truepz));
@@ -412,6 +426,7 @@ int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2
       truevx[i] = par.truevx;
       truevy[i] = par.truevy;
       truevz[i] = par.truevz;
+      is_CFR[i] = par.is_CFR;
       truepid[i] = par.truepid;
       trueparentid[i] = par.trueparentid;
       trueparentpid[i] = par.trueparentpid;

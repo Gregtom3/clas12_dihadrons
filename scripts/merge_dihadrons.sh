@@ -42,11 +42,7 @@ PROJECT_DIR=$PWD/projects
 echo "Available projects"
 ls $PROJECT_DIR
 
-if [[ -n "$1" ]]; then
-    PROJECT_NAME="$1"
-else
-    read -p "Please enter a project name: " PROJECT_NAME
-fi
+read -p "Please enter a project name: " PROJECT_NAME
 
 # Check if the project exists in the project directory
 if [ -d "$PROJECT_DIR/$PROJECT_NAME" ]; then
@@ -63,17 +59,27 @@ VOLATILE_DIR="$volatile/clas12_dihadrons/projects/$PROJECT_NAME"
 DATA_DIR="$VOLATILE_DIR/data"
 FARMOUT_DIR="$farmout"
 
-# Create pion pid pairs for the ML portion
-pion_pairs=("piplus_pi0" "piminus_pi0" "pi0_pi0")
+
+# Create pion pid pairs
+pion_pairs=("piplus_piplus" "piplus_pi0" "piminus_pi0" "piminus_piminus" "pi0_pi0" "piplus_piminus")
 declare -A pion_pairs_pids
 pion_pairs_pids[0,0]=211
-pion_pairs_pids[0,1]=111
+pion_pairs_pids[0,1]=211
 
-pion_pairs_pids[1,0]=-211
+pion_pairs_pids[1,0]=211
 pion_pairs_pids[1,1]=111
 
-pion_pairs_pids[2,0]=111
+pion_pairs_pids[2,0]=-211
 pion_pairs_pids[2,1]=111
+
+pion_pairs_pids[3,0]=-211
+pion_pairs_pids[3,1]=-211
+
+pion_pairs_pids[4,0]=111
+pion_pairs_pids[4,1]=111
+
+pion_pairs_pids[5,0]=211
+pion_pairs_pids[5,1]=-211
 
 # Create folders within FARMOUT_DIR
 mkdir_green "$FARMOUT_DIR/log"
@@ -81,44 +87,44 @@ mkdir_green "$FARMOUT_DIR/err"
 mkdir_green "$FARMOUT_DIR/slurm"
 mkdir_green "$FARMOUT_DIR/shell"
 
-# Determine the file names
-files=$(ls $DATA_DIR/${pion_pairs[0]} | sort -V)
 
-printblue "Analyzing $(echo $files | wc -w)"
-for file in $files; do
-    slurmshell=$FARMOUT_DIR/shell/photonML_$file.sh
-    slurmslurm=$FARMOUT_DIR/slurm/photonML_$file.slurm
+# Create list of unique datasets
+datasets=("Fall2018_RGA_inbending" "Fall2018_RGA_outbending" "Spring2019_RGA_inbending" "MC_RGA_inbending" "MC_RGA_outbending")
 
-    touch -f $slurmshell
-    touch -f $slurmslurm
+# Loop over pion pairs
+for pion_pair in "${pion_pairs[@]}"; do
+    # Loop over datasets
+    for dataset in "${datasets[@]}"; do
+        
+        rootdir=${DATA_DIR}/${pion_pair}
+        
+        slurmshell=$FARMOUT_DIR/shell/merge_${pion_pair}_${dataset}.sh
+        slurmslurm=$FARMOUT_DIR/slurm/merge_${pion_pair}_${dataset}.slurm
 
-    chmod +x $slurmshell
-    cat >> $slurmslurm << EOF
+        touch -f $slurmshell
+        touch -f $slurmslurm
+
+        chmod +x $slurmshell
+        cat >> $slurmslurm << EOF
 #!/bin/bash
 #SBATCH --account=clas12
 #SBATCH --partition=production
-#SBATCH --mem-per-cpu=2000
-#SBATCH --job-name=job_photonML_$file
+#SBATCH --mem-per-cpu=4000
+#SBATCH --job-name=job_merge_${pion_pair}_${dataset}
 #SBATCH --cpus-per-task=2
 #SBATCH --time=24:00:00
-#SBATCH --output=$FARMOUT_DIR/log/photonML_$file.out
-#SBATCH --error=$FARMOUT_DIR/err/photonML_$file.err
+#SBATCH --output=$FARMOUT_DIR/log/merge_${pion_pair}_${dataset}.out
+#SBATCH --error=$FARMOUT_DIR/err/merge_${pion_pair}_${dataset}.err
 $slurmshell
 EOF
 
-    echo "#!/bin/tcsh" >> $slurmshell
-    echo "source /group/clas12/packages/setup.csh" >> $slurmshell
-    echo "module load clas12/pro" >> $slurmshell
+        echo "#!/bin/tcsh" >> $slurmshell
+        echo "source /group/clas12/packages/setup.csh" >> $slurmshell
+        echo "module load clas12/pro" >> $slurmshell
 
-    # For loop over each dihadron pair
-    j=0
-    for pair in "${pion_pairs[@]}"; do
-        FILE="$DATA_DIR/$pair/$file"
-        echo "clas12root -b -q $PWD/macros/photonML.C\(\\\"${FILE}\\\",0\)" >> $slurmshell
-        echo "clas12root -b -q $PWD/macros/photonML.C\(\\\"${FILE}\\\",1\)" >> $slurmshell
-        j=$((j+1))
+        echo "clas12root -b -q $PWD/macros/merge_dihadrons.C\(\\\"${rootdir}\\\",\\\"${dataset}\\\"\)" >> $slurmshell
+                
+        echo "Submitting slurm job for $hipo"
+        #sbatch --quiet $slurmslurm
     done
-    
-    echo "Submitting slurm job for $file"
-    sbatch --quiet $slurmslurm
 done

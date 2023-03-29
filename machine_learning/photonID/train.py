@@ -13,7 +13,7 @@ from xgb.train import train as xgb_train
 # from sklearn.metrics import roc_curve, auc, confusion_matrix
 
 
-def train(rootdir = "/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas12_dihadrons/projects/ana_v0/data/raw/pi0_pi0",
+def train(rootdir = "/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas12_dihadrons/projects/ana_v0/data/pi0_pi0",
           SUBDATA="MC_RGA_inbending",
           yamlfile = "params_folder/model_params.yaml",
           nn_type  = "calo", # calo or track (use either calorimeter info or track info to determine nearest neighbors)
@@ -62,7 +62,7 @@ def train(rootdir = "/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas1
         model_params = model[3]
         
         # Define savedir
-        savedir=outdir+"/"+model_type
+        savedir=outdir+"/"+model_name
         
         print("\n\nProcessing model",model_name,"with type",model_type,"\n\n")
         

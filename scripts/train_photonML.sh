@@ -43,7 +43,11 @@ PROJECT_DIR=$PWD/projects
 echo "Available projects"
 ls $PROJECT_DIR
 
-read -p "Please enter a project name: " PROJECT_NAME
+if [[ -n "$1" ]]; then
+    PROJECT_NAME="$1"
+else
+    read -p "Please enter a project name: " PROJECT_NAME
+fi
 
 # Check if the project exists in the project directory
 if [ -d "$PROJECT_DIR/$PROJECT_NAME" ]; then
@@ -62,7 +66,11 @@ PARAMS_DIR=$PWD/machine_learning/photonID/params_folder
 echo "Available param lists"
 ls $PARAMS_DIR
 
-read -p "Please enter a params list: " PARAMS_NAME
+if [[ -n "$2" ]]; then
+    PARAMS_NAME="$2"
+else
+    read -p "Please enter a params list: " PARAMS_NAME
+fi
 
 # Check if the file exists
 if [ ! -f $PARAMS_DIR/$PARAMS_NAME ]; then
@@ -118,7 +126,7 @@ for pid_pair in "${pion_pairs[@]}"; do
 #SBATCH --account=clas12
 #SBATCH --partition gpu
 #SBATCH --mem-per-cpu=4000
-#SBATCH --job-name=job_photonML_${pid_pair}_${mc}_${nn_type}
+#SBATCH --job-name=job_photonMLtrain_${pid_pair}_${mc}_${nn_type}
 #SBATCH --cpus-per-task=2
 #SBATCH --gres=gpu:TitanRTX:1
 #SBATCH --time=24:00:00

@@ -23,6 +23,8 @@ def make_plots(x,y,ypred,savedir,suffix):
     for p in [0.5,0.75,0.9]:
         ypred_new = (ypred >= p).astype(bool)
         conf_matrix_threshold = np.array(pd.crosstab(y, ypred_new, rownames=['Actual'], colnames=['Predicted']))
+        if(conf_matrix_threshold.shape!=(2,2)):
+            continue
         plot_confusion_matrix(conf_matrix_threshold, 
                       p=p,
                       categories=categories,
