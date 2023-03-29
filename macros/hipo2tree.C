@@ -331,7 +331,7 @@ int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2
       partstruct.truevz = mcparticles->getVz(idx);
 
       partstruct.trueparentid = mcparticles->getParent(idx)-1;
-      partstruct.trueparentpid = mcparticles->getParent(partstruct.trueparentid);
+      partstruct.trueparentpid = mcparticles->getPid(partstruct.trueparentid);
       partstruct.trueparentparentid = mcparticles->getParent(partstruct.trueparentid)-1;
       partstruct.trueparentparentpid = mcparticles->getPid(partstruct.trueparentparentid);
       
@@ -339,14 +339,14 @@ int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2
       int parent_idx = mcparticles->getParent(idx)-1;
       int parent_pid = 0;
       while(parent_idx!=-1){
-          parent_pid = mcparticles->getParent(parent_idx);
+          parent_pid = mcparticles->getPid(parent_idx);
           if(6-abs(parent_pid)>=0){
               partstruct.is_CFR=1;
               break;
           }
           parent_idx = mcparticles->getParent(parent_idx)-1;
       }
-        
+      cout << "\n";
       if(partstruct.pid==11 && partstruct.trueparentid==0){ // scattered electron
         trueQ2=_kin.Q2(_electron_beam_energy,partstruct.trueE,_kin.cth(partstruct.truepx,partstruct.truepy,partstruct.truepz));
         truey=_kin.y(_electron_beam_energy,partstruct.trueE);
