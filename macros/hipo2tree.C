@@ -346,7 +346,6 @@ int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2
           }
           parent_idx = mcparticles->getParent(parent_idx)-1;
       }
-      cout << "\n";
       if(partstruct.pid==11 && partstruct.trueparentid==0){ // scattered electron
         trueQ2=_kin.Q2(_electron_beam_energy,partstruct.trueE,_kin.cth(partstruct.truepx,partstruct.truepy,partstruct.truepz));
         truey=_kin.y(_electron_beam_energy,partstruct.trueE);
@@ -382,9 +381,12 @@ int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2
 	  vec_particles[i].truevx = vec_mcparticles[j].truevx;
 	  vec_particles[i].truevy = vec_mcparticles[j].truevy;
 	  vec_particles[i].truevz = vec_mcparticles[j].truevz;
+      vec_particles[i].is_CFR = vec_mcparticles[j].is_CFR;
 	  vec_particles[i].truepid = vec_mcparticles[j].truepid;
 	  vec_particles[i].trueparentid = vec_mcparticles[j].trueparentid;
 	  vec_particles[i].trueparentpid = vec_mcparticles[j].trueparentpid;
+      vec_particles[i].trueparentparentid = vec_mcparticles[j].trueparentparentid;
+	  vec_particles[i].trueparentparentpid = vec_mcparticles[j].trueparentparentpid;
 	  break;
 	}
       }
