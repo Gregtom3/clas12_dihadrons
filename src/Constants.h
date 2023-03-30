@@ -58,6 +58,51 @@ inline float runTarget(std::string target){
 };
 
 
+//Function to get pid_h1 and pid_h2 from filename
+void getPIDs(std::string filename, int& pid_h1, int& pid_h2, std::string &particleNames="") {
+
+    // Extract the string between the second and third underscores
+    std::size_t first = filename.find("/data/");
+    std::size_t second = filename.find('/', first+6);
+    particleNames = filename.substr(first+6,second-first-6);
+
+    // Transform the particle names to lower case
+    std::transform(particleNames.begin(), particleNames.end(), particleNames.begin(), ::tolower);
+    // Assign the appropriate PID values to pid_h1 and pid_h2
+    if (particleNames == "piplus_pi0") {
+        pid_h1 = 211;
+        pid_h2 = 111;
+    } else if (particleNames == "piminus_pi0") {
+        pid_h1 = -211;
+        pid_h2 = 111;
+    } else if (particleNames == "pi0_pi0") {
+        pid_h1 = 111;
+        pid_h2 = 111;
+    } else if (particleNames == "piplus_piminus"){
+        pid_h1 = 211;
+        pid_h2 = -211;
+    } else if (particleNames == "piplus_piplus"){
+        pid_h1 = 211;
+        pid_h2 = 211;
+    } else if (particleNames == "piminus_piminus"){
+        pid_h1 = -211;
+        pid_h2 = -211;
+    } else {
+        // Invalid input string, set PIDs to zero
+        pid_h1 = 0;
+        pid_h2 = 0;
+    }
+}
+
+// Input --> "/path/to/file/<version>_merged.root"
+// Output --> "<version>"
+std::string getVersion(const char *c =""){
+    std::string s(c);
+    std::size_t lastSlash = s.find_last_of('/');
+    std::string filename = s.substr(lastSlash + 1);
+    std::string prefix = filename.substr(0, filename.find("_merged.root"));
+    return prefix;
+}
 
 // Fiducial Cut Definitions
 const double maxparams_in_XY[6][6][3][2] = {

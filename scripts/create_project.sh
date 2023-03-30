@@ -88,6 +88,7 @@ mkdir_green "$FARMOUT_DIR"
 # Create folders within PROJECT_DIR
 mkdir_green "$PROJECT_DIR/models"
 mkdir_green "$PROJECT_DIR/plots"
+mkdir_green "$PROJECT_DIR/asym"
 
 # Create folders within VOLATILE_DIR
 mkdir_green "$VOLATILE_DIR/data"

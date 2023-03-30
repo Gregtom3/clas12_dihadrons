@@ -1,8 +1,6 @@
 #include "../src/Constants.h"
 #include "../src/Kinematics.C"
 
-void getPIDs(std::string filename, int& pid_h1, int& pid_h2);
-
 void generate_combinations(std::vector<int>& input, int num, int start_idx, std::vector<int>& curr_combination, std::vector<std::vector<int>>& result) {
     if (num == 0) {
         result.push_back(curr_combination);
@@ -123,7 +121,9 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
     int truepid_1,truepid_2,trueparentpid_1,trueparentpid_2,trueparentid_1,trueparentid_2,trueparentparentpid_1,trueparentparentpid_2,trueparentparentid_1,trueparentparentid_2;
     int is_CFR_1, is_CFR_2;
     int MCmatch; // MCmatch --> 1 if all particles have Monte Carlo pairing
+    int isGoodEventWithoutML;
     int truepid_11, truepid_12, truepid_21, truepid_22; // For photon pairs
+    double trueM12, M12; // addition of M1 M2
     // Machine Learning output
     double p_11=-1;
     double p_12=-1;
@@ -134,6 +134,7 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
     outtree->Branch("Pol", &Pol, "Pol/D");
     outtree->Branch("hel", &hel, "hel/I");
     outtree->Branch("MCmatch", &MCmatch, "MCmatch/I");
+    outtree->Branch("isGoodEventWithoutML", &isGoodEventWithoutML, "isGoodEventWithoutML/I");
     outtree->Branch("is_CFR_1",&is_CFR_1, "is_CFR_1/I");
     outtree->Branch("is_CFR_2",&is_CFR_2, "is_CFR_2/I");
     outtree->Branch("x", &x, "x/D");
@@ -142,6 +143,7 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
     outtree->Branch("y", &y, "y/D");
     outtree->Branch("M1", &M1, "M1/D");
     outtree->Branch("M2", &M2, "M2/D");
+    outtree->Branch("M12",&M12,"M12/D");
     outtree->Branch("Mh", &Mh, "Mh/D");
     outtree->Branch("phi_h", &phi_h, "phi_h/D");
     outtree->Branch("phi_R0", &phi_R0, "phi_R0/D");
@@ -162,6 +164,7 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
     outtree->Branch("pT_tot", &pT_tot, "pT_tot/D");
     outtree->Branch("trueM1", &trueM1, "trueM1/D");
     outtree->Branch("trueM2", &trueM2, "trueM2/D");
+    outtree->Branch("trueM12",&trueM12,"trueM12/D");
     outtree->Branch("trueMh", &trueMh, "trueMh/D");
     outtree->Branch("truephi_h", &truephi_h, "truephi_h/D");
     outtree->Branch("truephi_R0", &truephi_R0, "truephi_R0/D");
@@ -386,6 +389,7 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
             // fill results
             M1 = h1.M();
             M2 = h2.M();
+            M12 = M1+M2;
             Mh = dihadron.M();
             phi_h = kin.phi_h(q,init_electron,h1,h2);
             phi_h1 = kin.phi_h(q,init_electron,h1);
@@ -414,6 +418,7 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
 
             trueM1 = trueh1.M();
             trueM2 = trueh2.M();
+            trueM12 = trueM1+trueM2;
             trueMh = truedihadron.M();
             truephi_h = kin.phi_h(trueq,init_electron,trueh1,trueh2);
             truephi_h1 = kin.phi_h(trueq,init_electron,trueh1);
@@ -440,9 +445,26 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
             trueMx = (init_electron+init_target-trueelectron-truedihadron).M();
             MCmatch=0;
             if(trueelectron.E()>0&&trueh1.E()>0&&trueh2.E()>0) MCmatch=1;
-
+            
+            // Determine if this would've been a good event without ML
+            isGoodEventWithoutML=1;
+            isGoodEventWithoutML*=(xF1>0&&xF2>0);
+            isGoodEventWithoutML*=(z<0.95);
+            if(pid_h1==111){
+                isGoodEventWithoutML*=(E[i]>0.6);
+                isGoodEventWithoutML*=(E[ii]>0.6);
+            }else{
+                isGoodEventWithoutML*=(h1.P()>1.25);
+            }
+            
+            if(pid_h2==111){
+                isGoodEventWithoutML*=(E[j]>0.6);
+                isGoodEventWithoutML*=(E[jj]>0.6);
+            }else{
+                isGoodEventWithoutML*=(h2.P()>1.25);
+            }
+            
             outtree->Fill();
-
         } // end dihadron loop
     }// end event loop
 
@@ -455,39 +477,3 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
 }
 
 
-
-//Function to get pid_h1 and pid_h2 from filename
-void getPIDs(std::string filename, int& pid_h1, int& pid_h2) {
-
-    // Extract the string between the second and third underscores
-    std::size_t first = filename.find("/data/");
-    std::size_t second = filename.find('/', first+6);
-    std::string particleNames = filename.substr(first+6,second-first-6);
-
-    // Transform the particle names to lower case
-    std::transform(particleNames.begin(), particleNames.end(), particleNames.begin(), ::tolower);
-    // Assign the appropriate PID values to pid_h1 and pid_h2
-    if (particleNames == "piplus_pi0") {
-        pid_h1 = 211;
-        pid_h2 = 111;
-    } else if (particleNames == "piminus_pi0") {
-        pid_h1 = -211;
-        pid_h2 = 111;
-    } else if (particleNames == "pi0_pi0") {
-        pid_h1 = 111;
-        pid_h2 = 111;
-    } else if (particleNames == "piplus_piminus"){
-        pid_h1 = 211;
-        pid_h2 = -211;
-    } else if (particleNames == "piplus_piplus"){
-        pid_h1 = 211;
-        pid_h2 = 211;
-    } else if (particleNames == "piminus_piminus"){
-        pid_h1 = -211;
-        pid_h2 = -211;
-    } else {
-        // Invalid input string, set PIDs to zero
-        pid_h1 = 0;
-        pid_h2 = 0;
-    }
-}
