@@ -10,9 +10,9 @@ from catboost import CatBoostClassifier
 from xgboost.sklearn import XGBClassifier
 from sklearn.ensemble import RandomForestClassifier
 
-def predict(rootdir="/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas12_dihadrons/projects/ana_v0/data/raw/pi0_pi0",
+def predict(rootdir="/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas12_dihadrons/projects/ana_v0/data/pi0_pi0",
             SUBDATA="Fall2018_RGA_inbending",
-            model_path="./test/calo/gbt/gbt_model_MC_RGA_inbending"):
+            model_path="./test/calo/gbt_0/gbt_model_MC_RGA_inbending"):
     
     # Load in rootfiles for analysis
     rootfiles = load_files(rootdir=rootdir,

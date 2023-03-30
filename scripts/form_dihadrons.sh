@@ -95,11 +95,15 @@ files=$(ls $DATA_DIR/${pion_pairs[1]} | sort -V)
 
 did_look_up=0
 for file in $files; do
+    if [[ $file == *"merge"* ]]; then
+        continue
+    fi
     if [[ $did_look_up == 0 ]]; then
-        
         echo "Looking up photon ML branches for first file..."
         branches=$(python $PWD/utils/read_ml_tbranches.py $DATA_DIR/${pion_pairs[1]}/$file)
-            
+        
+#	module unload root
+#	module load clas12/pro
         # Prompt the user for which TBranch to analyze
         echo "Which photon ML TBranch should be used for analysis?"
         echo $branches
@@ -140,8 +144,9 @@ for file in $files; do
 #SBATCH --error=$FARMOUT_DIR/err/dihadron_$file.err
 $slurmshell
 EOF
-
+    
     echo "#!/bin/tcsh" >> $slurmshell
+    echo "module unload root" >> $slurmshell
     echo "source /group/clas12/packages/setup.csh" >> $slurmshell
     echo "module load clas12/pro" >> $slurmshell
 
@@ -154,5 +159,5 @@ EOF
     done
     
     echo "Submitting slurm job for $file"
-    #sbatch --quiet $slurmslurm
+    sbatch --quiet $slurmslurm
 done

@@ -338,14 +338,16 @@ int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2
       // for loop over the idxs until we find if this particle came from CFR
       int parent_idx = mcparticles->getParent(idx)-1;
       int parent_pid = 0;
-      while(parent_idx!=-1){
+      while(parent_idx>=0){
           parent_pid = mcparticles->getPid(parent_idx);
+          if(parent_pid==0){break;}
           if(6-abs(parent_pid)>=0){
               partstruct.is_CFR=1;
               break;
           }
           parent_idx = mcparticles->getParent(parent_idx)-1;
       }
+      if(partstruct.is_CFR!=1) partstruct.is_CFR=0;
       if(partstruct.pid==11 && partstruct.trueparentid==0){ // scattered electron
         trueQ2=_kin.Q2(_electron_beam_energy,partstruct.trueE,_kin.cth(partstruct.truepx,partstruct.truepy,partstruct.truepz));
         truey=_kin.y(_electron_beam_energy,partstruct.trueE);
@@ -357,7 +359,6 @@ int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2
       // Add particle to list
       vec_mcparticles.push_back(partstruct);
     }
-      
     // Perform MC<-->Reco particle matching
     // ---------------------------------------------
     for (int i=0; i < vec_particles.size(); i++){

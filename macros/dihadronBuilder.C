@@ -19,6 +19,7 @@ std::vector<std::vector<int>> unique_combinations(std::vector<int> input, int nu
     std::vector<std::vector<int>> result;
     std::vector<int> curr_combination;
     std::sort(input.begin(), input.end());
+
     generate_combinations(input, num, 0, curr_combination, result);
     return result;
 }
@@ -48,10 +49,11 @@ std::vector<std::vector<int>> remove_duplicates(std::vector<std::vector<int>> in
 int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas12_dihadrons/projects/ana_v0/data/raw/pi0_pi0/nSidis_5032.root",
                     const char *weight_branch="gbt_0_calo"){
     
+
     // Declare pid_h1 and pid_h2
     int pid_h1=0;
     int pid_h2=0;
-    
+
     // Determine the pids from the file (see function)
     getPIDs(string(input_file),pid_h1,pid_h2);
 
@@ -69,6 +71,7 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
     double truepx[Nmax] , truepy[Nmax] , truepz[Nmax], trueE[Nmax], truetheta[Nmax], trueeta[Nmax], truephi[Nmax];
     double weight[Nmax];
     int parentID[Nmax],parentPID[Nmax],parentparentID[Nmax],parentparentPID[Nmax];
+    int is_CFR[Nmax];
     double pid[Nmax], truepid[Nmax];
     //link the TBranches to the variables
     EventTree->SetBranchAddress("run",&run);
@@ -105,6 +108,7 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
     EventTree->SetBranchAddress("trueeta",&trueeta);
     EventTree->SetBranchAddress("truephi",&truephi);
     EventTree->SetBranchAddress("truepid",truepid);
+    EventTree->SetBranchAddress("is_CFR",is_CFR);
     if(pid_h1==111||pid_h2==111)
         EventTree->SetBranchAddress(weight_branch,weight);
     
@@ -117,6 +121,7 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
     double M1,M2,Mh,phi_h,phi_R0,phi_R1,th,z1,z2,xF1,xF2,z,xF,Mx,phi_h1,phi_h2,delta_phi_h,pT_1,pT_2,pT_tot;
     double trueM1,trueM2,trueMh,truephi_h,truephi_R0,truephi_R1,trueth,truez1,truez2,truexF1,truexF2,truez,truexF,trueMx,truephi_h1,truephi_h2,truedelta_phi_h,truepT_1,truepT_2,truepT_tot;
     int truepid_1,truepid_2,trueparentpid_1,trueparentpid_2,trueparentid_1,trueparentid_2,trueparentparentpid_1,trueparentparentpid_2,trueparentparentid_1,trueparentparentid_2;
+    int is_CFR_1, is_CFR_2;
     int MCmatch; // MCmatch --> 1 if all particles have Monte Carlo pairing
     int truepid_11, truepid_12, truepid_21, truepid_22; // For photon pairs
     // Machine Learning output
@@ -129,6 +134,8 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
     outtree->Branch("Pol", &Pol, "Pol/D");
     outtree->Branch("hel", &hel, "hel/I");
     outtree->Branch("MCmatch", &MCmatch, "MCmatch/I");
+    outtree->Branch("is_CFR_1",&is_CFR_1, "is_CFR_1/I");
+    outtree->Branch("is_CFR_2",&is_CFR_2, "is_CFR_2/I");
     outtree->Branch("x", &x, "x/D");
     outtree->Branch("Q2", &Q2, "Q2/D");
     outtree->Branch("W", &W, "W/D");
@@ -193,7 +200,7 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
     outtree->Branch("p_22", &p_22,"p_22/D");
     // Kinematics Object
     Kinematics kin;
-  
+
     // Initial particles
     TLorentzVector init_electron(0,0,0,0); // To be set one run is found
     TLorentzVector init_target(0,0,0,Mp);
@@ -205,6 +212,7 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
     std::vector<int> h2_idxs;
     std::vector<std::vector<int>> dihadron_idxs;    
     for (int ev=0; ev<N; ev++){
+
         h1_idxs.clear();
         h2_idxs.clear();
         dihadron_idxs.clear();
@@ -220,7 +228,7 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
         
 
         EventTree->GetEntry(ev);
-        
+
         if(ev==0){
             init_electron.SetE(runBeamEnergy(run));
             init_electron.SetPz(sqrt(init_electron.E()*init_electron.E()-Me*Me));
@@ -239,7 +247,7 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
                 break;
             }
         }
-        
+
         //Loop over all particles in the event to determine hadron indecies
 
         for(int i = 0; i<Nmax; i++){
@@ -247,8 +255,7 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
             if(pid[i]==pid_h2 || (pid[i]==22 && pid_h2==111)) h2_idxs.push_back(i);
         }
         //Now form all possible dihadron index pairs
-
-        if(pid_h1==pid_h2 && pid_h1!=111){dihadron_idxs=unique_combinations(h1_idxs,2);}
+        if(pid_h1==pid_h2 && pid_h1!=111){dihadron_idxs=unique_combinations(h1_idxs,2); }
         else if(pid_h1==pid_h2 && pid_h1==111){dihadron_idxs=unique_combinations(h1_idxs,4);}
         else if(pid_h1!=pid_h2 && pid_h1==111 && pid_h2 != 111){
             for(int i = 0 ; i < h2_idxs.size(); i++){
@@ -278,6 +285,7 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
                 }
             }
         }
+
         // Remove any instance of duplicate dihadrons
         dihadron_idxs = remove_duplicates(dihadron_idxs);
         // Now loop over all dihadrons
@@ -323,11 +331,13 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
                     trueparentpid_1=parentPID[i];
                     trueparentparentid_1=parentparentID[i];
                     trueparentparentpid_1=parentparentPID[i];
+                    is_CFR_1=is_CFR[i];
                 } else {
                    trueparentid_1=-999;
                    trueparentpid_1=-999;
                    trueparentparentid_1=-999;
                    trueparentparentpid_1=-999;
+                   is_CFR_1=-999;
                 }
             }else{
                 h1.SetPxPyPzE(px[i],py[i],pz[i],E[i]);
@@ -337,6 +347,7 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
                 trueparentpid_1=parentPID[i];
                 trueparentparentid_1=parentparentID[i];
                 trueparentparentpid_1=parentparentPID[i];
+                is_CFR_1=is_CFR[i];
             }
             if(pid_h2==111){
                 p_21 = weight[j];
@@ -350,11 +361,13 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
                     trueparentpid_2=parentPID[j];
                     trueparentparentid_2=parentparentID[j];
                     trueparentparentpid_2=parentparentPID[j];
+                    is_CFR_2=is_CFR_2[j];
                 } else {
                    trueparentid_2=-999;
                    trueparentpid_2=-999;
                    trueparentparentid_2=-999;
                    trueparentparentpid_2=-999;
+                   is_CFR_2=-999;
                 }
             }
             else{
@@ -365,6 +378,7 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
                 trueparentpid_2=parentPID[j];
                 trueparentparentid_2=parentparentID[j];
                 trueparentparentpid_2=parentparentPID[j];
+                is_CFR_2=is_CFR_2[j];
             }
             // Build the dihadron
             dihadron = h1+h2;
@@ -428,6 +442,7 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
             if(trueelectron.E()>0&&trueh1.E()>0&&trueh2.E()>0) MCmatch=1;
 
             outtree->Fill();
+
         } // end dihadron loop
     }// end event loop
 
@@ -445,13 +460,12 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
 void getPIDs(std::string filename, int& pid_h1, int& pid_h2) {
 
     // Extract the string between the second and third underscores
-    std::size_t first = filename.find("/raw/");
-    std::size_t second = filename.find('/', first+5);
-    std::string particleNames = filename.substr(first+5,second-first-5);
+    std::size_t first = filename.find("/data/");
+    std::size_t second = filename.find('/', first+6);
+    std::string particleNames = filename.substr(first+6,second-first-6);
 
     // Transform the particle names to lower case
     std::transform(particleNames.begin(), particleNames.end(), particleNames.begin(), ::tolower);
-
     // Assign the appropriate PID values to pid_h1 and pid_h2
     if (particleNames == "piplus_pi0") {
         pid_h1 = 211;

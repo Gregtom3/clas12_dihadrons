@@ -237,11 +237,10 @@ for pion_pair in ${pion_pairs[@]}; do
                   cat >> $slurmslurm << EOF
 #!/bin/bash
 #SBATCH --account=clas12
-#SBATCH --partition gpu
+#SBATCH --partition production
 #SBATCH --mem-per-cpu=4000
 #SBATCH --job-name=job_photonMLpredict_${pion_pair}_${dataset}
 #SBATCH --cpus-per-task=2
-#SBATCH --gres=gpu:TitanRTX:1
 #SBATCH --time=24:00:00
 #SBATCH --output=$FARMOUT_DIR/log/predict_photonML_${pion_pair}_${dataset}.out
 #SBATCH --error=$FARMOUT_DIR/err/predict_photonML_${pion_pair}_${dataset}.err
