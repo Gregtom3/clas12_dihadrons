@@ -125,6 +125,6 @@ EOF
         echo "clas12root -b -q $PWD/macros/merge_dihadrons.C\(\\\"${rootdir}\\\",\\\"${dataset}\\\"\)" >> $slurmshell
                 
         echo "Submitting slurm job for $pion_pair $dataset"
-        #sbatch --quiet $slurmslurm
+        sbatch --quiet $slurmslurm
     done
 done

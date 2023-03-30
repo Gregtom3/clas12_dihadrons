@@ -94,10 +94,7 @@ func4="./scripts/predict_photonML.sh"
 # Call the function
 call_function "${func4}" "${wait4}" "${in4[@]}"
 
-#
-module unload root
-module load clas12/pro
-#
+
 
 
 # 5. form_dihadrons.sh
@@ -109,3 +106,19 @@ func5="./scripts/form_dihadrons.sh"
 
 # Call the function
 call_function "${func5}" "${wait5}" "${in5[@]}"
+
+#
+module unload root
+module load clas12/pro
+#
+
+# 6. merge_dihadrons.sh
+# (Merge the TTrees by data versions)
+# ----------------------------------------
+in6=($PROJECT_NAME)
+wait6="job_merge_"
+func6="./scripts/merge_dihadrons.sh"
+
+# Call the function
+call_function "${func6}" "${wait6}" "${in6[@]}"
+
