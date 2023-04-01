@@ -3,6 +3,7 @@
 #include "../src/Constants.h"
 #include "../src/Structs.h"
 #include "../src/Kinematics.C"
+#include "../src/ParseBinYAML.C"
 #include "../src/ParseText.C"
 
 
