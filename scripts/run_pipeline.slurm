@@ -1,9 +1,9 @@
 #!/bin/bash
 
-PROJECT_NAME="ana_test"
-nFiles=5
-nEvents=10000
-model_list="model_params.yaml"
+PROJECT_NAME="ana_v0"
+nFiles=10
+nEvents=100000000
+model_list="model_params_gbt_only_full.yaml"
 ml_branch="gbt_0_calo" # <model name>_<track/calo>
                        # See model_list in machine_learning/photonID/params_folder
 
@@ -18,3 +18,4 @@ ml_branch="gbt_0_calo" # <model name>_<track/calo>
 #SBATCH --error=err_${PROJECT_NAME}.err
 
 bash ./scripts/pipeline.sh ${PROJECT_NAME} ${nFiles} ${nEvents} ${model_list} ${ml_branch}
+

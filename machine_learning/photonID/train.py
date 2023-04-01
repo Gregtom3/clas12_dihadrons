@@ -13,11 +13,11 @@ from xgb.train import train as xgb_train
 # from sklearn.metrics import roc_curve, auc, confusion_matrix
 
 
-def train(rootdir = "/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas12_dihadrons/projects/ana_v0/data/pi0_pi0",
+def train(rootdir = "/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas12_dihadrons/projects/ana_test/data/piplus_pi0",
           SUBDATA="MC_RGA_inbending",
           yamlfile = "params_folder/model_params.yaml",
           nn_type  = "calo", # calo or track (use either calorimeter info or track info to determine nearest neighbors)
-          outdir   = "/work/clas12/users/gmat/clas12/clas12_dihadrons/projects/ana_v0/models/photonID/pi0_pi0"):
+          outdir   = "/work/clas12/users/gmat/clas12/clas12_dihadrons/projects/ana_test/models/photonID/piplus_pi0"):
     
     
     # Load the parameters from the yamlfile

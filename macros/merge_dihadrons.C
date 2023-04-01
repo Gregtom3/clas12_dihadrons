@@ -36,10 +36,10 @@ std::vector<TString> getFilesInDir(const char* path, string version)
     i1 = 3;
   }
 
-    
   if ((dir = opendir (path)) != NULL) {
     while ((ent = readdir (dir)) != NULL) {
       std::string filename = ent->d_name;
+      cout << filename << endl;
       if (filename.length()<=5) continue;
       if (filename.substr(filename.length() - 5) != ".root") continue;
       if (filename.find("merged") != std::string::npos) continue;

@@ -67,11 +67,6 @@ func2="./scripts/preprocess_photonML.sh"
 # Call the function
 call_function "${func2}" "${wait2}" "${in2[@]}"
 
-#
-module unload root
-module load root
-#
-
 # 3. train_photonML.sh
 # (Performs training on Monte Carlo)
 # ----------------------------------------
@@ -107,10 +102,6 @@ func5="./scripts/form_dihadrons.sh"
 # Call the function
 call_function "${func5}" "${wait5}" "${in5[@]}"
 
-#
-module unload root
-module load clas12/pro
-#
 
 # 6. merge_dihadrons.sh
 # (Merge the TTrees by data versions)

@@ -99,25 +99,26 @@ for file in $files; do
         continue
     fi
     if [[ $did_look_up == 0 ]]; then
-        echo "Looking up photon ML branches for first file..."
-        branches=$(python $PWD/utils/read_ml_tbranches.py $DATA_DIR/${pion_pairs[1]}/$file)
         
-#	module unload root
+#   module unload root
 #	module load clas12/pro
         # Prompt the user for which TBranch to analyze
         echo "Which photon ML TBranch should be used for analysis?"
-        echo $branches
         if [[ -n "$2" ]]; then
             selectedBranch=$2
         else
+            echo "Looking up photon ML branches for first file..."
+            branches=$(python $PWD/utils/read_ml_tbranches.py $DATA_DIR/${pion_pairs[1]}/$file)
+            echo "Options..."
+            echo $branches
             read selectedBranch
-        fi
+            # Check if the selected TBranch is in the list of branches
+            if ! echo "$branches" | grep -q "^$selectedBranch$"; then
+		echo "Error: $selectedBranch is not in the list of branches."
+		exit 1
+            fi
+	fi
 
-        # Check if the selected TBranch is in the list of branches
-        if ! echo "$branches" | grep -q "^$selectedBranch$"; then
-            echo "Error: $selectedBranch is not in the list of branches."
-            exit 1
-        fi
         
         printblue "Analyzing $(echo $files | wc -w)"
         

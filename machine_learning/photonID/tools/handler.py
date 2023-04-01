@@ -61,19 +61,19 @@ def import_model(*args):
         model = CatBoostClassifier()
         
         # Load model from given directory
-        model.load_model(f"{savedir}/gbt_model_{suffix}")
+        model.load_model(savedir+"/gbt_model_"+suffix)
     
     # Check if model type is XGBoost
     elif(model_type=="xgb"):
         
         # Load model from given directory
-        model = pickle.load(open(f"{savedir}/xgb_model_{suffix}.pkl", "rb"))
+        model = pickle.load(open(savedir+"/xgb_model_"+suffix+".pkl", "rb"))
         
     # Check if model type is Random Forest
     elif(model_type=="rf"):
         
         # Load model from given directory
-        model = pickle.load(open(f"{savedir}/rf_model_{suffix}.pkl", "rb"))
+        model = pickle.load(open(savedir+"/rf_model_"+suffix+".pkl", "rb"))
     
     # If model type is unknown
     else:
@@ -124,7 +124,7 @@ def save_feature_importance(model=0,
     # Sort by most important
     dfPars = dfPars.sort_values(by="Importance",ascending=False)
     # Save to csv
-    dfPars.to_csv(f"{savedir}/param_importance_{suffix}.csv",index=False)
+    dfPars.to_csv(savedir+"/param_importance_"+suffix+".csv",index=False)
     
     
 

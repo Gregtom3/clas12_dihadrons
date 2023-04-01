@@ -3,7 +3,7 @@
 #include "../src/Constants.h"
 #include "../src/Structs.h"
 #include "../src/Kinematics.C"
-
+#include "../src/ParseText.C"
 
 
 int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2018/torus-1/pass1/v1/dst/train/nSidis/nSidis_005032.hipo",

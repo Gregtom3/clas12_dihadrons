@@ -1,0 +1,8 @@
+# Model parameters - Gradient Boosted Trees
+gbt_0: 
+  type: gbt
+  percent: 1
+  learning_rate: 0.1
+  depth: 10
+  iterations: 1000
+  min_data_in_leaf: 5

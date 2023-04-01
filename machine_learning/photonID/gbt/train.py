@@ -25,6 +25,7 @@ def train(train_pool,
     model = CatBoostClassifier(**params,
                             custom_loss=[metrics.Accuracy()], 
                             random_seed=42,
+                            #task_type="CPU")
                             task_type="GPU",
                             devices='0:1')
     model.fit(numeric_train_pool, verbose=1,eval_set=numeric_val_pool)

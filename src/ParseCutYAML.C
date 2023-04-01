@@ -43,7 +43,7 @@ std::vector<Block> readYaml(const std::string& filepath) {
             continue; // Ignore empty or commented lines
         }
 
-        if (line[0] == ' ') {
+        if (line[0] == ' ' && line != "") {
             // This is a variable line
             std::istringstream iss(line);
             std::string varName;

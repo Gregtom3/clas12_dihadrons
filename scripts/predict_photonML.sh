@@ -31,11 +31,10 @@ mkdir_green () {
 PYTHON_VERSION=$(python3 --version) 
 
 if [[ "$PYTHON_VERSION" != "Python 3.9.7" ]]; then
-    printred "Your python3 version is not 3.9.7."
+    printblue "Your python3 version is not 3.9.7."
     echo -e "Please run...\n\t module unload root\n\t module unload python\n\t module load root"
     echo "This program requires the latest version of ROOT on ifarm (6.26.10)"
-    echo "Exiting"
-    exit 0
+    echo "WARNING"
 fi
 
 # Assign the variable PWD the value of the current working directory
@@ -139,63 +138,6 @@ for file in $(find $PROJECT_DIR -name "*_model_*"); do
     fi
 done
 
-# LIST=()
-
-# for file in $(find $PROJECT_DIR -name "model_params.txt"); do
-#     FIRST_LINE=$(head -n1 "$file")
-#     if [[ ! ${LIST[*]} =~ $FIRST_LINE ]]; then
-#         LIST+=(${SUBSTRING}_calo)
-#         LIST+=(${SUBSTRING}_track)
-#     fi
-# done
-
-
-# #Search for files in project directory containing "_model_" in their filename
-# for file in $(find $PROJECT_DIR -name "*_model_*"); do
-#   #Get the substring from the filename
-#   SUBSTRING=$(getBasenameSubstring $PROJECT_DIR $file)
-#   #Check if substring is already in list
-#   if [[ ! ${LIST[*]} =~ $SUBSTRING ]]; then
-#     #If not, add it to the list
-#     LIST+=($SUBSTRING)
-#   fi
-# done
-
-# #Print out the list of unique substrings
-# echo "Unique substrings found:"
-# echo ${LIST[@]}
-
-
-# #Prompt user to pick a substring
-# echo -n "Which substring would you like to use? "
-# if [[ -n "$2" ]]; then
-#     CHOICE="$2"
-# else
-#     read CHOICE
-# fi
-
-
-# #Prompt user to pick a method
-# echo -n "Would you like to predict with \"calo\" or \"track\"? "
-# if [[ -n "$3" ]]; then
-#     METHOD="$3"
-# else
-#     read METHOD
-# fi
-
-# #Create sublist of files with the chosen substring 
-# FINAL_LIST=()
-# for file in $(find $PROJECT_DIR -name "*_model_*"); do
-#   #Get the substring from the filename
-#   SUBSTRING=$(getBasenameSubstring $PROJECT_DIR $file)
-#   if [[ $SUBSTRING == $CHOICE ]]; then
-#     #Check for calo or track substring
-#     if [[ $file == *"/${METHOD}/"* ]]; then
-#       FINAL_LIST+=($file)
-#     fi
-#   fi
-# done
-
 # Create pion pid pairs for the ML portion
 pion_pairs=("piplus_pi0" "piminus_pi0" "pi0_pi0")
 # Create list of unique datasets
@@ -244,7 +186,12 @@ for pion_pair in ${pion_pairs[@]}; do
 #SBATCH --time=24:00:00
 #SBATCH --output=$FARMOUT_DIR/log/predict_photonML_${pion_pair}_${dataset}.out
 #SBATCH --error=$FARMOUT_DIR/err/predict_photonML_${pion_pair}_${dataset}.err
-/u/apps/python3/3.9.7/bin/python3 $PWD/machine_learning/photonID/predict.py "${DATA_DIR}/${pion_pair}" "$dataset" "$model"
+source /etc/profile.d/modules.sh
+module unload root
+module unload python
+module load python3/3.9.7
+module load root
+/apps/python3/3.9.7/bin/python3 $PWD/machine_learning/photonID/predict.py "${DATA_DIR}/${pion_pair}" "$dataset" "$model"
 EOF
                 echo "Submitting slurm job for ${pion_pair} , ${dataset}"
                 sbatch --quiet $slurmslurm

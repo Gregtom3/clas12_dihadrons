@@ -41,7 +41,7 @@ def get_keys(u):
         else:
             for i in range(M):
                 original_keys.append(key)
-                modified_keys.append(key+f"_{i}")
+                modified_keys.append(key+"_"+str(i))
                 nns.append(i)
     
     return original_keys,modified_keys,nns

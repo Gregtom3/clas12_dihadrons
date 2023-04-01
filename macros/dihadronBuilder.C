@@ -1,5 +1,7 @@
 #include "../src/Constants.h"
 #include "../src/Kinematics.C"
+#include "../src/ParseBinYAML.C"
+#include "../src/ParseText.C"
 
 void generate_combinations(std::vector<int>& input, int num, int start_idx, std::vector<int>& curr_combination, std::vector<std::vector<int>>& result) {
     if (num == 0) {
@@ -51,9 +53,9 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
     // Declare pid_h1 and pid_h2
     int pid_h1=0;
     int pid_h2=0;
-
+    std::string particleNames ="";
     // Determine the pids from the file (see function)
-    getPIDs(string(input_file),pid_h1,pid_h2);
+    getPIDs(string(input_file),pid_h1,pid_h2,particleNames);
 
     // Read the TFile
     TFile *f = new TFile(input_file,"UPDATE");
@@ -364,7 +366,7 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
                     trueparentpid_2=parentPID[j];
                     trueparentparentid_2=parentparentID[j];
                     trueparentparentpid_2=parentparentPID[j];
-                    is_CFR_2=is_CFR_2[j];
+                    is_CFR_2=is_CFR[j];
                 } else {
                    trueparentid_2=-999;
                    trueparentpid_2=-999;
@@ -381,7 +383,7 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
                 trueparentpid_2=parentPID[j];
                 trueparentparentid_2=parentparentID[j];
                 trueparentparentpid_2=parentparentPID[j];
-                is_CFR_2=is_CFR_2[j];
+                is_CFR_2=is_CFR[j];
             }
             // Build the dihadron
             dihadron = h1+h2;

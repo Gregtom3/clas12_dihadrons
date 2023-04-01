@@ -42,7 +42,11 @@ PROJECT_DIR=$PWD/projects
 echo "Available projects"
 ls $PROJECT_DIR
 
-read -p "Please enter a project name: " PROJECT_NAME
+if [[ -n "$1" ]]; then
+    PROJECT_NAME=$1
+else
+    read -p "Please enter a project name: " PROJECT_NAME
+fi
 
 # Check if the project exists in the project directory
 if [ -d "$PROJECT_DIR/$PROJECT_NAME" ]; then

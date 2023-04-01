@@ -12,7 +12,7 @@ from sklearn.ensemble import RandomForestClassifier
 
 def predict(rootdir="/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas12_dihadrons/projects/ana_v0/data/pi0_pi0",
             SUBDATA="Fall2018_RGA_inbending",
-            model_path="./test/calo/gbt_0/gbt_model_MC_RGA_inbending"):
+            model_path="/work/clas12/users/gmat/clas12/clas12_dihadrons/projects/ana_test/models/photonID/piplus_pi0/calo/gbt_0"):
     
     # Load in rootfiles for analysis
     rootfiles = load_files(rootdir=rootdir,
@@ -49,7 +49,7 @@ def predict(rootdir="/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas1
 
         # create a new branch for the tree
         weights = array.array('d',100*[0.0])
-        weight_branch=tree.Branch(branchname, weights,f'{branchname}[Nmax]/D')
+        weight_branch=tree.Branch(branchname, weights,branchname+'[Nmax]/D')
         
         # Loop over the events in the EventTree and set the weights array accordingly
         # If the particle is not a photon, set weight to 1
