@@ -100,7 +100,7 @@ pair<vector<string>, vector<string>> get_2h_modulations(int L, std::string versi
 
 
 void process_azi_FM(FitManager &FM, std::string version){  
-    
+
   auto mods = get_azi_modulations(2,version);
   vector<string> char_vec = mods.first;
   vector<string> str_vec = mods.second;
@@ -137,7 +137,6 @@ void process_azi_FM(FitManager &FM, std::string version){
 
 
 void process_2h_FM(FitManager &FM, std::string version){  
-    
   auto mods = get_2h_modulations(2,version);
   vector<string> char_vec = mods.first;
   vector<string> str_vec = mods.second;
@@ -155,7 +154,7 @@ void process_2h_FM(FitManager &FM, std::string version){
   for (string ss: str_vec)
     FM.SetUp().LoadFormula(ss);
   ///////////////////////////////Load PDF
-  string pdf = "RooComponentsPDF::AziFit(1,{delta_phi_h,hel},=";
+  string pdf = "RooComponentsPDF::h2fit(1,{delta_phi_h,hel},=";
   for(unsigned int i = 0 ; i < str_vec.size() ; i++){
     pdf+=char_vec.at(i);
     pdf+=";mod";
@@ -166,8 +165,7 @@ void process_2h_FM(FitManager &FM, std::string version){
       pdf+=":";
   }
   FM.SetUp().FactoryPDF(pdf);
-  FM.SetUp().LoadSpeciesPDF("_h2Fit",1);
-    
+  FM.SetUp().LoadSpeciesPDF("h2fit",1);
   return ;
 }
 

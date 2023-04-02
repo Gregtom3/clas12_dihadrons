@@ -18,7 +18,7 @@ enum ANA_TYPE {
 
 void create_sweights(const char * infile, const char * brudir, YAMLbinstruct binStruct, Block cut, int pid_h1, int pid_h2, bool use_ML);
 void create_sideband(const char * infile, const char * brudir, YAMLbinstruct binStruct, Block cut, int pid_h1, int pid_h2, bool use_ML);
-void aysm(const char * infile, const char * brudir, std::string version, YAMLbinstruct binStruct, Block cut, int pid_h1, int pid_h2, bool use_ML, ANA_TYPE ana_type,  ASYM_TYPE asym_type);
+void asym(const char * infile, const char * brudir, std::string version, YAMLbinstruct binStruct, Block cut, int pid_h1, int pid_h2, bool use_ML, ANA_TYPE ana_type,  ASYM_TYPE asym_type);
 
 int calc_asymmetry(const char * infile = "/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas12_dihadrons/projects/ana_v0/data/piplus_pi0/Fall2018_RGA_inbending_merged.root",
                    const char * binfile = "/work/clas12/users/gmat/scipio/utils/Binning.yaml",
@@ -41,9 +41,13 @@ int calc_asymmetry(const char * infile = "/volatile/clas12/users/gmat/clas12anal
     brudir+="/"+version;
     gSystem->mkdir(TString(brudir)); // <project>/asym/<version>
     
+    // Make the second subdirectory 
+    brudir+="/cut_"+cut_title;
+    gSystem->mkdir(TString(brudir)); // <project>/asym/<version>/<cut>
+    
     // Create a directory for the hadron pair
     brudir+="/"+hadron_pair; 
-    gSystem->mkdir(TString(brudir)); // <project>/asym/<version>/<hadron_pair>
+    gSystem->mkdir(TString(brudir)); // <project>/asym/<version>/<cut>/<hadron_pair>
     
     // Pull the bin structures from the yaml file
     auto binStructs = get_structs(binfile);
@@ -67,7 +71,7 @@ int calc_asymmetry(const char * infile = "/volatile/clas12/users/gmat/clas12anal
     }else{
         brudir+="/noML";
     }
-    gSystem->mkdir(TString(brudir)); // <project>/asym/<version>/<hadron_pair>/<binning>/<ML>
+    gSystem->mkdir(TString(brudir)); // <project>/asym/<version>/<cut>/<hadron_pair>/<binning>/<ML>
     // Save the YAML bin into the brudir
     serializeYAMLbinstruct(binStruct,brudir+"/Binning.yaml");
     
@@ -86,8 +90,22 @@ int calc_asymmetry(const char * infile = "/volatile/clas12/users/gmat/clas12anal
         cout << "Error...unsure what cuts to use if any...Aborting..." << endl;
         return -1;
     }
+    
     // Save auxillary cut file to folder
     writeBlockToFile(brudir+"/Cut.yaml",cut);
+    
+    
+    
+    
+    
+    
+    
+    
+    // ----------------------------------------------------------------------------------
+    // Fitting Code
+    // ----------------------------------------------------------------------------------
+    
+    
     
     // For loop over dihadron asym approaches
     std::vector<ASYM_TYPE> asym_types = {AZI,TWOH};
@@ -97,7 +115,7 @@ int calc_asymmetry(const char * infile = "/volatile/clas12/users/gmat/clas12anal
         std::string BRUDIR=brudir+"/";
         if(asym_type==AZI) BRUDIR+="AZI";
         else if(asym_type==TWOH) BRUDIR+="TWOH";
-        gSystem->mkdir(TString(BRUDIR)); // <project>/asym/<version>/<hadron_pair>/<binning>/<ML>/<asym_type>
+        gSystem->mkdir(TString(BRUDIR)); // <project>/asym/<version>/<cut>/<hadron_pair>/<binning>/<ML>/<asym_type>
         
         
         
@@ -105,7 +123,12 @@ int calc_asymmetry(const char * infile = "/volatile/clas12/users/gmat/clas12anal
         // If we are using pi0's
         if(pid_h1==111 || pid_h2==111){
             create_sweights(infile,BRUDIR.c_str(),binStruct,cut,pid_h1,pid_h2,use_ML);
-            aysm(infile, BRUDIR.c_str(), version, binStruct, cut, pid_h1, pid_h2, use_ML, SPLOT,  asym_type);
+            asym(infile, BRUDIR.c_str(), version, binStruct, cut, pid_h1, pid_h2, use_ML, SPLOT,  asym_type);
+            create_sideband(infile,BRUDIR.c_str(),binStruct,cut,pid_h1,pid_h2,use_ML);
+	        asym(infile, BRUDIR.c_str(), version, binStruct, cut, pid_h1, pid_h2, use_ML, SIDEBAND,  asym_type);
+        }
+        else{
+            asym(infile, BRUDIR.c_str(), version, binStruct, cut, pid_h1, pid_h2, use_ML, STANDARD, asym_type);
         }
     }
     
@@ -147,8 +170,11 @@ void create_sweights(const char * infile, const char * brudir, YAMLbinstruct bin
         if(use_ML){
             RF.SetUp().LoadVariable(Form("p_11[%f,1]",p_thresh));   
             RF.SetUp().LoadVariable(Form("p_12[%f,1]",p_thresh)); 
+            RF.SetUp().AddCut(Form("p_11>%f",p_thresh));
+            RF.SetUp().AddCut(Form("p_12>%f",p_thresh));
         }else{
             RF.SetUp().LoadVariable("isGoodEventWithoutML[0.9,1.1]");
+            RF.SetUp().AddCut("isGoodEventWithoutML==1");
         }
     }
     else if(pid_h1!=111 && pid_h2==111){
@@ -159,8 +185,11 @@ void create_sweights(const char * infile, const char * brudir, YAMLbinstruct bin
         if(use_ML){
             RF.SetUp().LoadVariable(Form("p_21[%f,1]",p_thresh)); 
             RF.SetUp().LoadVariable(Form("p_22[%f,1]",p_thresh)); 
+            RF.SetUp().AddCut(Form("p_21>%f",p_thresh));
+            RF.SetUp().AddCut(Form("p_22>%f",p_thresh));
         }else{
             RF.SetUp().LoadVariable("isGoodEventWithoutML[0.9,1.1]");
+            RF.SetUp().AddCut("isGoodEventWithoutML==1");
         }
     }
     else if(pid_h1==111 && pid_h2==111){
@@ -173,14 +202,21 @@ void create_sweights(const char * infile, const char * brudir, YAMLbinstruct bin
             RF.SetUp().LoadVariable(Form("p_12[%f,1]",p_thresh)); 
             RF.SetUp().LoadVariable(Form("p_21[%f,1]",p_thresh)); 
             RF.SetUp().LoadVariable(Form("p_22[%f,1]",p_thresh)); 
+            RF.SetUp().AddCut(Form("p_11>%f",p_thresh));
+            RF.SetUp().AddCut(Form("p_12>%f",p_thresh));
+            RF.SetUp().AddCut(Form("p_21>%f",p_thresh));
+            RF.SetUp().AddCut(Form("p_22>%f",p_thresh));
         }else{
             RF.SetUp().LoadVariable("isGoodEventWithoutML[0.9,1.1]");
+            RF.SetUp().AddCut("isGoodEventWithoutML==1");
         }
     }
     
     // For loop over the cuts desired to apply them
     for(int j = 0 ; j < cut.vmin.size() ; j++){                    
-        RF.SetUp().LoadVariable(Form("%s[%f,%f]",cut.var.at(j).c_str(),cut.vmin.at(j),cut.vmax.at(j)));    
+        RF.SetUp().LoadVariable(Form("%s[%f,%f]",cut.var.at(j).c_str(),cut.vmin.at(j),cut.vmax.at(j)));
+        RF.SetUp().AddCut(Form("%s>%f",cut.var.at(j).c_str(),cut.vmin.at(j)));
+        RF.SetUp().AddCut(Form("%s<%f",cut.var.at(j).c_str(),cut.vmax.at(j)));
     }
     
     //////////////////////////////////// Gaussian
@@ -300,7 +336,7 @@ void create_sideband(const char * infile, const char * brudir, YAMLbinstruct bin
         }
         
         // Draw into the histogram
-        tree->Draw(Form("%s>>Mdiphoton",cvar.c_str()),TString(cutstr),"goff");
+        tree->Draw(Form("%s>>Mdiphoton",cvar.c_str()),TString(cutstr),"goff",10000);
         
         // Scale the histogram
         TH1F *hnorm = (TH1F*)h->Clone();
@@ -351,7 +387,6 @@ void create_sideband(const char * infile, const char * brudir, YAMLbinstruct bin
         }
 
         double u = 1-(bg->Integral(Mggmin,Mggmax)/sig->Integral(Mggmin,Mggmax));
-        
         ///////////////////////////// Create TFile for saving output
         TFile *sdbnd_out = new TFile(Form("%s/outSdbndBins/%s/sideband.root",brudir,subdir.c_str()),"RECREATE");
         TVectorD purity(1);
@@ -366,7 +401,6 @@ void create_sideband(const char * infile, const char * brudir, YAMLbinstruct bin
         h->Write();
         sdbnd_out->Close();
         delete hnorm;
-        delete h;
         delete f_sdbnd;
         delete sig;
         delete bg;
@@ -378,33 +412,42 @@ void create_sideband(const char * infile, const char * brudir, YAMLbinstruct bin
 }
 
 
-void aysm(const char * infile, const char * brudir, std::string version, YAMLbinstruct binStruct, Block cut, int pid_h1, int pid_h2, bool use_ML, ANA_TYPE ana_type,  ASYM_TYPE asym_type){
+void asym(const char * infile, const char * brudir, std::string version, YAMLbinstruct binStruct, Block cut, int pid_h1, int pid_h2, bool use_ML, ANA_TYPE ana_type,  ASYM_TYPE asym_type){
 
     const double p_thresh = 0.9; // ML cut
     
     if(ana_type==SPLOT){
-        FitManager FM;
-        FM.SetUp().SetOutDir(Form("%s/outObsBins_splot/",brudir));
-        if(asym_type==AZI)
-            process_azi_FM(FM,version);
-        else if(asym_type==TWOH)
-            process_2h_FM(FM,version);
-        //////////////////////////////////// Bins
-        // Load bin variables
-        for (int i = 0; i < binStruct.numDimensions; i++) {
-          std::string binName = binStruct.dimensionNames[i];
-          std::vector<double> binEdges = binStruct.binEdges[i];
-          int numBins = binEdges.size();
-          Double_t binEdgesArr[numBins];
-          for (int j = 0; j < numBins; j++) {
-            binEdgesArr[j] = binEdges[j];
-          }
-          FM.Bins().LoadBinVar(binName, numBins-1, binEdgesArr);
-        }
         
-        FM.LoadData("dihadron",infile);
-        FM.Data().LoadWeights("Signal",Form("%s/outsPlotBins/Tweights.root",brudir));
-        Here::Go(&FM);
+        for(int reg = 0 ; reg < 2; reg++){
+            FitManager FM;
+            if(reg==0)
+                FM.SetUp().SetOutDir(Form("%s/outObsBins_splot_sig/",brudir));
+            else
+                FM.SetUp().SetOutDir(Form("%s/outObsBins_splot_bg/",brudir));
+            if(asym_type==AZI)
+                process_azi_FM(FM,version);
+            else if(asym_type==TWOH)
+                process_2h_FM(FM,version);
+            //////////////////////////////////// Bins
+            // Load bin variables
+            for (int i = 0; i < binStruct.numDimensions; i++) {
+              std::string binName = binStruct.dimensionNames[i];
+              std::vector<double> binEdges = binStruct.binEdges[i];
+              int numBins = binEdges.size();
+              Double_t binEdgesArr[numBins];
+              for (int j = 0; j < numBins; j++) {
+                binEdgesArr[j] = binEdges[j];
+              }
+              FM.Bins().LoadBinVar(binName, numBins-1, binEdgesArr);
+            }
+
+            FM.LoadData("dihadron",infile);
+            if(reg==0)
+                FM.Data().LoadWeights("Signal",Form("%s/outsPlotBins/Tweights.root",brudir));
+            else
+                FM.Data().LoadWeights("BG",Form("%s/outsPlotBins/Tweights.root",brudir));
+            Here::Go(&FM);
+        }
     }
     
     else if(ana_type==SIDEBAND){
@@ -435,29 +478,27 @@ void aysm(const char * infile, const char * brudir, std::string version, YAMLbin
             }else if(reg==1 && pid_h1==111 && pid_h2==111){
                 FM.SetUp().LoadVariable("M12[0.4,0.8]");
             }
-            //////////////////////////////////// Load variables
-            FM.SetUp().LoadVariable("phi_h[-100,100]");
-            FM.SetUp().LoadVariable("phi_R0[-100,100]");
-            FM.SetUp().LoadVariable("th[-100,100]");
-            FM.SetUp().LoadVariable("phi_h1[-100,100]");
-            FM.SetUp().LoadVariable("phi_h2[-100,100]");
-            FM.SetUp().SetIDBranchName("fgID");
-
             // From PID's determine ML cuts
             if(pid_h1==111 && pid_h2!=111){
                 if(use_ML){
                     FM.SetUp().LoadVariable(Form("p_11[%f,1]",p_thresh));   
                     FM.SetUp().LoadVariable(Form("p_12[%f,1]",p_thresh)); 
+                    FM.SetUp().AddCut(Form("p_11>%f",p_thresh));
+                    FM.SetUp().AddCut(Form("p_12>%f",p_thresh));
                 }else{
                     FM.SetUp().LoadVariable("isGoodEventWithoutML[0.9,1.1]");
+                    FM.SetUp().AddCut("isGoodEventWithoutML==1");
                 }
             }
             else if(pid_h1!=111 && pid_h2==111){
                 if(use_ML){
                     FM.SetUp().LoadVariable(Form("p_21[%f,1]",p_thresh)); 
                     FM.SetUp().LoadVariable(Form("p_22[%f,1]",p_thresh)); 
+                    FM.SetUp().AddCut(Form("p_21>%f",p_thresh));
+                    FM.SetUp().AddCut(Form("p_22>%f",p_thresh));
                 }else{
                     FM.SetUp().LoadVariable("isGoodEventWithoutML[0.9,1.1]");
+                    FM.SetUp().AddCut("isGoodEventWithoutML==1");
                 }
             }
             else if(pid_h1==111 && pid_h2==111){
@@ -466,15 +507,22 @@ void aysm(const char * infile, const char * brudir, std::string version, YAMLbin
                     FM.SetUp().LoadVariable(Form("p_12[%f,1]",p_thresh)); 
                     FM.SetUp().LoadVariable(Form("p_21[%f,1]",p_thresh)); 
                     FM.SetUp().LoadVariable(Form("p_22[%f,1]",p_thresh)); 
+                    FM.SetUp().AddCut(Form("p_11>%f",p_thresh));
+                    FM.SetUp().AddCut(Form("p_12>%f",p_thresh));
+                    FM.SetUp().AddCut(Form("p_21>%f",p_thresh));
+                    FM.SetUp().AddCut(Form("p_22>%f",p_thresh));
                 }else{
                     FM.SetUp().LoadVariable("isGoodEventWithoutML[0.9,1.1]");
+                    FM.SetUp().AddCut("isGoodEventWithoutML==1");
                 }
             }
 
 
             // For loop over the cuts desired to apply them
             for(int j = 0 ; j < cut.vmin.size() ; j++){                    
-                FM.SetUp().LoadVariable(Form("%s[%f,%f]",cut.var.at(j).c_str(),cut.vmin.at(j),cut.vmax.at(j)));     
+                FM.SetUp().LoadVariable(Form("%s[%f,%f]",cut.var.at(j).c_str(),cut.vmin.at(j),cut.vmax.at(j)));    
+                FM.SetUp().AddCut(Form("%s>%f",cut.var.at(j).c_str(),cut.vmin.at(j)));
+                FM.SetUp().AddCut(Form("%s<%f",cut.var.at(j).c_str(),cut.vmax.at(j)));  
             }
 
 
@@ -506,15 +554,11 @@ void aysm(const char * infile, const char * brudir, std::string version, YAMLbin
         else if(asym_type==TWOH)
             process_2h_FM(FM,version);
         
-        //////////////////////////////////// Load variables
-        FM.SetUp().LoadVariable("phi_h[-100,100]");
-        FM.SetUp().LoadVariable("phi_R0[-100,100]");
-        FM.SetUp().LoadVariable("phi_h1[-100,100]");
-        FM.SetUp().LoadVariable("phi_h2[-100,100]");
-        
         // For loop over the cuts desired to apply them
         for(int j = 0 ; j < cut.vmin.size() ; j++){
-            FM.SetUp().LoadVariable(Form("%s[%f,%f]",cut.var.at(j).c_str(),cut.vmin.at(j),cut.vmax.at(j)));   
+            FM.SetUp().LoadVariable(Form("%s[%f,%f]",cut.var.at(j).c_str(),cut.vmin.at(j),cut.vmax.at(j)));
+            FM.SetUp().AddCut(Form("%s>%f",cut.var.at(j).c_str(),cut.vmin.at(j)));
+            FM.SetUp().AddCut(Form("%s<%f",cut.var.at(j).c_str(),cut.vmax.at(j)));
         }
         
         //////////////////////////////////// Bins

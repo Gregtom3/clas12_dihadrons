@@ -127,7 +127,7 @@ for pid_pair in "${pion_pairs[@]}"; do
 #SBATCH --partition gpu
 #SBATCH --mem-per-cpu=4000
 #SBATCH --job-name=job_photonMLtrain_${pid_pair}_${mc}_${nn_type}
-#SBATCH --cpus-per-task=2
+#SBATCH --cpus-per-task=16
 #SBATCH --gres=gpu:TitanRTX:1
 #SBATCH --time=24:00:00
 #SBATCH --output=$FARMOUT_DIR/log/train_photonML_${pid_pair}_${mc}_${nn_type}.out

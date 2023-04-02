@@ -73,13 +73,16 @@ def load_data(rootfiles=[""],
     else:
         enu=enumerate(rootfiles)
     for ifile,rootfile in enu:
+        if(ifile==25):
+            print("ONLY TRAINING ON 25 FILES MAX")
+            break
+        
         # Open the file in uproot
         u = uproot.open(rootfile)
         u = u[ttree]
         
         # Get dataframe params
         branchnames,keys,nns = get_keys(u)
-        
         if(ifile==0): 
             # Create dataframe from first file
             # This dataframe will be appended to for each file
@@ -94,10 +97,13 @@ def load_data(rootfiles=[""],
                 tmp_df[k]=u[b].array(library="np")
             else:
                 tmp_df[k]=np.array(u[b].array(library="ak")[:,n],dtype=float)
-        
+                
         # Concatenate with main dataframe
         df=pd.concat([df,tmp_df], ignore_index=True,axis=0)
 
+        # Delete temporary dataframe
+        del tmp_df
+        
     # Create dataset for training/evaluation
     X = df.drop("flag",axis=1)
     if(version=="predict"):
