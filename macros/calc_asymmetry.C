@@ -134,8 +134,8 @@ int calc_asymmetry(const char * infile = "/volatile/clas12/users/gmat/clas12anal
         if(pid_h1==111 || pid_h2==111){
             create_sweights(INFILE.c_str(),BRUDIR.c_str(),binStruct,cut,pid_h1,pid_h2,use_ML);
             asym(INFILE.c_str(), BRUDIR.c_str(), version, binStruct, cut, pid_h1, pid_h2, use_ML, SPLOT,  asym_type);
-            //create_sideband(INFILE.c_str(),BRUDIR.c_str(),binStruct,cut,pid_h1,pid_h2,use_ML);
-	        //asym(INFILE.c_str(), BRUDIR.c_str(), version, binStruct, cut, pid_h1, pid_h2, use_ML, SIDEBAND,  asym_type);
+            create_sideband(INFILE.c_str(),BRUDIR.c_str(),binStruct,cut,pid_h1,pid_h2,use_ML);
+	        asym(INFILE.c_str(), BRUDIR.c_str(), version, binStruct, cut, pid_h1, pid_h2, use_ML, SIDEBAND,  asym_type);
         }
         else{
             asym(INFILE.c_str(), BRUDIR.c_str(), version, binStruct, cut, pid_h1, pid_h2, use_ML, STANDARD, asym_type);
