@@ -1,8 +1,9 @@
-#include "../src/ParseBinYAML.C"
-#include "../src/ParseCutYAML.C"
-#include "../src/fitTools.C"
-#include "../src/Constants.h"
-#include "../src/ParseText.C"
+#include "../../src/ParseBinYAML.C"
+#include "../../src/ParseCutYAML.C"
+#include "../../src/fitTools.C"
+#include "../../src/Constants.h"
+#include "../../src/ParseText.C"
+#include "../../src/injectDihadronAsym.C"
 
 enum ASYM_TYPE {
     AZI,
@@ -20,8 +21,9 @@ void create_sweights(const char * infile, const char * brudir, YAMLbinstruct bin
 void create_sideband(const char * infile, const char * brudir, YAMLbinstruct binStruct, Block cut, int pid_h1, int pid_h2, bool use_ML);
 void asym(const char * infile, const char * brudir, std::string version, YAMLbinstruct binStruct, Block cut, int pid_h1, int pid_h2, bool use_ML, ANA_TYPE ana_type,  ASYM_TYPE asym_type);
 
-int calc_asymmetry(const char * infile = "/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas12_dihadrons/projects/ana_v0/data/piplus_pi0/Fall2018_RGA_inbending_merged.root",
-                   const char * binfile = "/work/clas12/users/gmat/scipio/utils/Binning.yaml",
+int calc_asymmetry(const char * infile = "/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas12_dihadrons/projects/ana_v0/data/piplus_piminus/MC_RGA_inbending_merged.root",
+                   //const char * infile = "./MC_RGA_inbending_merged.root",
+                   const char * binfile = "/work/clas12/users/gmat/clas12/clas12_dihadrons/utils/binning_files/Binning.yaml",
                    std::string brudir  = "/work/clas12/users/gmat/clas12/clas12_dihadrons/projects/ana_v0/asym",
                    const int binnum = 0,
                    const std::string cut_title = "v1",
@@ -33,7 +35,6 @@ int calc_asymmetry(const char * infile = "/volatile/clas12/users/gmat/clas12anal
     int pid_h2=0;
     std::string hadron_pair="";
     getPIDs(std::string(infile),pid_h1,pid_h2,hadron_pair);
-
     // Pull the <version>_merged.root from "infile"
     std::string version=getVersion(infile);
     
@@ -53,6 +54,10 @@ int calc_asymmetry(const char * infile = "/volatile/clas12/users/gmat/clas12anal
     auto binStructs = get_structs(binfile);
     auto binStruct = binStructs[binnum];
     
+    // If this is a Monte Carlo file, then we must inject the asymmetries
+    if (strstr(infile, "MC_") != NULL){
+        injectDihadronAsym(infile,binStruct,pid_h1,pid_h2,2);
+    }
     // Create a directory for the binning scheme selected by binnum
     brudir+="/";
     for (int i = 0; i < binStruct.numDimensions; i++) {
@@ -124,12 +129,14 @@ int calc_asymmetry(const char * infile = "/volatile/clas12/users/gmat/clas12anal
         if(pid_h1==111 || pid_h2==111){
             create_sweights(infile,BRUDIR.c_str(),binStruct,cut,pid_h1,pid_h2,use_ML);
             asym(infile, BRUDIR.c_str(), version, binStruct, cut, pid_h1, pid_h2, use_ML, SPLOT,  asym_type);
-            create_sideband(infile,BRUDIR.c_str(),binStruct,cut,pid_h1,pid_h2,use_ML);
-	        asym(infile, BRUDIR.c_str(), version, binStruct, cut, pid_h1, pid_h2, use_ML, SIDEBAND,  asym_type);
+            //create_sideband(infile,BRUDIR.c_str(),binStruct,cut,pid_h1,pid_h2,use_ML);
+	        //asym(infile, BRUDIR.c_str(), version, binStruct, cut, pid_h1, pid_h2, use_ML, SIDEBAND,  asym_type);
         }
         else{
             asym(infile, BRUDIR.c_str(), version, binStruct, cut, pid_h1, pid_h2, use_ML, STANDARD, asym_type);
         }
+        
+        break;
     }
     
     
@@ -156,7 +163,7 @@ void create_sweights(const char * infile, const char * brudir, YAMLbinstruct bin
     RF.SetUp().LoadVariable("th[-100,100]");
     RF.SetUp().LoadVariable("phi_h1[-100,100]");
     RF.SetUp().LoadVariable("phi_h2[-100,100]");
-    RF.SetUp().SetIDBranchName("fgID");
+    RF.SetUp().SetIDBranchName("fggID");
     
     // From PID's determine several properties of the sWeight fitting
     std::string cvar = "";
@@ -255,6 +262,10 @@ void create_sweights(const char * infile, const char * brudir, YAMLbinstruct bin
 void create_sideband(const char * infile, const char * brudir, YAMLbinstruct binStruct, Block cut, int pid_h1, int pid_h2, bool use_ML){
     
     const double p_thresh = 0.9; // ML cut
+    std::string hel_str="hel";  // changes if we inject the Monte Carlo
+    if (strstr(infile, "MC_") != NULL){
+        hel_str=binStruct.injectName+"."+hel_str;
+    }
     
     // Open the TFile
     TFile *tfile = new TFile(infile,"READ");
@@ -319,7 +330,7 @@ void create_sideband(const char * infile, const char * brudir, YAMLbinstruct bin
         gSystem->mkdir(Form("%s/outSdbndBins/%s",brudir,subdir.c_str()));
         
         // Add helicity requirements
-        cutstr += "&&(hel==1||hel==-1)";
+        cutstr += "&&("+hel_str+"==1||"+hel_str+"==-1)";
         
         // Determine additional cuts based on ML usage
         if(use_ML){
@@ -415,6 +426,10 @@ void create_sideband(const char * infile, const char * brudir, YAMLbinstruct bin
 void asym(const char * infile, const char * brudir, std::string version, YAMLbinstruct binStruct, Block cut, int pid_h1, int pid_h2, bool use_ML, ANA_TYPE ana_type,  ASYM_TYPE asym_type){
 
     const double p_thresh = 0.9; // ML cut
+    std::string hel_str="hel";  // changes if we inject the Monte Carlo
+    if (strstr(infile, "MC_") != NULL){
+        hel_str=binStruct.injectName+"."+hel_str;
+    }
     
     if(ana_type==SPLOT){
         
@@ -425,9 +440,9 @@ void asym(const char * infile, const char * brudir, std::string version, YAMLbin
             else
                 FM.SetUp().SetOutDir(Form("%s/outObsBins_splot_bg/",brudir));
             if(asym_type==AZI)
-                process_azi_FM(FM,version);
+                process_azi_FM(FM,version,hel_str);
             else if(asym_type==TWOH)
-                process_2h_FM(FM,version);
+                process_2h_FM(FM,version,hel_str);
             //////////////////////////////////// Bins
             // Load bin variables
             for (int i = 0; i < binStruct.numDimensions; i++) {
@@ -461,9 +476,9 @@ void asym(const char * infile, const char * brudir, std::string version, YAMLbin
                 FM.SetUp().SetOutDir(Form("%s/outObsBins_sdbnd_bg/",brudir));
             }
             if(asym_type==AZI)
-                process_azi_FM(FM,version);
+                process_azi_FM(FM,version,hel_str);
             else if(asym_type==TWOH)
-                process_2h_FM(FM,version);
+                process_2h_FM(FM,version,hel_str);
 
             if(reg==0 && pid_h1==111 && pid_h2!=111){
                 FM.SetUp().LoadVariable("M1[0.106,0.166]");
@@ -550,9 +565,9 @@ void asym(const char * infile, const char * brudir, std::string version, YAMLbin
         FitManager FM;
         FM.SetUp().SetOutDir(Form("%s/outObsBins/",brudir));
         if(asym_type==AZI)
-            process_azi_FM(FM,version);
+            process_azi_FM(FM,version,hel_str);
         else if(asym_type==TWOH)
-            process_2h_FM(FM,version);
+            process_2h_FM(FM,version,hel_str);
         
         // For loop over the cuts desired to apply them
         for(int j = 0 ; j < cut.vmin.size() ; j++){
