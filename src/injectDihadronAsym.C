@@ -61,7 +61,7 @@ std::vector<TF2> get_ALUs_bg(YAMLbinstruct bs){
 // Inject the TTree with a helicity determined by probabilities
 void injectDihadronAsym(const char * input_file, YAMLbinstruct binStruct, int pid_h1, int pid_h2, int L){
     
-    TFile * f = new TFile(input_file,"UPDATE");
+    TFile * f = new TFile(input_file,"READ");
     std::vector<TF2> mods = get_mods(L);
     std::vector<TF2> ALUs_sig = get_ALUs_sig(binStruct);
     std::vector<TF2> ALUs_bg = get_ALUs_bg(binStruct);
@@ -75,6 +75,8 @@ void injectDihadronAsym(const char * input_file, YAMLbinstruct binStruct, int pi
     int MCmatch;
     int truepid_1;
     int truepid_2;
+    int trueparentpid_1;
+    int trueparentpid_2;
     double x=0;
     double y=0;
     double phih;
@@ -82,6 +84,8 @@ void injectDihadronAsym(const char * input_file, YAMLbinstruct binStruct, int pi
     
     tIn->SetBranchAddress("truepid_1",&truepid_1);
     tIn->SetBranchAddress("truepid_2",&truepid_2);
+    tIn->SetBranchAddress("trueparentpid_1",&trueparentpid_1);
+    tIn->SetBranchAddress("trueparentpid_2",&trueparentpid_2);
     tIn->SetBranchAddress("MCmatch",&MCmatch);
     tIn->SetBranchAddress("truephi_h",&phih);
     tIn->SetBranchAddress("truephi_R0",&phiR);
@@ -91,25 +95,23 @@ void injectDihadronAsym(const char * input_file, YAMLbinstruct binStruct, int pi
     }
     
     auto injectName = binStruct.injectName;
-
-    TString hel_branchname = TString(injectName) + TString(".hel");
-    // Disable the existing branch if it exists
-    TBranch *b = tIn->GetBranch(hel_branchname);
-    tIn->GetListOfBranches()->Remove(b);
-    TLeaf* l= tIn->GetLeaf(hel_branchname);
-    tIn->GetListOfLeaves()->Remove(l);
     
+    TString hel_branchname = TString(injectName) + ".hel";
+    TString new_filename = TString(input_file) + "." + TString(binStruct.name) + ".root";
+    
+    TFile * fOut = new TFile(new_filename,"RECREATE");
+    TTree * tOut = tIn->CloneTree();
     // Create helicity injection
     int hel;
-    TBranch * hel_branch = tIn->Branch(hel_branchname,&hel,hel_branchname+TString("/I"));
+    TBranch * hel_branch = tOut->Branch(hel_branchname,&hel,hel_branchname+TString("/I"));
     // Loop through all events
     float sum=0.0;
     float prob=0.0;
-    for ( int i = 0 ; i < tIn->GetEntries() ; i++){
+    for ( int i = 0 ; i < tOut->GetEntries() ; i++){
 
-        tIn->GetEntry(i);
+        tOut->GetEntry(i);
         if(i%10000==0)
-            cout << i << "/" << tIn->GetEntries()-1 << "    x = " << x << " , y = " << y << " , prob = " << prob << endl;
+            cout << i << "/" << tOut->GetEntries()-1 << "    x = " << x << " , y = " << y << " , prob = " << prob << endl;
         
         // If not all Reco Particles had a reco match, skip event
         if(MCmatch!=1){
@@ -120,7 +122,13 @@ void injectDihadronAsym(const char * input_file, YAMLbinstruct binStruct, int pi
         
         // Inject either signal or background
         sum=0.0;
-        if(truepid_1==pid_h1 && truepid_2==pid_h2){
+        bool isSignal = true;
+        if(pid_h1==111){isSignal*=(trueparentpid_1==pid_h1);}
+        else {isSignal*=(truepid_1==pid_h1);}
+        if(pid_h2==111){isSignal*=(trueparentpid_2==pid_h2);}
+        else {isSignal*=(truepid_2==pid_h2);}
+        
+        if(isSignal){
             for (unsigned int j = 0 ; j < mods.size(); j++){
                 sum+=ALUs_sig.at(j).Eval(x,y)*mods.at(j).Eval(phih,phiR);
             }
@@ -142,7 +150,9 @@ void injectDihadronAsym(const char * input_file, YAMLbinstruct binStruct, int pi
             hel=-1;
         hel_branch->Fill();
     }
-    tIn->Print();
-    tIn->Write(0,TObject::kOverwrite);
+    
+    tOut->Print();
+    tOut->Write(0,TObject::kOverwrite);
+    fOut->Close();
     f->Close();
 }

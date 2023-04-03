@@ -55,9 +55,14 @@ int calc_asymmetry(const char * infile = "/volatile/clas12/users/gmat/clas12anal
     auto binStruct = binStructs[binnum];
     
     // If this is a Monte Carlo file, then we must inject the asymmetries
+    std::string INFILE="";
     if (strstr(infile, "MC_") != NULL){
         injectDihadronAsym(infile,binStruct,pid_h1,pid_h2,2);
+        INFILE=std::string(infile) + "." + binStruct.name + ".root";
+    }else{
+        INFILE=std::string(infile);
     }
+    cout << "INFILE: " << INFILE << endl;
     // Create a directory for the binning scheme selected by binnum
     brudir+="/";
     for (int i = 0; i < binStruct.numDimensions; i++) {
@@ -127,18 +132,23 @@ int calc_asymmetry(const char * infile = "/volatile/clas12/users/gmat/clas12anal
         // Based on the pid combination, determine if we need background subtraction
         // If we are using pi0's
         if(pid_h1==111 || pid_h2==111){
-            create_sweights(infile,BRUDIR.c_str(),binStruct,cut,pid_h1,pid_h2,use_ML);
-            asym(infile, BRUDIR.c_str(), version, binStruct, cut, pid_h1, pid_h2, use_ML, SPLOT,  asym_type);
-            //create_sideband(infile,BRUDIR.c_str(),binStruct,cut,pid_h1,pid_h2,use_ML);
-	        //asym(infile, BRUDIR.c_str(), version, binStruct, cut, pid_h1, pid_h2, use_ML, SIDEBAND,  asym_type);
+            create_sweights(INFILE.c_str(),BRUDIR.c_str(),binStruct,cut,pid_h1,pid_h2,use_ML);
+            asym(INFILE.c_str(), BRUDIR.c_str(), version, binStruct, cut, pid_h1, pid_h2, use_ML, SPLOT,  asym_type);
+            //create_sideband(INFILE.c_str(),BRUDIR.c_str(),binStruct,cut,pid_h1,pid_h2,use_ML);
+	        //asym(INFILE.c_str(), BRUDIR.c_str(), version, binStruct, cut, pid_h1, pid_h2, use_ML, SIDEBAND,  asym_type);
         }
         else{
-            asym(infile, BRUDIR.c_str(), version, binStruct, cut, pid_h1, pid_h2, use_ML, STANDARD, asym_type);
+            asym(INFILE.c_str(), BRUDIR.c_str(), version, binStruct, cut, pid_h1, pid_h2, use_ML, STANDARD, asym_type);
         }
         
         break;
     }
     
+    
+    // Delete the injected Monte carlo file after use
+    if (strstr(infile, "MC_") != NULL){
+        gSystem->Unlink(TString(INFILE));
+    }
     
     return 0;
 }
