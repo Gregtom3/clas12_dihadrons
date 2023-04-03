@@ -16,7 +16,7 @@ float get_polarization(std::string version){
   return _polarization;
 }
 
-pair<vector<string>, vector<string>> get_azi_modulations(int L, std::string version){
+pair<vector<string>, vector<string>> get_azi_modulations(int L, std::string version, std::string hel="hel"){
     
   float _polarization=get_polarization(version);
     
@@ -27,12 +27,12 @@ pair<vector<string>, vector<string>> get_azi_modulations(int L, std::string vers
       for (int m = 1; m <= l; m++)
         {
             
-	  string str = string(Form("%f",_polarization))+"*@hel[]*sin(" + to_string(m) + "*@phi_h[]-" + to_string(m) +"*@phi_R0[])";
+	  string str = string(Form("%f",_polarization))+"*@"+hel+"[]*sin(" + to_string(m) + "*@phi_h[]-" + to_string(m) +"*@phi_R0[])";
 	  str_vec.push_back(str);
         }
       for (int m = -l; m <= l; m++)
         {
-	  string str = string(Form("%f",_polarization))+"*@hel[]*sin(" + to_string(1-m) +"*@phi_h[]+" + to_string(m) +"*@phi_R0[])";
+	  string str = string(Form("%f",_polarization))+"*@"+hel+"[]*sin(" + to_string(1-m) +"*@phi_h[]+" + to_string(m) +"*@phi_R0[])";
 	  str_vec.push_back(str);
         }
     }
@@ -60,7 +60,7 @@ pair<vector<string>, vector<string>> get_azi_modulations(int L, std::string vers
 }
 
 
-pair<vector<string>, vector<string>> get_2h_modulations(int L, std::string version){
+pair<vector<string>, vector<string>> get_2h_modulations(int L, std::string version, std::string hel="hel"){
 
   float _polarization=get_polarization(version);
     
@@ -68,7 +68,7 @@ pair<vector<string>, vector<string>> get_2h_modulations(int L, std::string versi
   vector<string> str_vec;
   for (int l = 1; l <= L; l++)
     {
-      string str = string(Form("%f",_polarization))+"*@hel[]*sin(" + to_string(l) + "*@delta_phi_h[])";
+      string str = string(Form("%f",_polarization))+"*@"+hel+"[]*sin(" + to_string(l) + "*@delta_phi_h[])";
       str_vec.push_back(str);
     }
     
@@ -99,17 +99,17 @@ pair<vector<string>, vector<string>> get_2h_modulations(int L, std::string versi
 
 
 
-void process_azi_FM(FitManager &FM, std::string version){  
+void process_azi_FM(FitManager &FM, std::string version, std::string hel="hel"){  
 
-  auto mods = get_azi_modulations(2,version);
+  auto mods = get_azi_modulations(2,version,hel);
   vector<string> char_vec = mods.first;
   vector<string> str_vec = mods.second;
     
   ///////////////////////////////Load Variables
   FM.SetUp().LoadVariable("phi_h[-3.14159265,3.14159265]");
   FM.SetUp().LoadVariable("phi_R0[-3.14159265,3.14159265]");
-  FM.SetUp().LoadCategory("hel[Polp=1,Polm=-1]");
-  FM.SetUp().SetIDBranchName("fgID");
+  FM.SetUp().LoadCategory(Form("%s[Polp=1,Polm=-1]",hel.c_str()));
+  FM.SetUp().SetIDBranchName("fggID");
   ////////////////////////////////Cuts
 
   ///////////////////////////////Load parameters
@@ -119,7 +119,7 @@ void process_azi_FM(FitManager &FM, std::string version){
   for (string ss: str_vec)
     FM.SetUp().LoadFormula(ss);
   ///////////////////////////////Load PDF
-  string pdf = "RooComponentsPDF::AziFit(1,{phi_h,phi_R0,hel},=";
+  string pdf = Form("RooComponentsPDF::AziFit(1,{phi_h,phi_R0,%s},=",hel.c_str());
   for(unsigned int i = 0 ; i < str_vec.size() ; i++){
     pdf+=char_vec.at(i);
     pdf+=";mod";
@@ -136,15 +136,15 @@ void process_azi_FM(FitManager &FM, std::string version){
 }
 
 
-void process_2h_FM(FitManager &FM, std::string version){  
-  auto mods = get_2h_modulations(2,version);
+void process_2h_FM(FitManager &FM, std::string version, std::string hel="hel"){  
+  auto mods = get_2h_modulations(2,version,hel);
   vector<string> char_vec = mods.first;
   vector<string> str_vec = mods.second;
     
   ///////////////////////////////Load Variables
   FM.SetUp().LoadVariable("delta_phi_h[-3.14159265,3.14159265]");
-  FM.SetUp().LoadCategory("hel[Polp=1,Polm=-1]");
-  FM.SetUp().SetIDBranchName("fgID");
+  FM.SetUp().LoadCategory(Form("%s[Polp=1,Polm=-1]",hel.c_str()));
+  FM.SetUp().SetIDBranchName("fggID");
   ////////////////////////////////Cuts
 
   ///////////////////////////////Load parameters
@@ -154,7 +154,7 @@ void process_2h_FM(FitManager &FM, std::string version){
   for (string ss: str_vec)
     FM.SetUp().LoadFormula(ss);
   ///////////////////////////////Load PDF
-  string pdf = "RooComponentsPDF::h2fit(1,{delta_phi_h,hel},=";
+  string pdf = Form("RooComponentsPDF::h2fit(1,{delta_phi_h,%s},=",hel.c_str());
   for(unsigned int i = 0 ; i < str_vec.size() ; i++){
     pdf+=char_vec.at(i);
     pdf+=";mod";
@@ -167,11 +167,4 @@ void process_2h_FM(FitManager &FM, std::string version){
   FM.SetUp().FactoryPDF(pdf);
   FM.SetUp().LoadSpeciesPDF("h2fit",1);
   return ;
-}
-
-
-
-void make_cut(FitManager &FM, const char *branch="", const double vmin = -999, const double vmax = 999){
-    
-    
 }

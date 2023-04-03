@@ -86,13 +86,13 @@ int merge_dihadrons(
   TTree *t = (TTree*)F->Get("dihadron");
 
   // Create ID branch for brufit
-  int fgID=0;
-  TBranch *bfgId = t->Branch("fgID",&fgID,"fgID/I"); // create new branch
+  double fgID=0;
+  TBranch *bfgId = t->Branch("fggID",&fgID,"fggID/D"); // create new branch
   const int N = t->GetEntries();
   for(int i = 0; i < N; ++i){
     t->GetEntry(i); // load in all TBranches
-    fgID = i;
     bfgId->Fill(); // Fill only the new TBranch
+    fgID+=1;
   }  
   
   // Print final TTree

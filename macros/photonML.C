@@ -103,7 +103,8 @@ int photonML(const char * input_file = "/volatile/clas12/users/gmat/clas12analys
     const int kNmax = 500;
     int Nmax;
     double E[kNmax], th[kNmax], phi[kNmax], trueE[kNmax], pcal_e[kNmax], pcal_m2u[kNmax], pcal_m2v[kNmax];
-    double pid[kNmax], pcal_x[kNmax],pcal_y[kNmax],pcal_z[kNmax];
+    int pid[kNmax];
+    double pcal_x[kNmax],pcal_y[kNmax],pcal_z[kNmax];
     double ecin_x[kNmax],ecin_y[kNmax],ecin_z[kNmax];
     double ecout_x[kNmax],ecout_y[kNmax],ecout_z[kNmax];
     //Set the address of the branches in EventTree

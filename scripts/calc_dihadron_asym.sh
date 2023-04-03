@@ -155,7 +155,7 @@ EOF
         fi
 
         echo "Submitting slurm job for $(basename "$FILE"), binning scheme $((binnum+1)) of $((schemes))"
-        #sbatch --quiet $slurmslurm
+        sbatch --quiet $slurmslurm
     done
   done
 done

@@ -26,14 +26,31 @@ std::vector<std::vector<int>> unique_combinations(std::vector<int> input, int nu
 
 std::vector<std::vector<int>> remove_duplicates(std::vector<std::vector<int>> input) {
     std::vector<std::vector<int>> output;
-    
-    // Sort each inner vector and remove duplicates
-    for (auto& v : input) {
-        std::sort(v.begin(), v.end());
+
+    // Store the original indices and sort each inner vector based on the values
+    std::vector<std::vector<size_t>> indices(input.size());
+    for (size_t i = 0; i < input.size(); ++i) {
+        indices[i].resize(input[i].size());
+        std::iota(indices[i].begin(), indices[i].end(), 0);
+
+        std::sort(indices[i].begin(), indices[i].end(),
+                  [&](size_t a, size_t b) { return input[i][a] < input[i][b]; });
+        std::sort(input[i].begin(), input[i].end());
     }
+
+    // Sort and remove duplicates from the outer vector
     std::sort(input.begin(), input.end());
     input.erase(std::unique(input.begin(), input.end()), input.end());
-    
+
+    // Restore the original order of the inner vectors
+    for (size_t i = 0; i < input.size(); ++i) {
+        std::vector<int> temp(input[i].size());
+        for (size_t j = 0; j < input[i].size(); ++j) {
+            temp[indices[i][j]] = input[i][j];
+        }
+        input[i] = temp;
+    }
+
     return input;
 }
 
@@ -46,7 +63,7 @@ std::vector<std::vector<int>> remove_duplicates(std::vector<std::vector<int>> in
 // The program uses the input_file name to determine what hadrons to build. If pi0's are built, then the "weight_branch" tells the program which machine learning model
 // is to be used to save photon classification values. The "weight_branch" in the "EventTree" is created by the program "machine_learning/photonID/predict.py"
 
-int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas12_dihadrons/projects/ana_v0/data/raw/pi0_pi0/nSidis_5032.root",
+int dihadronBuilder(const char *input_file="hipo2tree.root",
                     const char *weight_branch="gbt_0_calo"){
     
 
@@ -72,7 +89,7 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
     double weight[Nmax];
     int parentID[Nmax],parentPID[Nmax],parentparentID[Nmax],parentparentPID[Nmax];
     int is_CFR[Nmax];
-    double pid[Nmax], truepid[Nmax];
+    int pid[Nmax], truepid[Nmax];
     //link the TBranches to the variables
     EventTree->SetBranchAddress("run",&run);
     EventTree->SetBranchAddress("Pol",&Pol);
@@ -119,19 +136,21 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
     TTree *outtree = new TTree(treename,"Dihadron-by-Dihadron info");
     
     double M1,M2,Mh,phi_h,phi_R0,phi_R1,th,z1,z2,xF1,xF2,z,xF,Mx,phi_h1,phi_h2,delta_phi_h,pT_1,pT_2,pT_tot;
-    double trueM1,trueM2,trueMh,truephi_h,truephi_R0,truephi_R1,trueth,truez1,truez2,truexF1,truexF2,truez,truexF,trueMx,truephi_h1,truephi_h2,truedelta_phi_h,truepT_1,truepT_2,truepT_tot;
+    double  trueM1,trueM2,trueMh,truephi_h,truephi_R0,truephi_R1,trueth,truez1,truez2,truexF1,truexF2,truez,truexF,trueMx,truephi_h1,truephi_h2,truedelta_phi_h,truepT_1,truepT_2,truepT_tot;
     int truepid_1,truepid_2,trueparentpid_1,trueparentpid_2,trueparentid_1,trueparentid_2,trueparentparentpid_1,trueparentparentpid_2,trueparentparentid_1,trueparentparentid_2;
     int is_CFR_1, is_CFR_2;
     int MCmatch; // MCmatch --> 1 if all particles have Monte Carlo pairing
     int isGoodEventWithoutML;
     int truepid_11, truepid_12, truepid_21, truepid_22; // For photon pairs
     double trueM12, M12; // addition of M1 M2
+    double fgID=0; //uniqueID for each dihadron
     // Machine Learning output
     double p_11=-1;
     double p_12=-1;
     double p_21=-1;
     double p_22=-1;
     // Create branches
+    outtree->Branch("fgID", &fgID, "fgID/D");
     outtree->Branch("run", &run, "run/I");
     outtree->Branch("Pol", &Pol, "Pol/D");
     outtree->Branch("hel", &hel, "hel/I");
@@ -161,9 +180,13 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
     outtree->Branch("phi_h1", &phi_h1, "phi_h1/D");
     outtree->Branch("phi_h2", &phi_h2, "phi_h2/D");
     outtree->Branch("delta_phi_h", &delta_phi_h, "delta_phi_h/D");
-    outtree->Branch("pT_1", &pT_1, "pT_1/D");
-    outtree->Branch("pT_2", &pT_2, "pT_2/D");
-    outtree->Branch("pT_tot", &pT_tot, "pT_tot/D");
+    outtree->Branch("pT1", &pT_1, "pT1/D");
+    outtree->Branch("pT2", &pT_2, "pT2/D");
+    outtree->Branch("pTtot", &pT_tot, "pTtot/D");
+    outtree->Branch("truex", &truex, "truex/D");
+    outtree->Branch("trueQ2", &trueQ2, "trueQ2/D");
+    outtree->Branch("trueW", &trueW, "trueW/D");
+    outtree->Branch("truey", &truey, "truey/D");
     outtree->Branch("trueM1", &trueM1, "trueM1/D");
     outtree->Branch("trueM2", &trueM2, "trueM2/D");
     outtree->Branch("trueM12",&trueM12,"trueM12/D");
@@ -182,9 +205,9 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
     outtree->Branch("truephi_h1", &truephi_h1, "truephi_h1/D");
     outtree->Branch("truephi_h2", &truephi_h2, "truephi_h2/D");
     outtree->Branch("truedelta_phi_h", &truedelta_phi_h, "truedelta_phi_h/D");
-    outtree->Branch("truepT_1", &truepT_1, "truepT_1/D");
-    outtree->Branch("truepT_2", &truepT_2, "truepT_2/D");
-    outtree->Branch("truepT_tot", &truepT_tot, "truepT_tot/D");
+    outtree->Branch("truepT1", &truepT_1, "truepT1/D");
+    outtree->Branch("truepT2", &truepT_2, "truepT2/D");
+    outtree->Branch("truepTtot", &truepT_tot, "truepTtot/D");
     outtree->Branch("truepid_1", &truepid_1, "truepid_1/I");
     outtree->Branch("truepid_2", &truepid_2, "truepid_2/I");
     outtree->Branch("truepid_11", &truepid_11, "truepid_11/I");
@@ -203,6 +226,7 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
     outtree->Branch("p_12", &p_12,"p_12/D");
     outtree->Branch("p_21", &p_21,"p_21/D");
     outtree->Branch("p_22", &p_22,"p_22/D");
+
     // Kinematics Object
     Kinematics kin;
 
@@ -252,7 +276,7 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
                 break;
             }
         }
-
+            
         //Loop over all particles in the event to determine hadron indecies
 
         for(int i = 0; i<Nmax; i++){
@@ -290,7 +314,7 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
                 }
             }
         }
-
+    
         // Remove any instance of duplicate dihadrons
         dihadron_idxs = remove_duplicates(dihadron_idxs);
         // Now loop over all dihadrons
@@ -324,6 +348,7 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
             TLorentzVector trueh2;
             TLorentzVector dihadron;
             TLorentzVector truedihadron;
+  
             if(pid_h1==111){
                 p_11 = weight[i];
                 p_12 = weight[ii];
@@ -385,6 +410,7 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
                 trueparentparentpid_2=parentparentPID[j];
                 is_CFR_2=is_CFR[j];
             }
+            
             // Build the dihadron
             dihadron = h1+h2;
             truedihadron = trueh1+trueh2;
@@ -467,6 +493,7 @@ int dihadronBuilder(const char *input_file="/volatile/clas12/users/gmat/clas12an
             }
             
             outtree->Fill();
+            fgID++;
         } // end dihadron loop
     }// end event loop
 

@@ -9,9 +9,9 @@ binningStructures:
       - [0,0.1,0.13,0.16,0.19,0.235,0.3,0.5,1]
     injectLabel: linear
     inject_sigfuncs:
-        - "0.1*x"
         - "0.0*x"
-        - "0.0*x"
+        - "0.5*x"
+        - "0.5*x"
         - "0.0*x"
         - "0.0*x"
         - "0.0*x"

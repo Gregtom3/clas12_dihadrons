@@ -7,13 +7,14 @@
 #include "../src/ParseText.C"
 
 
-int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2018/torus-1/pass1/v1/dst/train/nSidis/nSidis_005032.hipo",
-              const char * outputFile = "/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas12_dihadrons/projects/ana_v0/data/pi0_pi0/nSidis_5032.root",
+int hipo2tree(//const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2018/torus-1/pass1/v1/dst/train/nSidis/nSidis_005032.hipo",
+              const char * hipoFile = "/cache/clas12/rg-a/production/montecarlo/clasdis/fall2018/torus-1/v1/bkg45nA_10604MeV/45nA_job_3051_0.hipo",
+              const char * outputFile = "hipo2tree.root",
               const double _electron_beam_energy = 10.6,
-              const int pid_h1=111,
+              const int pid_h1=211,
               const int pid_h2=111,
-              const int maxEvents = 100000000,
-              bool hipo_is_mc = false){
+              const int maxEvents = 10000,
+              bool hipo_is_mc = true){
  
   // Open TTree and declare branches
   // -------------------------------------
@@ -31,10 +32,10 @@ int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2
 
   // Particle Info
   int Nmax = 100; // maximum number of particles
-  int pindex[Nmax], status[Nmax];
-  double px[Nmax], py[Nmax], pz[Nmax], p[Nmax], E[Nmax], pid[Nmax],m[Nmax];
+  int pindex[Nmax], status[Nmax], pid[Nmax], truepid[Nmax], trueparentid[Nmax], trueparentpid[Nmax], trueparentparentid[Nmax], trueparentparentpid[Nmax];
+  double px[Nmax], py[Nmax], pz[Nmax], p[Nmax], E[Nmax],m[Nmax];
   double vx[Nmax], vy[Nmax], vz[Nmax], chi2[Nmax], beta[Nmax];
-  double truepx[Nmax], truepy[Nmax], truepz[Nmax], truep[Nmax], trueE[Nmax], truepid[Nmax], trueparentid[Nmax], trueparentpid[Nmax], trueparentparentid[Nmax], trueparentparentpid[Nmax];
+  double truepx[Nmax], truepy[Nmax], truepz[Nmax], truep[Nmax], trueE[Nmax];
   int is_CFR[Nmax];
   double theta[Nmax], eta[Nmax], phi[Nmax], truept[Nmax], truem[Nmax], truetheta[Nmax], trueeta[Nmax], truephi[Nmax], truevx[Nmax], truevy[Nmax], truevz[Nmax];
   int pcal_sector[Nmax], ecin_sector[Nmax], ecout_sector[Nmax];
@@ -76,7 +77,7 @@ int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2
   tree->Branch("pz", pz, "pz[Nmax]/D");
   tree->Branch("p", p, "p[Nmax]/D");
   tree->Branch("E", E, "E[Nmax]/D");
-  tree->Branch("pid", pid, "pid[Nmax]/D");
+  tree->Branch("pid", pid, "pid[Nmax]/I");
   tree->Branch("vx", vx, "vx[Nmax]/D");
   tree->Branch("vy", vy, "vy[Nmax]/D");
   tree->Branch("vz", vz, "vz[Nmax]/D");
@@ -100,7 +101,7 @@ int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2
   tree->Branch("truevz", truevz, "truevz[Nmax]/D");
   tree->Branch("trueE", trueE, "trueE[Nmax]/D");
   tree->Branch("is_CFR", is_CFR, "is_CFR[Nmax]/I");
-  tree->Branch("truepid", truepid, "truepid[Nmax]/D");
+  tree->Branch("truepid", truepid, "truepid[Nmax]/I");
   tree->Branch("trueparentid", trueparentid, "trueparentid[Nmax]/I");
   tree->Branch("trueparentpid", trueparentpid, "trueparentpid[Nmax]/I");
   tree->Branch("trueparentparentid", trueparentparentid, "trueparentparentid[Nmax]/I");
@@ -334,8 +335,11 @@ int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2
       partstruct.trueparentid = mcparticles->getParent(idx)-1;
       partstruct.trueparentpid = mcparticles->getPid(partstruct.trueparentid);
       partstruct.trueparentparentid = mcparticles->getParent(partstruct.trueparentid)-1;
-      partstruct.trueparentparentpid = mcparticles->getPid(partstruct.trueparentparentid);
-      
+      if(partstruct.trueparentparentid==-1){
+          partstruct.trueparentparentpid = -999;
+      }else{
+          partstruct.trueparentparentpid = mcparticles->getPid(partstruct.trueparentparentid);
+      }
       // for loop over the idxs until we find if this particle came from CFR
       int parent_idx = mcparticles->getParent(idx)-1;
       int parent_pid = 0;
