@@ -353,7 +353,7 @@ int hipo2tree(//const char * hipoFile = "/cache/clas12/rg-a/production/recon/fal
           parent_idx = mcparticles->getParent(parent_idx)-1;
       }
       if(partstruct.is_CFR!=1) partstruct.is_CFR=0;
-      if(partstruct.pid==11 && partstruct.trueparentid==0){ // scattered electron
+      if(partstruct.truepid==11 && partstruct.trueparentid==0){ // scattered electron
         trueQ2=_kin.Q2(_electron_beam_energy,partstruct.trueE,_kin.cth(partstruct.truepx,partstruct.truepy,partstruct.truepz));
         truey=_kin.y(_electron_beam_energy,partstruct.trueE);
         truenu=_kin.nu(_electron_beam_energy,partstruct.trueE);
