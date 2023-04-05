@@ -2,6 +2,12 @@
 #define CutManager_h
 #include "Constants.h"
 
+enum RUN_PERIOD {
+    RGA,
+    RGB,
+    RGC
+};
+
 class CutManager{
  public:
   // Constructors
@@ -9,7 +15,8 @@ class CutManager{
   CutManager(int); // Run Number
   // Public member variables and functions
   void set_run(int);
-        
+  void set_run_period(std::string);
+  RUN_PERIOD get_run_period();
   std::vector<part> filter_particles(std::vector<part>);
     
  protected:
@@ -35,6 +42,7 @@ class CutManager{
   // Private member variables
   int _run=0;
   int _torusBending=0;
+  RUN_PERIOD _run_period=RGA;
         
 };
 #endif

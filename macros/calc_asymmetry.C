@@ -1,9 +1,9 @@
-#include "../../src/ParseBinYAML.C"
-#include "../../src/ParseCutYAML.C"
-#include "../../src/fitTools.C"
-#include "../../src/Constants.h"
-#include "../../src/ParseText.C"
-#include "../../src/injectDihadronAsym.C"
+#include "../src/ParseBinYAML.C"
+#include "../src/ParseCutYAML.C"
+#include "../src/fitTools.C"
+#include "../src/Constants.h"
+#include "../src/ParseText.C"
+#include "../src/injectDihadronAsym.C"
 
 enum ASYM_TYPE {
     AZI,
@@ -49,11 +49,9 @@ int calc_asymmetry(const char * infile = "/volatile/clas12/users/gmat/clas12anal
     // Create a directory for the hadron pair
     brudir+="/"+hadron_pair; 
     gSystem->mkdir(TString(brudir)); // <project>/asym/<version>/<cut>/<hadron_pair>
-    
     // Pull the bin structures from the yaml file
     auto binStructs = get_structs(binfile);
     auto binStruct = binStructs[binnum];
-    
     // If this is a Monte Carlo file, then we must inject the asymmetries
     std::string INFILE="";
     if (strstr(infile, "MC_") != NULL){
@@ -62,7 +60,7 @@ int calc_asymmetry(const char * infile = "/volatile/clas12/users/gmat/clas12anal
     }else{
         INFILE=std::string(infile);
     }
-    cout << "INFILE: " << INFILE << endl;
+
     // Create a directory for the binning scheme selected by binnum
     brudir+="/";
     for (int i = 0; i < binStruct.numDimensions; i++) {
@@ -72,7 +70,6 @@ int calc_asymmetry(const char * infile = "/volatile/clas12/users/gmat/clas12anal
             brudir+="_";
         }
     }
-    
     gSystem->mkdir(TString(brudir)); // <project>/asym/<version>/<hadron_pair>/<binning>
     
     // Create a directory for ML usage

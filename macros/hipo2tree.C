@@ -8,20 +8,24 @@
 
 
 int hipo2tree(//const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2018/torus-1/pass1/v1/dst/train/nSidis/nSidis_005032.hipo",
-              const char * hipoFile = "/cache/clas12/rg-a/production/montecarlo/clasdis/fall2018/torus-1/v1/bkg45nA_10604MeV/45nA_job_3051_0.hipo",
-              const char * outputFile = "hipo2tree.root",
+              //const char * hipoFile = "/cache/clas12/rg-a/production/montecarlo/clasdis/fall2018/torus-1/v1/bkg45nA_10604MeV/45nA_job_3051_0.hipo",
+              const char * hipoFile = "/volatile/clas12/rg-c/production/dst/8.7.0_TBT/dst/train/sidisdvcs/sidisdvcs_016291.hipo",
+	      const char * outputFile = "hipo2tree.root",
               const double _electron_beam_energy = 10.6,
               const int pid_h1=211,
-              const int pid_h2=111,
-              const int maxEvents = 10000,
-              bool hipo_is_mc = true){
- 
+              const int pid_h2=-211,
+              const int maxEvents = 1000000,
+              bool hipo_is_mc = false){
+
+
+
   // Open TTree and declare branches
   // -------------------------------------
   TFile *fOut = new TFile(outputFile,"RECREATE");
   TTree* tree = new TTree("EventTree","EventTree");
-    
+
   int run;
+  TString target_string = "";
   // Reconstructed variables
   double x, y, W, nu,Pol,Q2;
   int hel;
@@ -29,6 +33,7 @@ int hipo2tree(//const char * hipoFile = "/cache/clas12/rg-a/production/recon/fal
 
   // Monte Carlo Info
   double truex, truey, trueW, truenu,trueQ2;
+
 
   // Particle Info
   int Nmax = 100; // maximum number of particles
@@ -47,7 +52,7 @@ int hipo2tree(//const char * hipoFile = "/cache/clas12/rg-a/production/recon/fal
   double ecout_e[Nmax], ecout_lu[Nmax], ecout_lv[Nmax], ecout_lw[Nmax], ecout_m2u[Nmax], ecout_m2v[Nmax], ecout_m2w[Nmax];
   int sector[Nmax];
   double traj_x1[Nmax], traj_y1[Nmax], traj_z1[Nmax], traj_x2[Nmax], traj_y2[Nmax], traj_z2[Nmax], traj_x3[Nmax], traj_y3[Nmax], traj_z3[Nmax];
- 
+
   // Set branches
   tree->Branch("run",&run,"run/I");
   tree->Branch("Pol",&Pol,"Pol/D");
@@ -162,18 +167,19 @@ int hipo2tree(//const char * hipoFile = "/cache/clas12/rg-a/production/recon/fal
 
   _chain.Add(hipoFile);
   _config_c12=_chain.GetC12Reader();
+
   // If not monte carlo, enforce QADB
   // -------------------------------------
-  if(hipo_is_mc==true)
+  bool do_QADB=(hipo_is_mc==false && std::string(hipoFile).find("/rg-c/")==std::string::npos);
+  if(!do_QADB)
     _config_c12->db()->turnOffQADB();
   
-
   // Configure PIDs for final state
   // -------------------------------------
   FS fs = get_FS(pid_h1,pid_h2);
   _config_c12->addExactPid(11,1);     // Exactly 1 electron
-  _config_c12->addAtLeastPid(fs.pid_h1,fs.num_h1);
-  if(fs.pid_h2!=0) _config_c12->addAtLeastPid(fs.pid_h2,fs.num_h2); // Doesn't run if duplicate final state
+  if(fs.pid_h1!=0)    _config_c12->addAtLeastPid(fs.pid_h1,fs.num_h1);
+  if(fs.pid_h2!=0)    _config_c12->addAtLeastPid(fs.pid_h2,fs.num_h2); // Doesn't run if duplicate final state
   
   // Add RUN::config bank
   // -------------------------------------
@@ -185,6 +191,11 @@ int hipo2tree(//const char * hipoFile = "/cache/clas12/rg-a/production/recon/fal
   // Establish CLAS12 event parser
   // -------------------------------------
   auto &_c12=_chain.C12ref();
+
+  // Create RCDB Connection
+  // -------------------------------------
+  clas12::clas12databases::SetRCDBRootConnection("/work/clas12/users/gmat/clas12/clas12_dihadrons/utils/rcdb.root"); 
+  clas12::clas12databases db;
   
   // Create CLAS12Analysis Objects
   // -------------------------------------
@@ -200,13 +211,12 @@ int hipo2tree(//const char * hipoFile = "/cache/clas12/rg-a/production/recon/fal
   int whileidx=0;
   int _ievent=0;
   while(_chain.Next()==true && (whileidx < maxEvents || maxEvents < 0)){
+
     if(whileidx%10000==0 && whileidx!=0){
       std::cout << whileidx << " events read | " << _ievent*100.0/whileidx << "% passed event selection" << std::endl;
     }
 
     auto event = _c12->event();
-      
-    whileidx++;
     
     // Clear vectors
     vec_particles.clear();
@@ -217,7 +227,9 @@ int hipo2tree(//const char * hipoFile = "/cache/clas12/rg-a/production/recon/fal
     run = _c12->getBank(_idx_RUNconfig)->getInt(_irun,0);
     if(hipo_is_mc)
       run *= _c12->getBank(_idx_RUNconfig)->getFloat(_itorus,0); // Multiply run number by torus bending
+    
     _cm.set_run(run);
+    _cm.set_run_period(std::string(hipoFile));
       
     // Get helicity
     // -------------------------------------
@@ -234,6 +246,38 @@ int hipo2tree(//const char * hipoFile = "/cache/clas12/rg-a/production/recon/fal
     // Get polarization
     // -------------------------------------
     Pol = runPolarization(run);
+    
+    // Get RCDB Info
+    // -------------------------------------
+    if(whileidx==0){
+        if(_cm.get_run_period()==RGC && hipo_is_mc==false){
+          // This is a convoluted way of reading the RCDB, but I don't know the "more correct way"
+          auto c12 = _chain.GetC12Reader();
+          c12->connectDataBases(&db);
+          if(!do_QADB)
+            c12->db()->turnOffQADB();
+          auto& rcdbData = c12->rcdb()->current();
+          target_string = TString(rcdbData.target);
+
+        }else if(_cm.get_run_period()==RGC && hipo_is_mc==true){
+          if(std::string(hipoFile).find("proton")!=std::string::npos) target_string="p";
+          else if(std::string(hipoFile).find("neutron")!=std::string::npos) target_string="n";
+          else {
+              cout << "Unknown RGC target for hipoFile="<<hipoFile<<"...Aborting..."<<endl;
+              return -1;
+          }
+        }else if(_cm.get_run_period()==RGA){
+            target_string="p";
+        }else if(_cm.get_run_period()==RGB){
+            target_string="d";
+        }else{
+              cout << "Unknown target for hipoFile="<<hipoFile<<"...Aborting..."<<endl;
+              return -1;
+        }
+        fOut->WriteObject(&target_string,"Target");
+    }
+    
+    whileidx++;
       
     // Loop over reconstructed particles
     // -------------------------------------------------------
@@ -487,6 +531,7 @@ int hipo2tree(//const char * hipoFile = "/cache/clas12/rg-a/production/recon/fal
     tree->Fill();
     _ievent++;
   }
+  fOut->cd();
   tree->Write();
   fOut->Close(); 
   return 0;

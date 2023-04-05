@@ -117,13 +117,16 @@ else
     read CHOICE
 fi
 
+
 # Find the index of CHOICE in either CALO_LIST or TRACK_LIST
 if [[ "${CALO_LIST[*]}" =~ "${CHOICE}" ]]; then
     INDEX=$(echo ${CALO_LIST[@]} | tr " " "\n" | grep -n "${CHOICE}" | cut -d ":" -f 1)
     ARRAY="CALO_LIST"
+    SUBSTR="/calo/"
 elif [[ "${TRACK_LIST[*]}" =~ "${CHOICE}" ]]; then
     INDEX=$(echo ${TRACK_LIST[@]} | tr " " "\n" | grep -n "${CHOICE}" | cut -d ":" -f 1)
     ARRAY="TRACK_LIST"
+    SUBSTR="/track/"
 else
     echo "Error: CHOICE not found in CALO_LIST or TRACK_LIST."
     exit 1
@@ -171,8 +174,8 @@ for pion_pair in ${pion_pairs[@]}; do
         SUFFIX=$(dataset_to_model $dataset)
         # Look for the corresponding element in FINAL_LIST
         for model in ${FINAL_LIST[@]}; do
-            if [[ $model == *"$SUFFIX"* ]] && [[ $model == *"$pion_pair"* ]]; then
-                  slurmslurm=$FARMOUT_DIR/slurm/predict_photonML_${pion_pair}_${dataset}.slurm
+            if [[ $model == *"$SUFFIX"* ]] && [[ $model == *"$pion_pair"* ]] && [[ $model == *"$SUBSTR"* ]]; then
+                 slurmslurm=$FARMOUT_DIR/slurm/predict_photonML_${pion_pair}_${dataset}.slurm
 
                   touch -f $slurmslurm
 
@@ -193,7 +196,7 @@ module load python3/3.9.7
 module load root
 /apps/python3/3.9.7/bin/python3 $PWD/machine_learning/photonID/predict.py "${DATA_DIR}/${pion_pair}" "$dataset" "$model"
 EOF
-                echo "Submitting slurm job for ${pion_pair} , ${dataset}"
+                echo "Submitting slurm job for ${pion_pair} , ${dataset}, ${model}"
                 sbatch --quiet $slurmslurm
             fi
         done

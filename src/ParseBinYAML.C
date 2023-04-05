@@ -1,6 +1,5 @@
 struct YAMLbinstruct {
     std::string name = "";
-    std::string parentDirectory = "";
     int numDimensions = 0;
     int nBins = 1;
     std::vector<std::string> dimensionNames;
@@ -20,7 +19,6 @@ void serializeYAMLbinstruct(const YAMLbinstruct& binstruct, const std::string& f
 
 void printYAMLbinstruct(const YAMLbinstruct& binstruct) {
     std::cout << "name: " << binstruct.name << std::endl;
-    std::cout << "parentDirectory: " << binstruct.parentDirectory << std::endl;
     std::cout << "numDimensions: " << binstruct.numDimensions << std::endl;
     std::cout << "nBins: " << binstruct.nBins << std::endl;
     std::cout << "dimensionNames: ";
@@ -90,8 +88,6 @@ std::vector<YAMLbinstruct> get_structs(const char* inyaml) {
                 currentStructure = {};
             }
             currentStructure.name = line.substr(line.find(":") + 2);
-        } else if (line.find("parentDirectory") != std::string::npos) {
-            currentStructure.parentDirectory = line.substr(line.find(":") + 2);
         } else if (line.find("numDimensions") != std::string::npos) {
             currentStructure.numDimensions = std::stoi(line.substr(line.find(":") + 2));
         } else if (line.find("dimensionNames") != std::string::npos) {
@@ -115,14 +111,22 @@ std::vector<YAMLbinstruct> get_structs(const char* inyaml) {
         }
     }
 
+    // Include this line to save the last structure
+    if (currentStructure.name != "") {
+                for (const auto& vect : currentStructure.binEdges) {
+                    currentStructure.nBins *= (vect.size() - 1);
+                }
+                YAMLbinstructs.push_back(currentStructure);
+                currentStructure = {};
+    }
     yamlFile.close();
+    
     return YAMLbinstructs;
 }
 
 void serializeYAMLbinstruct(const YAMLbinstruct& binstruct, const std::string& filename) {
     std::ofstream outfile(filename);
     outfile << "name: " << binstruct.name << std::endl;
-    outfile << "parentDirectory: " << binstruct.parentDirectory << std::endl;
     outfile << "numDimensions: " << binstruct.numDimensions << std::endl;
     outfile << "nBins: " << binstruct.nBins << std::endl;
     outfile << "dimensionNames: ";

@@ -55,7 +55,7 @@ wait1="job_hipo2tree"
 func1="./scripts/create_project.sh"
 
 # Call the function
-call_function "${func1}" "${wait1}" "${in1[@]}"
+#call_function "${func1}" "${wait1}" "${in1[@]}"
 
 # 2. preproess_photonML.sh
 # (Creates TTree for machine learning)
@@ -65,7 +65,7 @@ wait2="job_photonML_"
 func2="./scripts/preprocess_photonML.sh"
 
 # Call the function
-call_function "${func2}" "${wait2}" "${in2[@]}"
+#call_function "${func2}" "${wait2}" "${in2[@]}"
 
 # 3. train_photonML.sh
 # (Performs training on Monte Carlo)

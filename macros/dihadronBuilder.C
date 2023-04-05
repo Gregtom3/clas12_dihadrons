@@ -73,7 +73,6 @@ int dihadronBuilder(const char *input_file="hipo2tree.root",
     std::string particleNames ="";
     // Determine the pids from the file (see function)
     getPIDs(string(input_file),pid_h1,pid_h2,particleNames);
-
     // Read the TFile
     TFile *f = new TFile(input_file,"UPDATE");
     // Read the TTree
@@ -135,8 +134,8 @@ int dihadronBuilder(const char *input_file="hipo2tree.root",
     if (f->Get(treename)) f->Delete("dihadron*;*");
     TTree *outtree = new TTree(treename,"Dihadron-by-Dihadron info");
     
-    double M1,M2,Mh,phi_h,phi_R0,phi_R1,th,z1,z2,xF1,xF2,z,xF,Mx,phi_h1,phi_h2,delta_phi_h,pT_1,pT_2,pT_tot;
-    double  trueM1,trueM2,trueMh,truephi_h,truephi_R0,truephi_R1,trueth,truez1,truez2,truexF1,truexF2,truez,truexF,trueMx,truephi_h1,truephi_h2,truedelta_phi_h,truepT_1,truepT_2,truepT_tot;
+    double M1,M2,Mh,phi_h,phi_R0,phi_R1,th,z1,z2,xF1,xF2,z,xF,Mx,phi_h1,phi_h2,delta_phi_h,pT_1,pT_2,pT_tot,P_1,P_2,P_tot;
+    double  trueM1,trueM2,trueMh,truephi_h,truephi_R0,truephi_R1,trueth,truez1,truez2,truexF1,truexF2,truez,truexF,trueMx,truephi_h1,truephi_h2,truedelta_phi_h,truepT_1,truepT_2,truepT_tot,trueP_1,trueP_2,trueP_tot;
     int truepid_1,truepid_2,trueparentpid_1,trueparentpid_2,trueparentid_1,trueparentid_2,trueparentparentpid_1,trueparentparentpid_2,trueparentparentid_1,trueparentparentid_2;
     int is_CFR_1, is_CFR_2;
     int MCmatch; // MCmatch --> 1 if all particles have Monte Carlo pairing
@@ -183,6 +182,9 @@ int dihadronBuilder(const char *input_file="hipo2tree.root",
     outtree->Branch("pT1", &pT_1, "pT1/D");
     outtree->Branch("pT2", &pT_2, "pT2/D");
     outtree->Branch("pTtot", &pT_tot, "pTtot/D");
+    outtree->Branch("P1", &P_1, "P1/D");
+    outtree->Branch("P2", &P_2, "P2/D");
+    outtree->Branch("Ptot", &P_tot, "Ptot/D");
     outtree->Branch("truex", &truex, "truex/D");
     outtree->Branch("trueQ2", &trueQ2, "trueQ2/D");
     outtree->Branch("trueW", &trueW, "trueW/D");
@@ -208,6 +210,9 @@ int dihadronBuilder(const char *input_file="hipo2tree.root",
     outtree->Branch("truepT1", &truepT_1, "truepT1/D");
     outtree->Branch("truepT2", &truepT_2, "truepT2/D");
     outtree->Branch("truepTtot", &truepT_tot, "truepTtot/D");
+    outtree->Branch("trueP1", &trueP_1, "trueP1/D");
+    outtree->Branch("trueP2", &trueP_2, "trueP2/D");
+    outtree->Branch("truePtot", &trueP_tot, "truePtot/D");
     outtree->Branch("truepid_1", &truepid_1, "truepid_1/I");
     outtree->Branch("truepid_2", &truepid_2, "truepid_2/I");
     outtree->Branch("truepid_11", &truepid_11, "truepid_11/I");
@@ -275,8 +280,7 @@ int dihadronBuilder(const char *input_file="hipo2tree.root",
                 trueq=init_electron-trueelectron;
                 break;
             }
-        }
-            
+        } 
         //Loop over all particles in the event to determine hadron indecies
 
         for(int i = 0; i<Nmax; i++){
@@ -431,7 +435,9 @@ int dihadronBuilder(const char *input_file="hipo2tree.root",
             pT_1 = kin.Pt(q,h1,init_target);
             pT_2 = kin.Pt(q,h2,init_target);
             pT_tot = kin.Pt(q,dihadron,init_target);
-
+            P_1 = h1.P();
+            P_2 = h2.P();
+            P_tot = dihadron.P();
             phi_R0 = kin.phi_R(q,init_electron,h1,h2,0);
             phi_R1 = kin.phi_R(q,init_electron,h1,h2,1);
             th     = kin.com_th(h1,h2);
@@ -460,7 +466,9 @@ int dihadronBuilder(const char *input_file="hipo2tree.root",
             truepT_1 = kin.Pt(trueq,trueh1,init_target);
             truepT_2 = kin.Pt(trueq,trueh2,init_target);
             truepT_tot = kin.Pt(trueq,truedihadron,init_target);
-
+            trueP_1 = trueh1.P();
+            trueP_2 = trueh2.P();
+            trueP_tot = truedihadron.P();
             truephi_R0 = kin.phi_R(trueq,init_electron,trueh1,trueh2,0);
             truephi_R1 = kin.phi_R(trueq,init_electron,trueh1,trueh2,1);
             trueth     = kin.com_th(trueh1,trueh2);

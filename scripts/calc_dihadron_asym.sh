@@ -86,7 +86,7 @@ BINNING_FILE=$BINNING_DIR/$BINNING_FILE
 binyaml=$(cat $BINNING_FILE)
 
 # Count the number of times ".root" appears in the YAML file
-schemes=$(echo "$binyaml" | grep -o "\.root" | wc -l)
+schemes=$(echo "$binyaml" | grep -o "numDimensions:" | wc -l)
 
 
 CUT_LIBRARY=$PWD/utils/cut_library.yaml
@@ -112,7 +112,7 @@ fi
 # Create pion pid pairs
 pion_pairs=("piplus_piplus" "piplus_pi0" "piminus_pi0" "piminus_piminus" "pi0_pi0" "piplus_piminus")
 # Create list of unique datasets
-datasets=("Fall2018_RGA_inbending" "Fall2018_RGA_outbending" "Spring2019_RGA_inbending")
+datasets=("MC_RGA_inbending" "MC_RGA_outbending" "Fall2018_RGA_inbending" "Fall2018_RGA_outbending" "Spring2019_RGA_inbending")
 
 for pion_pair in "${pion_pairs[@]}"; do
   for dataset in "${datasets[@]}"; do
@@ -157,5 +157,6 @@ EOF
         echo "Submitting slurm job for $(basename "$FILE"), binning scheme $((binnum+1)) of $((schemes))"
         sbatch --quiet $slurmslurm
     done
+    exit 1
   done
 done
