@@ -10,11 +10,12 @@
 int hipo2tree(//const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2018/torus-1/pass1/v1/dst/train/nSidis/nSidis_005032.hipo",
               //const char * hipoFile = "/cache/clas12/rg-a/production/montecarlo/clasdis/fall2018/torus-1/v1/bkg45nA_10604MeV/45nA_job_3051_0.hipo",
               const char * hipoFile = "/volatile/clas12/rg-c/production/dst/8.7.0_TBT/dst/train/sidisdvcs/sidisdvcs_016291.hipo",
+	      //const char * hipoFile = "/work/cebaf24gev/sidis/reconstructed/polarized-plus-10.5GeV-proton/hipo/0000.hipo",
 	      const char * outputFile = "hipo2tree.root",
               const double _electron_beam_energy = 10.6,
-              const int pid_h1=211,
-              const int pid_h2=-211,
-              const int maxEvents = 1000000,
+              const int pid_h1=0,
+              const int pid_h2=0,
+              const int maxEvents = 1000,
               bool hipo_is_mc = false){
 
 
@@ -50,10 +51,13 @@ int hipo2tree(//const char * hipoFile = "/cache/clas12/rg-a/production/recon/fal
   double pcal_e[Nmax], pcal_lu[Nmax], pcal_lv[Nmax], pcal_lw[Nmax], pcal_m2u[Nmax], pcal_m2v[Nmax], pcal_m2w[Nmax];
   double ecin_e[Nmax], ecin_lu[Nmax], ecin_lv[Nmax], ecin_lw[Nmax], ecin_m2u[Nmax], ecin_m2v[Nmax], ecin_m2w[Nmax];
   double ecout_e[Nmax], ecout_lu[Nmax], ecout_lv[Nmax], ecout_lw[Nmax], ecout_m2u[Nmax], ecout_m2v[Nmax], ecout_m2w[Nmax];
+  double nphe_ltcc[Nmax];
+  double nphe_htcc[Nmax];
   int sector[Nmax];
   double traj_x1[Nmax], traj_y1[Nmax], traj_z1[Nmax], traj_x2[Nmax], traj_y2[Nmax], traj_z2[Nmax], traj_x3[Nmax], traj_y3[Nmax], traj_z3[Nmax];
-
+  int A;
   // Set branches
+  tree->Branch("A",&A,"A/I");  
   tree->Branch("run",&run,"run/I");
   tree->Branch("Pol",&Pol,"Pol/D");
   tree->Branch("Nmax",&Nmax,"Nmax/I");
@@ -159,6 +163,8 @@ int hipo2tree(//const char * hipoFile = "/cache/clas12/rg-a/production/recon/fal
   tree->Branch("traj_y3", traj_y3, "traj_y3[Nmax]/D");
   tree->Branch("traj_z3", traj_z3, "traj_z3[Nmax]/D");
     
+  tree->Branch("nphe_ltcc", nphe_ltcc, "nphe_ltcc[Nmax]/D");
+  tree->Branch("nphe_htcc", nphe_htcc, "nphe_htcc[Nmax]/D");  
     
   // Configure CLAS12 Reader and HipoChain
   // -------------------------------------
@@ -258,17 +264,23 @@ int hipo2tree(//const char * hipoFile = "/cache/clas12/rg-a/production/recon/fal
             c12->db()->turnOffQADB();
           auto& rcdbData = c12->rcdb()->current();
           target_string = TString(rcdbData.target);
-
+          if(target_string.Contains("NH3")){A=17;}
+          else if(target_string.Contains("ND3")){A=20;}
+          else if(target_string.Contains("C")){A=12;}
+          else{A=-999;}
+          cout << target_string << " " << A << endl;
         }else if(_cm.get_run_period()==RGC && hipo_is_mc==true){
-          if(std::string(hipoFile).find("proton")!=std::string::npos) target_string="p";
-          else if(std::string(hipoFile).find("neutron")!=std::string::npos) target_string="n";
+          if(std::string(hipoFile).find("proton")!=std::string::npos){ A=1; target_string="p";}
+          else if(std::string(hipoFile).find("neutron")!=std::string::npos) {A=1; target_string="n";}
           else {
               cout << "Unknown RGC target for hipoFile="<<hipoFile<<"...Aborting..."<<endl;
               return -1;
           }
         }else if(_cm.get_run_period()==RGA){
+            A=1;
             target_string="p";
         }else if(_cm.get_run_period()==RGB){
+            A=2;
             target_string="d";
         }else{
               cout << "Unknown target for hipoFile="<<hipoFile<<"...Aborting..."<<endl;
@@ -334,7 +346,7 @@ int hipo2tree(//const char * hipoFile = "/cache/clas12/rg-a/production/recon/fal
     // -------------------------------------------------
       
     vec_particles = _cm.filter_particles(vec_particles);
-      
+    
     // Determine if this filtered list still contains the final state
     // particles we are interested in. If not, next event
     // -------------------------------------------------
@@ -346,10 +358,11 @@ int hipo2tree(//const char * hipoFile = "/cache/clas12/rg-a/production/recon/fal
       else if(particle.pid==fs.pid_h1) num_h1++;
       else if(particle.pid==fs.pid_h2) num_h2++;
     }
+
     if(num_e<1 || num_h1 < fs.num_h1 || num_h2 < fs.num_h2) {
       continue;
     }
-      
+
       
       
     // Loop over all Monte Carlo particles
@@ -416,7 +429,7 @@ int hipo2tree(//const char * hipoFile = "/cache/clas12/rg-a/production/recon/fal
         float dphi = abs(vec_particles[i].phi - vec_mcparticles[j].truephi)*180/PI;
         float dE = abs(vec_particles[i].E - vec_mcparticles[j].trueE);
         
-        if (dth<2 && (dphi<4 || abs(dphi-2*PI)<4) && dE<0.5){
+        if (dth<2 && (dphi<4 || abs(dphi-2*PI)<4) && dE<5){
 	  // Perform Pairing
 	  vec_particles[i].truepx = vec_mcparticles[j].truepx;
 	  vec_particles[i].truepy = vec_mcparticles[j].truepy;
@@ -527,6 +540,8 @@ int hipo2tree(//const char * hipoFile = "/cache/clas12/rg-a/production/recon/fal
       traj_x3[i] = par.traj_x3;
       traj_y3[i] = par.traj_y3;
       traj_z3[i] = par.traj_z3;
+      nphe_ltcc[i] = par.nphe_ltcc;
+      nphe_htcc[i] = par.nphe_htcc;
     }
     tree->Fill();
     _ievent++;

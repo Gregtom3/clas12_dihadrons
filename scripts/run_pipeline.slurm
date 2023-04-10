@@ -1,7 +1,7 @@
 #!/bin/bash
 
-PROJECT_NAME="ana_v1"
-nFiles=25
+PROJECT_NAME="ana_v2"
+nFiles=500
 nEvents=10000000
 model_list="model_params_gbt_only_full.yaml"
 ml_branch="gbt_0_calo" # <model name>_<track/calo>

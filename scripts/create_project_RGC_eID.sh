@@ -88,32 +88,10 @@ mkdir_green "$FARMOUT_DIR"
 # Create folders within PROJECT_DIR
 mkdir_green "$PROJECT_DIR/models"
 mkdir_green "$PROJECT_DIR/plots"
-
+mkdir_green "$PROJECT_DIR/asym"
 
 # Create folders within VOLATILE_DIR
 mkdir_green "$VOLATILE_DIR/data"
-mkdir_green "$VOLATILE_DIR/asym"
-
-# Create pion pid pairs
-pion_pairs=("piplus_piplus" "piplus_pi0" "piminus_pi0" "piminus_piminus" "pi0_pi0" "piplus_piminus")
-declare -A pion_pairs_pids
-pion_pairs_pids[0,0]=211
-pion_pairs_pids[0,1]=211
-
-pion_pairs_pids[1,0]=211
-pion_pairs_pids[1,1]=111
-
-pion_pairs_pids[2,0]=-211
-pion_pairs_pids[2,1]=111
-
-pion_pairs_pids[3,0]=-211
-pion_pairs_pids[3,1]=-211
-
-pion_pairs_pids[4,0]=111
-pion_pairs_pids[4,1]=111
-
-pion_pairs_pids[5,0]=211
-pion_pairs_pids[5,1]=-211
 
 # Create subdirectories for each pion pair in the data directory
 for pair in "${pion_pairs[@]}"; do
@@ -160,9 +138,10 @@ get_hipo_dirs()
             declare -a hipodirs=("/cache/clas12/$rungroup/production/recon/fall2018/torus-1/pass1/v1/dst/train/nSidis/" "/cache/clas12/$rungroup/production/recon/fall2018/torus+1/pass1/v1/dst/train/nSidis/" "/cache/clas12/$rungroup/production/recon/spring2019/torus-1/pass1/v1/dst/train/nSidis/")
         fi
     fi
+    
     if [ $rungroup == "rg-c" ]; then
         if [ $version == "MC" ]; then
-            declare -a hipodirs=("/work/cebaf24gev/sidis/reconstructed/polarized-plus-10.5GeV-proton/hipo/") #"/work/cebaf24gev/sidis/reconstructed/polarized-plus-10.5GeV-neutron/hipo/")
+            declare -a hipodirs=("/work/cebaf24gev/sidis/reconstructed/polarized-plus-10.5GeV-proton/hipo/" "/work/cebaf24gev/sidis/reconstructed/polarized-plus-10.5GeV-neutron/hipo/")
         elif [ $version == "sidisdvcs" ]; then
             declare -a hipodirs=("/volatile/clas12/$rungroup/production/dst/8.7.0_TBT/dst/train/sidisdvcs/")
         fi
@@ -226,29 +205,17 @@ function hipo_beamE_runNumber {
 
 #Call the function
 
-rungroups=("rg-a")
-#rungroups=("rg-c")
-versions=("data" "MC")
+rungroups=("rg-c")
+versions=("sidisdvcs" "MC")
 
 for ana in "${versions[@]}"
 do
     printblue "VERSION=$ana"
     for rungroup in "${rungroups[@]}"
     do
-        if [ $rungroup == "rg-a" ]; then
-            rg="RGA"
-        elif [ $rungroup == "rg-c" ]; then
-            rg="RGC"
-        fi
-        
-        if [ $rungroup == "rg-a" ] && [ "$ana" == "data" ]; then
-            ana="nSidis"
-        elif [ $rungroup == "rg-c" ] && [ "$ana" == "data" ]; then
-            ana="sidisdvcs"
-        fi
-        
         printgreen "\tRUNGROUP=$rungroup"
-        if [ "$ana" == "nSidis" ] || [ "$ana" == "sidisdvcs" ]; then
+        if [ $ana == "sidisdvcs" ]
+        then
             hipo_is_mc=0
         else
             hipo_is_mc=1
@@ -290,17 +257,11 @@ EOF
                 echo "source /group/clas12/packages/setup.csh" >> $slurmshell
                 echo "module load clas12/pro" >> $slurmshell
 
-                # For loop over each dihadron pair
-                j=0
-                for pair in "${pion_pairs[@]}"; do
-                    outfile="$VOLATILE_DIR/data/$pair/${ana}_${rg}_${runNumber}.root"
-                    pid1=${pion_pairs_pids[${j},0]}
-                    pid2=${pion_pairs_pids[${j},1]}
-                    echo "clas12root -b -q $PWD/macros/hipo2tree.C\(\\\"${hipo}\\\",\\\"${outfile}\\\",$beamE,$pid1,$pid2,$nEvents,$hipo_is_mc\)" >> $slurmshell
-                    j=$((j+1))
-                done
+                outfile="$VOLATILE_DIR/data/${ana}_${runNumber}.root"
                 
-                echo "Submitting slurm job for $hipo"
+                echo "clas12root -b -q $PWD/macros/hipo2tree.C\(\\\"${hipo}\\\",\\\"${outfile}\\\",$beamE,0,0,$nEvents,$hipo_is_mc\)" >> $slurmshell
+                
+                echo "Submitting slurm job for $hipo , $ana , $rungroup , $beamE "
                 sbatch --quiet $slurmslurm
             done
         done

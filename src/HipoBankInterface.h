@@ -39,7 +39,13 @@ class HipoBankInterface{
   int _itime_RECCal;
   int _ipath_RECCal;
   int _ienergy_RECCal;
-
+    
+  int _idx_RECCherenkov;
+  int _ipindex_RECCherenkov;
+  int _iz_RECCherenkov;
+  int _inphe_RECCherenkov;
+  int _idetector_RECCherenkov;
+    
   float _Ele_PCAL_e, _Ele_ECIN_e, _Ele_ECOUT_e;
   int _sector_Cal[3]={0,0,0};
   float _time_Cal[3]={0,0,0};
@@ -77,6 +83,8 @@ class HipoBankInterface{
   float _y_DC[3]={0,0,0};
   float _z_DC[3]={0,0,0};
 
+  float _nphe_ltcc=0;
+  float _nphe_htcc=0;
 };  
 
 #endif

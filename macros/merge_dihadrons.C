@@ -13,27 +13,38 @@ std::vector<TString> getFilesInDir(const char* path, string version)
   if(version=="Fall2018_RGA_inbending"){
     nmin = 5032;
     nmax = 5332;
-    i1 = 7;
+    i1 = 11;
   }
   else if(version=="Fall2018_RGA_outbending"){
     nmin = 5333;
     nmax = 5666;
-    i1 = 7;
+    i1 = 11;
   }
   else if(version=="Spring2019_RGA_inbending"){
     nmin = 6616;
     nmax = 6783;
-    i1 = 7;
+    i1 = 11;
   }
   else if(version=="MC_RGA_inbending"){
     nmin = 3051;
     nmax = 3304;
-    i1 = 3;
+    i1 = 7;
   }
   else if(version=="MC_RGA_outbending"){
     nmin = 3313;
     nmax = 3327;
-    i1 = 3;
+    i1 = 7;
+  }
+  else if(version=="MC_RGC"){
+    nmin = 0;
+    nmax = 1000;
+    i1 = 7;
+  }
+  else if(version=="Data_RGC"){
+    nmin = 0;
+    nmax = 20000;
+    i1 = 14;
+    i2 = 5;
   }
 
   if ((dir = opendir (path)) != NULL) {
@@ -43,9 +54,13 @@ std::vector<TString> getFilesInDir(const char* path, string version)
       if (filename.length()<=5) continue;
       if (filename.substr(filename.length() - 5) != ".root") continue;
       if (filename.find("merged") != std::string::npos) continue;
-      if (filename.find("MC") != std::string::npos && version.find("MC_RGA") == std::string::npos)
+      if (filename.find("MC_RGA") != std::string::npos && version.find("MC_RGA") == std::string::npos)
             continue;
-      if (filename.find("nSidis") != std::string::npos && (version.find("2018_RGA")==std::string::npos && version.find("2019_RGA")==std::string::npos))
+      if (filename.find("nSidis_RGA") != std::string::npos && (version.find("2018_RGA")==std::string::npos && version.find("2019_RGA")==std::string::npos))
+          continue;
+      if (filename.find("sidisdvcs_RGC") != std::string::npos && (version.find("Data_RGC")==std::string::npos))
+          continue;
+      if (filename.find("MC_RGC") != std::string::npos && (version.find("MC_RGC")==std::string::npos))
           continue;
       std::string numberString = filename.substr(i1, i2);
       int number = std::stoi(numberString);

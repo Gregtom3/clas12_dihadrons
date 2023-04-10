@@ -81,7 +81,7 @@ int dihadronBuilder(const char *input_file="hipo2tree.root",
     //declare all necessary variables
     double x, Q2, W, Pol,y;
     double truex, trueQ2, trueW, truey;
-    int hel,run;
+    int hel,run,A;
     int Nmax=100;
     double px[Nmax], py[Nmax], pz[Nmax], E[Nmax], vz[Nmax], chi2[Nmax], theta[Nmax], eta[Nmax], phi[Nmax];
     double truepx[Nmax] , truepy[Nmax] , truepz[Nmax], trueE[Nmax], truetheta[Nmax], trueeta[Nmax], truephi[Nmax];
@@ -90,6 +90,7 @@ int dihadronBuilder(const char *input_file="hipo2tree.root",
     int is_CFR[Nmax];
     int pid[Nmax], truepid[Nmax];
     //link the TBranches to the variables
+    EventTree->SetBranchAddress("A",&A);
     EventTree->SetBranchAddress("run",&run);
     EventTree->SetBranchAddress("Pol",&Pol);
     EventTree->SetBranchAddress("hel",&hel);
@@ -125,7 +126,7 @@ int dihadronBuilder(const char *input_file="hipo2tree.root",
     EventTree->SetBranchAddress("truephi",&truephi);
     EventTree->SetBranchAddress("truepid",truepid);
     EventTree->SetBranchAddress("is_CFR",is_CFR);
-    if(pid_h1==111||pid_h2==111)
+    if((pid_h1==111||pid_h2==111)&&std::string(weight_branch)!="none")
         EventTree->SetBranchAddress(weight_branch,weight);
     
     //Create the new TTree
@@ -149,6 +150,7 @@ int dihadronBuilder(const char *input_file="hipo2tree.root",
     double p_21=-1;
     double p_22=-1;
     // Create branches
+    outtree->Branch("A", &A, "A/I");
     outtree->Branch("fgID", &fgID, "fgID/D");
     outtree->Branch("run", &run, "run/I");
     outtree->Branch("Pol", &Pol, "Pol/D");

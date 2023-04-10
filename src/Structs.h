@@ -27,7 +27,7 @@ FS get_FS(int pid_h1, int pid_h2){
     fs.pid_h2=22;
     fs.num_h2=2;
   }
-  else if(pid_h1==pid_h2){ // PiPi
+  else if(pid_h1==pid_h2 && pid_h1!=0){ // PiPi
     fs.pid_h1=pid_h1;
     fs.num_h1=2;
     fs.pid_h2=0;
@@ -137,6 +137,9 @@ struct part{
   double traj_x3=-999;
   double traj_y3=-999;
   double traj_z3=-999;
-    
+  
+  // Cherenkov Info
+  double nphe_ltcc=-999;
+  double nphe_htcc=-999;
 };
 #endif

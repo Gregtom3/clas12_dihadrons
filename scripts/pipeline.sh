@@ -65,7 +65,7 @@ wait2="job_photonML_"
 func2="./scripts/preprocess_photonML.sh"
 
 # Call the function
-#call_function "${func2}" "${wait2}" "${in2[@]}"
+call_function "${func2}" "${wait2}" "${in2[@]}"
 
 # 3. train_photonML.sh
 # (Performs training on Monte Carlo)

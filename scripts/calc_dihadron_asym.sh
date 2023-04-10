@@ -61,7 +61,7 @@ fi
 
 VOLATILE_DIR="$volatile/clas12_dihadrons/projects/$PROJECT_NAME"
 DATA_DIR="$VOLATILE_DIR/data"
-BRU_DIR=$PROJECT_DIR/asym
+BRU_DIR=$VOLATILE_DIR/asym
 FARMOUT_DIR="$farmout"
 
 # Create folders within FARMOUT_DIR
@@ -89,35 +89,36 @@ binyaml=$(cat $BINNING_FILE)
 schemes=$(echo "$binyaml" | grep -o "numDimensions:" | wc -l)
 
 
-CUT_LIBRARY=$PWD/utils/cut_library.yaml
-echo "Available cut schemes (green options)"
+# CUT_LIBRARY=$PWD/utils/cut_library.yaml
+# echo "Available cut schemes (green options)"
 
-while IFS= read -r line; do
-  if [[ $line =~ ^[[:space:]] ]]; then
-    echo -e "$line"
-  else
-    echo -e "\e[32m$line\e[0m"
-  fi
-done < $CUT_LIBRARY
-
-
-if [[ -n "$3" ]]; then
-    CUT_TITLE=$3
-else
-    read -p "Please enter a cut style: " CUT_TITLE
-fi
+# while IFS= read -r line; do
+#   if [[ $line =~ ^[[:space:]] ]]; then
+#     echo -e "$line"
+#   else
+#     echo -e "\e[32m$line\e[0m"
+#   fi
+# done < $CUT_LIBRARY
 
 
+# if [[ -n "$3" ]]; then
+#     CUT_TITLE=$3
+# else
+#     read -p "Please enter a cut style: " CUT_TITLE
+# fi
+
+CUT_TITLES=("v3" "v4" "v6" "v1" "v5" "v6")
 
 # Create pion pid pairs
 pion_pairs=("piplus_piplus" "piplus_pi0" "piminus_pi0" "piminus_piminus" "pi0_pi0" "piplus_piminus")
 # Create list of unique datasets
 datasets=("MC_RGA_inbending" "MC_RGA_outbending" "Fall2018_RGA_inbending" "Fall2018_RGA_outbending" "Spring2019_RGA_inbending")
 
-for pion_pair in "${pion_pairs[@]}"; do
+for ((i=0; i<${#pion_pairs[@]}; i++)); do
+  pion_pair=${pion_pairs[$i]}
+  CUT_TITLE=${CUT_TITLES[$i]}
   for dataset in "${datasets[@]}"; do
     for ((binnum=0; binnum<$schemes; binnum++)); do
-        echo "Processing $pion_pair in $dataset"
 
         FILE=$DATA_DIR/$pion_pair/${dataset}_merged.root
         file=${pion_pair}_${dataset}_${binnum}
@@ -157,6 +158,5 @@ EOF
         echo "Submitting slurm job for $(basename "$FILE"), binning scheme $((binnum+1)) of $((schemes))"
         sbatch --quiet $slurmslurm
     done
-    exit 1
   done
 done

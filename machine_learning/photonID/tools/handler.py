@@ -13,20 +13,29 @@ def create_dirs(outdir="",
                 models=[]):
     
     if not os.path.exists(outdir):
-        os.makedirs(outdir)
+        try:
+            os.makedirs(outdir)
+        except FileExistsError:
+            pass
         print("Making directory",outdir)
     
     outdir=outdir+"/"+nn_type
     if not os.path.exists(outdir):
-        os.mkdir(outdir)
+        try:
+            os.makedirs(outdir)
+        except FileExistsError:
+            pass
         print("Making directory",outdir)
     
     for model in models:
         model_name = model[0]
         subdir=outdir+"/"+model_name
         if not os.path.exists(subdir):
-            os.mkdir(subdir)
-            os.mkdir(subdir+"/eval_plots")
+            try:
+                os.mkdir(subdir)
+                os.mkdir(subdir+"/eval_plots")
+            except FileExistsError:
+                pass
             print("\tMaking subdirectory",subdir)
             print("\t\tMaking subdirectory",subdir+"/eval_plots")
     print("\n")

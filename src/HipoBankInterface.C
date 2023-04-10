@@ -32,6 +32,12 @@ HipoBankInterface::HipoBankInterface(const std::unique_ptr<clas12::clas12reader>
   _iy_RECTraj = _c12->getBankOrder(_idx_RECTraj,"y");
   _iz_RECTraj = _c12->getBankOrder(_idx_RECTraj,"z");
 
+  // Add REC::Cherenkov info
+  _idx_RECCherenkov = _c12->addBank("REC::Cherenkov");
+  _ipindex_RECCherenkov = _c12->getBankOrder(_idx_RECCherenkov,"pindex");
+  _inphe_RECCherenkov = _c12->getBankOrder(_idx_RECCherenkov,"nphe");
+  _iz_RECCherenkov = _c12->getBankOrder(_idx_RECCherenkov,"z");
+  _idetector_RECCherenkov = _c12->getBankOrder(_idx_RECCherenkov,"detector");
 }
 
 
@@ -138,6 +144,21 @@ bool HipoBankInterface::loadBankData(const std::unique_ptr<clas12::clas12reader>
   // Get the azimuthal sector # from the middle drift chamber
   _sector_DC = determineSectorDC(_x_DC[1], _y_DC[1], _z_DC[1]);
   
+  // -------------------------------------------------------------
+  // Parse the REC::Cherenkov
+  // -------------------------------------------------------------
+  for(auto i = 0 ; i < _c12->getBank(_idx_RECCherenkov)->getRows() ; i++){
+      if(_c12->getBank(_idx_RECCherenkov)->getInt(_ipindex_RECCherenkov,i)!=pindex)
+          continue;
+      
+      // See https://clasweb.jlab.org/wiki/index.php/CLAS12_DSTs#Special_Banks for detector ints
+      if(_c12->getBank(_idx_RECCherenkov)->getByte(_idetector_RECCherenkov,i)==15){// htcc == 15
+          _nphe_htcc = _c12->getBank(_idx_RECCherenkov)->getFloat(_inphe_RECCherenkov,i);
+      } else { // ltcc == 16
+          _nphe_ltcc = _c12->getBank(_idx_RECCherenkov)->getFloat(_inphe_RECCherenkov,i);
+      }
+  }
+    
   importDataToParticle(particle);
   
   return true;
@@ -197,6 +218,9 @@ bool HipoBankInterface::importDataToParticle(part &particle)
   particle.traj_x3 = _x_DC[2];
   particle.traj_y3 = _y_DC[2];
   particle.traj_z3 = _z_DC[2];
+    
+  particle.nphe_ltcc = _nphe_ltcc;
+  particle.nphe_htcc = _nphe_htcc;
   return true;
 }
 int HipoBankInterface::determineSectorDC(float x, float y, float z){
@@ -219,6 +243,8 @@ void HipoBankInterface::clear(){
   _Ele_ECIN_e = 0.0;
   _Ele_ECOUT_e = 0.0;
   _sector_DC = -1;
+  _nphe_ltcc = 0.0;
+  _nphe_htcc = 0.0;
   for(int i = 0 ; i < 3 ; i++){
     _sector_Cal[i]=0;
     _time_Cal[i]=0;

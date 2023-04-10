@@ -22,7 +22,7 @@ void CutManager::set_run(int run){
 void CutManager::set_run_period(std::string infile){
     if(infile.find("/rg-a/") != std::string::npos) _run_period = RGA;
     else if(infile.find("/rg-b/") != std::string::npos) _run_period = RGB;
-    else if(infile.find("/rg-c/") != std::string::npos) _run_period = RGC;
+    else if(infile.find("/rg-c/") != std::string::npos || infile.find("10.5GeV") != std::string::npos) _run_period = RGC;
     else {
         cout << "Unknown run period from input_file="<<infile<<"...defaulting to RGA"<<endl;
         _run_period=RGA;
