@@ -144,7 +144,7 @@ done
 # Create pion pid pairs for the ML portion
 pion_pairs=("piplus_pi0" "piminus_pi0" "pi0_pi0")
 # Create list of unique datasets
-datasets=("Fall2018_RGA_inbending" "Fall2018_RGA_outbending" "Spring2019_RGA_inbending" "MC_RGA_inbending" "MC_RGA_outbending")
+datasets=("Fall2018_RGA_inbending" "Fall2018_RGA_outbending" "Spring2019_RGA_inbending" "MC_RGA_inbending" "MC_RGA_outbending" "MC_RGC" "Data_RGC")
 
 # Returns the monte carlo dataset used to train the appropriate model
 function dataset_to_model() {
@@ -164,6 +164,12 @@ function dataset_to_model() {
         "MC_RGA_outbending")
             echo "MC_RGA_outbending"
             ;;
+        "MC_RGC")
+            echo "MC_RGC"
+            ;;
+        "Data_RGC")
+            echo "MC_RGC"
+            ;;
     esac
 }
 
@@ -174,12 +180,13 @@ for pion_pair in ${pion_pairs[@]}; do
         SUFFIX=$(dataset_to_model $dataset)
         # Look for the corresponding element in FINAL_LIST
         for model in ${FINAL_LIST[@]}; do
+	    
             if [[ $model == *"$SUFFIX"* ]] && [[ $model == *"$pion_pair"* ]] && [[ $model == *"$SUBSTR"* ]]; then
                  slurmslurm=$FARMOUT_DIR/slurm/predict_photonML_${pion_pair}_${dataset}.slurm
+		 echo $dataset
+                 touch -f $slurmslurm
 
-                  touch -f $slurmslurm
-
-                  cat >> $slurmslurm << EOF
+                 cat >> $slurmslurm << EOF
 #!/bin/bash
 #SBATCH --account=clas12
 #SBATCH --partition production

@@ -106,7 +106,7 @@ pion_pairs_pids[2,0]=111
 pion_pairs_pids[2,1]=111
 
 # Create separate trainable models for the different Monte Carlos
-monte_carlos=("MC_RGA_inbending" "MC_RGA_outbending")
+monte_carlos=("MC_RGA_inbending" "MC_RGA_outbending" "MC_RGC")
 
 # Create separate trainable models using either calo or track training
 nn_types=("calo" "track")

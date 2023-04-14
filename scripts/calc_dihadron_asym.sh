@@ -88,75 +88,229 @@ binyaml=$(cat $BINNING_FILE)
 # Count the number of times ".root" appears in the YAML file
 schemes=$(echo "$binyaml" | grep -o "numDimensions:" | wc -l)
 
-
-# CUT_LIBRARY=$PWD/utils/cut_library.yaml
-# echo "Available cut schemes (green options)"
-
-# while IFS= read -r line; do
-#   if [[ $line =~ ^[[:space:]] ]]; then
-#     echo -e "$line"
-#   else
-#     echo -e "\e[32m$line\e[0m"
-#   fi
-# done < $CUT_LIBRARY
-
-
-# if [[ -n "$3" ]]; then
-#     CUT_TITLE=$3
-# else
-#     read -p "Please enter a cut style: " CUT_TITLE
-# fi
-
-CUT_TITLES=("v3" "v4" "v6" "v1" "v5" "v6")
+CUT_TITLES=("v6" "v4" "v4" "v6" "v1" "v3")
+#CUT_TITLES=("v0" "v0" "v0" "v0" "v0" "v0")
 
 # Create pion pid pairs
 pion_pairs=("piplus_piplus" "piplus_pi0" "piminus_pi0" "piminus_piminus" "pi0_pi0" "piplus_piminus")
+#pion_pairs=("piplus_piminus" "piplus_pi0" )
 # Create list of unique datasets
 datasets=("MC_RGA_inbending" "MC_RGA_outbending" "Fall2018_RGA_inbending" "Fall2018_RGA_outbending" "Spring2019_RGA_inbending")
+#datasets=("MC_RGA_inbending")
 
+# First write the scripts for the fitting code without ML (i.e. without pi0's)
 for ((i=0; i<${#pion_pairs[@]}; i++)); do
   pion_pair=${pion_pairs[$i]}
+  
+  if [[ $pion_pair == *"pi0"* ]]; then
+      continue
+  fi
+
   CUT_TITLE=${CUT_TITLES[$i]}
   for dataset in "${datasets[@]}"; do
-    for ((binnum=0; binnum<$schemes; binnum++)); do
-
-        FILE=$DATA_DIR/$pion_pair/${dataset}_merged.root
-        file=${pion_pair}_${dataset}_${binnum}
+    for ((binscheme=0; binscheme<$schemes; binscheme++)); do
+        nbins=$(python $PWD/utils/read_bin_nums.py $BINNING_FILE $binscheme)
+        for ((binnum=0; binnum<$nbins; binnum++)); do
         
-        slurmshell=$FARMOUT_DIR/shell/brudihadron_$file.sh
-        slurmslurm=$FARMOUT_DIR/slurm/brudihadron_$file.slurm
+            FILE=$DATA_DIR/$pion_pair/${dataset}_merged.root
+            
+            file=${pion_pair}_${dataset}_${binscheme}_${binnum}
 
-        touch -f $slurmshell
-        touch -f $slurmslurm
 
-        chmod +x $slurmshell
-        cat >> $slurmslurm << EOF
+            slurmshell=$FARMOUT_DIR/shell/brudihadron_$file.sh
+            slurmslurm=$FARMOUT_DIR/slurm/brudihadron_$file.slurm
+
+            touch -f $slurmshell
+            touch -f $slurmslurm
+
+            chmod +x $slurmshell
+            cat >> $slurmslurm << EOF
 #!/bin/bash
 #SBATCH --account=clas12
 #SBATCH --partition=production
 #SBATCH --mem-per-cpu=4000
 #SBATCH --job-name=job_brudihadron_$file
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=8
 #SBATCH --time=24:00:00
 #SBATCH --output=$FARMOUT_DIR/log/brudihadron_$file.out
 #SBATCH --error=$FARMOUT_DIR/err/brudihadron_$file.err
 $slurmshell
 EOF
 
-        echo "#!/bin/tcsh" >> $slurmshell
-        echo "module unload root" >> $slurmshell
-        echo "source /group/clas12/packages/setup.csh" >> $slurmshell
-        echo "module load clas12/pro" >> $slurmshell
+            echo "#!/bin/tcsh" >> $slurmshell
+            echo "module unload root" >> $slurmshell
+            echo "source /group/clas12/packages/setup.csh" >> $slurmshell
+            echo "module load clas12/pro" >> $slurmshell
 
-        echo "/u/site/12gev_phys/2.4/Linux_CentOS7.7.1908-gcc9.2.0/root/6.20.04/bin/root $BRUFIT/macros/LoadBru.C -b -q -l $PWD/macros/calc_asymmetry.C\(\\\"${FILE}\\\",\\\"${BINNING_FILE}\\\",\\\"${BRU_DIR}\\\",$binnum,\\\"${CUT_TITLE}\\\",0\)" >> $slurmshell
-        
-        # Needs ML?
-        if [[ $pion_pair == *"pi0"* ]]; then
-            echo "/u/site/12gev_phys/2.4/Linux_CentOS7.7.1908-gcc9.2.0/root/6.20.04/bin/root $BRUFIT/macros/LoadBru.C -b -q -l $PWD/macros/calc_asymmetry.C\(\\\"${FILE}\\\",\\\"${BINNING_FILE}\\\",\\\"${BRU_DIR}\\\",$binnum,\\\"${CUT_TITLE}\\\",1\)" >> $slurmshell
-        fi
+            echo "/u/site/12gev_phys/2.4/Linux_CentOS7.7.1908-gcc9.2.0/root/6.20.04/bin/root $BRUFIT/macros/LoadBru.C -b -q -l $PWD/macros/calc_asymmetry.C\(\\\"${FILE}\\\",\\\"${BINNING_FILE}\\\",\\\"${BRU_DIR}\\\",$binscheme,$binnum,\\\"${CUT_TITLE}\\\",0\)" >> $slurmshell
 
-        echo "Submitting slurm job for $(basename "$FILE"), binning scheme $((binnum+1)) of $((schemes))"
-        sbatch --quiet $slurmslurm
+            echo "STANDARD: Submitting ${pion_pair} slurm job for $(basename "$FILE"), binning scheme $((binscheme+1)) of $((schemes)), bin $((binnum+1)) of $((nbins))"
+            sbatch --quiet $slurmslurm
+        done
+      done
     done
-  done
+done
+
+
+
+
+
+
+
+
+
+# Next, write the scripts for the sPlot fitting code with ML (i.e. with pi0's)
+for ((i=0; i<${#pion_pairs[@]}; i++)); do
+  pion_pair=${pion_pairs[$i]}
+  
+  if ! [[ $pion_pair == *"pi0"* ]]; then
+      continue
+  fi
+
+  if [[ $pion_pair == "pi0_pi0" ]]; then
+      continue
+  fi
+  CUT_TITLE=${CUT_TITLES[$i]}
+  for dataset in "${datasets[@]}"; do
+    for ((ML=0; ML<2; ML++)); do
+        for ((binscheme=0; binscheme<$schemes; binscheme++)); do
+            nbins=$(python $PWD/utils/read_bin_nums.py $BINNING_FILE $binscheme)
+            FILE=$DATA_DIR/$pion_pair/${dataset}_merged.root
+
+            file=splot_${pion_pair}_${dataset}_${binscheme}_isML_$ML
+
+            slurmshell=$FARMOUT_DIR/shell/brudihadron_$file.sh
+            slurmslurm=$FARMOUT_DIR/slurm/brudihadron_$file.slurm
+
+            touch -f $slurmshell
+            touch -f $slurmslurm
+
+            chmod +x $slurmshell
+            cat >> $slurmslurm << EOF
+#!/bin/bash
+#SBATCH --account=clas12
+#SBATCH --partition=production
+#SBATCH --mem-per-cpu=4000
+#SBATCH --job-name=job_brudihadron_$file
+#SBATCH --cpus-per-task=8
+#SBATCH --time=24:00:00
+#SBATCH --output=$FARMOUT_DIR/log/brudihadron_$file.out
+#SBATCH --error=$FARMOUT_DIR/err/brudihadron_$file.err
+$slurmshell
+EOF
+
+            echo "#!/bin/tcsh" >> $slurmshell
+            echo "module unload root" >> $slurmshell
+            echo "source /group/clas12/packages/setup.csh" >> $slurmshell
+            echo "module load clas12/pro" >> $slurmshell
+
+            echo "/u/site/12gev_phys/2.4/Linux_CentOS7.7.1908-gcc9.2.0/root/6.20.04/bin/root $BRUFIT/macros/LoadBru.C -b -q -l $PWD/macros/calc_asymmetry.C\(\\\"${FILE}\\\",\\\"${BINNING_FILE}\\\",\\\"${BRU_DIR}\\\",$binscheme,0,\\\"${CUT_TITLE}\\\",$ML,1,0,0\)" >> $slurmshell
+
+
+            # Now write the functions that submit the individual binned fits
+            for ((binnum=0; binnum<$nbins; binnum++)); do
+                FILE=$DATA_DIR/$pion_pair/${dataset}_merged.root
+
+                file=sweight_${pion_pair}_${dataset}_${binscheme}_${binnum}_isML_$ML
+
+                slurmshell2=$FARMOUT_DIR/shell/brudihadron_$file.sh
+                slurmslurm2=$FARMOUT_DIR/slurm/brudihadron_$file.slurm
+
+                touch -f $slurmshell2
+                touch -f $slurmslurm2
+
+                chmod +x $slurmshell2
+                cat >> $slurmslurm2 << EOF
+#!/bin/bash
+#SBATCH --account=clas12
+#SBATCH --partition=production
+#SBATCH --mem-per-cpu=4000
+#SBATCH --job-name=job_brudihadron_$file
+#SBATCH --cpus-per-task=8
+#SBATCH --time=24:00:00
+#SBATCH --output=$FARMOUT_DIR/log/brudihadron_$file.out
+#SBATCH --error=$FARMOUT_DIR/err/brudihadron_$file.err
+$slurmshell2
+EOF
+            
+                echo "#!/bin/tcsh" >> $slurmshell2
+                echo "module unload root" >> $slurmshell2
+                echo "source /group/clas12/packages/setup.csh" >> $slurmshell2
+                echo "module load clas12/pro" >> $slurmshell2
+
+                echo "/u/site/12gev_phys/2.4/Linux_CentOS7.7.1908-gcc9.2.0/root/6.20.04/bin/root $BRUFIT/macros/LoadBru.C -b -q -l $PWD/macros/calc_asymmetry.C\(\\\"${FILE}\\\",\\\"${BINNING_FILE}\\\",\\\"${BRU_DIR}\\\",$binscheme,$binnum,\\\"${CUT_TITLE}\\\",$ML,0,1,0\)" >> $slurmshell2
+
+                echo "sbatch $slurmslurm2" >> $slurmshell
+            done
+
+            echo "bash $PWD/scripts/wait_to_delete_inject_file.sh job_brudihadron_sweight"
+            echo "/u/site/12gev_phys/2.4/Linux_CentOS7.7.1908-gcc9.2.0/root/6.20.04/bin/root $BRUFIT/macros/LoadBru.C -b -q -l $PWD/macros/calc_asymmetry.C\(\\\"${FILE}\\\",\\\"${BINNING_FILE}\\\",\\\"${BRU_DIR}\\\",$binscheme,0,\\\"${CUT_TITLE}\\\",$ML,1,0,0,1\)" >> $slurmshell
+            
+            echo "SPLOT (ML=$ML): Submitting ${pion_pair} slurm job for $(basename "$FILE"), binning scheme $((binscheme+1)) of $((schemes))"
+            sbatch --quiet $slurmslurm
+          done
+        done
+    done
+done
+
+
+
+
+
+
+# Next, write the scripts for the sideband fitting code with ML (i.e. with pi0's)
+for ((i=0; i<${#pion_pairs[@]}; i++)); do
+  pion_pair=${pion_pairs[$i]}
+  
+  if ! [[ $pion_pair == *"pi0"* ]]; then
+      continue
+  fi
+
+  if [[ $pion_pair == "pi0_pi0" ]]; then
+      continue
+  fi
+  
+  CUT_TITLE=${CUT_TITLES[$i]}
+  for dataset in "${datasets[@]}"; do
+    for ((ML=0; ML<2; ML++)); do
+        for ((binscheme=0; binscheme<$schemes; binscheme++)); do
+            nbins=$(python $PWD/utils/read_bin_nums.py $BINNING_FILE $binscheme)
+            for ((binnum=0; binnum<$nbins; binnum++)); do
+                FILE=$DATA_DIR/$pion_pair/${dataset}_merged.root
+
+                file=sideband_${pion_pair}_${dataset}_${binscheme}_${binnum}_isML_$ML
+
+
+                slurmshell=$FARMOUT_DIR/shell/brudihadron_$file.sh
+                slurmslurm=$FARMOUT_DIR/slurm/brudihadron_$file.slurm
+
+                touch -f $slurmshell
+                touch -f $slurmslurm
+
+                chmod +x $slurmshell
+                cat >> $slurmslurm << EOF
+#!/bin/bash
+#SBATCH --account=clas12
+#SBATCH --partition=production
+#SBATCH --mem-per-cpu=4000
+#SBATCH --job-name=job_brudihadron_$file
+#SBATCH --cpus-per-task=8
+#SBATCH --time=24:00:00
+#SBATCH --output=$FARMOUT_DIR/log/brudihadron_$file.out
+#SBATCH --error=$FARMOUT_DIR/err/brudihadron_$file.err
+$slurmshell
+EOF
+            
+                echo "#!/bin/tcsh" >> $slurmshell
+                echo "module unload root" >> $slurmshell
+                echo "source /group/clas12/packages/setup.csh" >> $slurmshell
+                echo "module load clas12/pro" >> $slurmshell
+
+                echo "/u/site/12gev_phys/2.4/Linux_CentOS7.7.1908-gcc9.2.0/root/6.20.04/bin/root $BRUFIT/macros/LoadBru.C -b -q -l $PWD/macros/calc_asymmetry.C\(\\\"${FILE}\\\",\\\"${BINNING_FILE}\\\",\\\"${BRU_DIR}\\\",$binscheme,$binnum,\\\"${CUT_TITLE}\\\",$ML,0,0,1\)" >> $slurmshell
+                echo "SIDEBAND (ML=$ML): Submitting ${pion_pair} slurm job for $(basename "$FILE"), binning scheme $((binscheme+1)) of $((schemes)), bin $((binnum+1)) of $((nbins))"
+                sbatch --quiet $slurmslurm
+            done
+          done
+        done
+    done
 done
