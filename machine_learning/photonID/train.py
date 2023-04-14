@@ -17,7 +17,7 @@ def train(rootdir = "/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas1
           SUBDATA= "MC_RGC",
           yamlfile = "/work/clas12/users/gmat/clas12/clas12_dihadrons/machine_learning/photonID/params_folder/model_params_gbt_only_full.yaml",
           nn_type  = "calo", # calo or track (use either calorimeter info or track info to determine nearest neighbors)
-          outdir   = "/work/clas12/users/gmat/clas12/clas12_dihadrons/projects/ana_vgrc/models/photonID/piplus_pi0"):
+          outdir   = "/work/clas12/users/gmat/clas12/clas12_dihadrons/projects/ana_vrgc/models/photonID/piplus_pi0"):
     
     
     # Load the parameters from the yamlfile

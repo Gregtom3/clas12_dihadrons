@@ -60,28 +60,47 @@ def load_data(rootfiles=[""],
               version="train",
               split_ratio = 0.75,
               random_seed = 42):
+
     assert(version=="train" or version=="predict")
-    
     if(type(rootfiles)!=list):
         rootfiles=[rootfiles]
         print("WARNING: Need to convert <rootfiles> to list")
     
-    df=0
+    df=pd.DataFrame()
     # Loop over rootfiles
     if(version=="train"):
         enu=enumerate(tqdm(rootfiles))
     else:
         enu=enumerate(rootfiles)
+
     for ifile,rootfile in enu:
-        if(ifile==25):
-            print("ONLY TRAINING ON 25 FILES MAX")
+        if(ifile==40 and version=="train"):
+            print("ONLY TRAINING ON 40 FILES MAX")
             break
         
         # Open the file in uproot
         u = uproot.open(rootfile)
-        u = u[ttree]
+        found=False
+        for key in u.keys():
+            if(ttree in key):
+                found=True
+                break
         
+        if(not found):
+            print("Skipping file",rootfile,"...missing TTree=",ttree)
+            continue
+            
+        try:
+            u = u[ttree]
+        except:
+            print("Skipping file",rootfile,"...missing TTree=",ttree)
+            continue
+        # If the TTree is empty, continue
+        if(u.num_entries==0):
+            continue
+
         # Get dataframe params
+        
         branchnames,keys,nns = get_keys(u)
         if(ifile==0): 
             # Create dataframe from first file
@@ -103,7 +122,11 @@ def load_data(rootfiles=[""],
 
         # Delete temporary dataframe
         del tmp_df
-        
+
+    # If the dataframe is empty, return -1
+    if(df.empty):
+        return -1
+
     # Create dataset for training/evaluation
     X = df.drop("flag",axis=1)
     if(version=="predict"):
