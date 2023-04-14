@@ -59,7 +59,7 @@ std::vector<TF2> get_ALUs_bg(YAMLbinstruct bs){
 
 
 // Inject the TTree with a helicity determined by probabilities
-void injectDihadronAsym(const char * input_file, YAMLbinstruct binStruct, int pid_h1, int pid_h2, int L){
+void injectDihadronAsym(const char * input_file, const char *output_file, YAMLbinstruct binStruct, int pid_h1, int pid_h2, int L){
     
     TFile * f = new TFile(input_file,"READ");
     std::vector<TF2> mods = get_mods(L);
@@ -97,9 +97,9 @@ void injectDihadronAsym(const char * input_file, YAMLbinstruct binStruct, int pi
     auto injectName = binStruct.injectName;
     
     TString hel_branchname = TString(injectName) + ".hel";
-    TString new_filename = TString(input_file) + "." + TString(binStruct.name) + ".root";
+    // TString new_filename = TString(input_file) + "." + TString(binStruct.name) + ".root";
     
-    TFile * fOut = new TFile(new_filename,"RECREATE");
+    TFile * fOut = new TFile(output_file,"RECREATE");
     TTree * tOut = tIn->CloneTree();
     // Create helicity injection
     int hel;
@@ -108,7 +108,6 @@ void injectDihadronAsym(const char * input_file, YAMLbinstruct binStruct, int pi
     float sum=0.0;
     float prob=0.0;
     for ( int i = 0 ; i < tOut->GetEntries() ; i++){
-
         tOut->GetEntry(i);
         if(i%10000==0)
             cout << i << "/" << tOut->GetEntries()-1 << "    x = " << x << " , y = " << y << " , prob = " << prob << endl;
@@ -142,6 +141,12 @@ void injectDihadronAsym(const char * input_file, YAMLbinstruct binStruct, int pi
         
         // Calculate the probability of positive helicity
         prob = (1.0+sum)/2.0; // 0 < prob < 1 for small asymmetries
+        if (std::isnan(prob) || std::isnan(-prob)) {
+            prob=0.5;
+            hel=0;
+            hel_branch->Fill();
+            continue;
+        }
         
         // Set helicity
         if(gRandom->Uniform()<prob)

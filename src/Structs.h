@@ -33,17 +33,22 @@ FS get_FS(int pid_h1, int pid_h2){
     fs.pid_h2=0;
     fs.num_h2=0;
   }
-  else if(pid_h1==0 && pid_h2==0){
-    fs.pid_h1=0;
-    fs.num_h1=0;
-    fs.pid_h2=0;
-    fs.num_h2=0;
-  }else{
+  else{
     fs.pid_h1=pid_h1;
     fs.num_h1=1;
     fs.pid_h2=pid_h2;
     fs.num_h2=1;
   }
+  
+  if(pid_h1==0){
+    fs.pid_h1=0;
+    fs.num_h1=0;
+  }
+  if(pid_h2==0){
+    fs.pid_h2=0;
+    fs.num_h2=0;
+  }
+
   return fs;
 } 
 
