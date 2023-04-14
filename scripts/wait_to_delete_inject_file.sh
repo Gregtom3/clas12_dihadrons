@@ -8,7 +8,7 @@ function wait_for_jobs() {
     do
         read jobsLeft <<< $(echo "$(squeue -u gmat --format="%.18i %.9P %.30j %.8u %.8T %.10M %.9l %.6D %R")" | grep $job_name | awk 'END{print NR}')
         echo "Jobs remaining: " $jobsLeft
-        sleep 3
+        sleep 30
     done
 }
 
