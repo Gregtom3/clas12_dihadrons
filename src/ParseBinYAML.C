@@ -16,6 +16,34 @@ YAMLbinstruct get_struct(const char* inyaml, const char* file);
 void ParseBinYaml(const char* input_data_wildcard, const char* output_datadir, const char* input_yaml, int isMC, int binNum);
 void serializeYAMLbinstruct(const YAMLbinstruct& binstruct, const std::string& filename);
 
+void getBinMinMax(const YAMLbinstruct& binstruct, int n,
+                  std::vector<double>& binMin, std::vector<double>& binMax)
+{
+    std::vector<std::vector<double>> binEdges = binstruct.binEdges;
+    int numBins = binEdges[0].size() - 1;
+    int numDims = binEdges.size();
+    int binIndex = 0;
+    
+    // Find start index of nth bin volume
+    for (int i = 0; i < numDims; i++) {
+        int numBins_i = binEdges[i].size() - 1;
+        int binIndex_i = (n % numBins_i) + 1;
+        n /= numBins_i;
+        binIndex += binIndex_i * pow(numBins_i, i);
+    }
+    
+    // Get min and max values for each dimension
+    binMin.resize(numDims);
+    binMax.resize(numDims);
+    for (int i = 0; i < numDims; i++) {
+        int numBins_i = binEdges[i].size() - 1;
+        int binIndex_i = binIndex % numBins_i;
+        binIndex /= numBins_i;
+        binMin[i] = binEdges[i][binIndex_i];
+        binMax[i] = binEdges[i][binIndex_i+1];
+    }
+}
+
 
 void printYAMLbinstruct(const YAMLbinstruct& binstruct) {
     std::cout << "name: " << binstruct.name << std::endl;
