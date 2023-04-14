@@ -64,7 +64,7 @@ std::vector<std::vector<int>> remove_duplicates(std::vector<std::vector<int>> in
 // is to be used to save photon classification values. The "weight_branch" in the "EventTree" is created by the program "machine_learning/photonID/predict.py"
 
 int dihadronBuilder(const char *input_file="hipo2tree.root",
-                    const char *weight_branch="gbt_0_calo"){
+                    const char *weight_branch="none"){
     
 
     // Declare pid_h1 and pid_h2

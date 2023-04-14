@@ -7,15 +7,15 @@
 #include "../src/ParseText.C"
 
 
-int hipo2tree(//const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2018/torus-1/pass1/v1/dst/train/nSidis/nSidis_005032.hipo",
+int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2018/torus-1/pass1/v1/dst/train/nSidis/nSidis_005032.hipo",
               //const char * hipoFile = "/cache/clas12/rg-a/production/montecarlo/clasdis/fall2018/torus-1/v1/bkg45nA_10604MeV/45nA_job_3051_0.hipo",
-              const char * hipoFile = "/volatile/clas12/rg-c/production/dst/8.7.0_TBT/dst/train/sidisdvcs/sidisdvcs_016291.hipo",
+              //const char * hipoFile = "/volatile/clas12/rg-c/production/dst/8.7.0_TBT/dst/train/sidisdvcs/sidisdvcs_016291.hipo",
 	      //const char * hipoFile = "/work/cebaf24gev/sidis/reconstructed/polarized-plus-10.5GeV-proton/hipo/0000.hipo",
 	      const char * outputFile = "hipo2tree.root",
               const double _electron_beam_energy = 10.6,
-              const int pid_h1=0,
-              const int pid_h2=0,
-              const int maxEvents = 1000,
+              const int pid_h1=211,
+              const int pid_h2=111,
+              const int maxEvents = 10000,
               bool hipo_is_mc = false){
 
 
@@ -217,7 +217,6 @@ int hipo2tree(//const char * hipoFile = "/cache/clas12/rg-a/production/recon/fal
   int whileidx=0;
   int _ievent=0;
   while(_chain.Next()==true && (whileidx < maxEvents || maxEvents < 0)){
-
     if(whileidx%10000==0 && whileidx!=0){
       std::cout << whileidx << " events read | " << _ievent*100.0/whileidx << "% passed event selection" << std::endl;
     }
@@ -294,14 +293,14 @@ int hipo2tree(//const char * hipoFile = "/cache/clas12/rg-a/production/recon/fal
     // Loop over reconstructed particles
     // -------------------------------------------------------
     auto particles=_c12->getDetParticles();
-      
     for(unsigned int idx = 0 ; idx < particles.size() ; idx++){
       // Create new part struct
       part partstruct;
       // Extract each particle from event one-at-a-time
       // -------------------------------------------------------
       auto particle = particles.at(idx);
-      partstruct.pid = particle->getPid();      
+      partstruct.pid = particle->getPid(); 
+
       partstruct.chi2 = particle->getChi2Pid();
       partstruct.theta = particle->getTheta();
       if(partstruct.theta*180/PI<5 || partstruct.theta*180/PI>35) continue;
@@ -337,7 +336,7 @@ int hipo2tree(//const char * hipoFile = "/cache/clas12/rg-a/production/recon/fal
       vec_particles.push_back(partstruct);
           
     }
-
+    
     // Apply the cuts to make a new vec_particles
     // Calls the CutManager which parses through the vector
     // and makes relevant cuts for each particle
