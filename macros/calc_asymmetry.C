@@ -18,8 +18,8 @@ enum ANA_TYPE {
 
 
 void create_sweights(const char * infile, const char * brudir, YAMLbinstruct binStruct, Block cut, int pid_h1, int pid_h2, bool use_ML);
-void create_sideband(const char * infile, const char * brudir, YAMLbinstruct binStruct, int binnum, Block cut, int pid_h1, int pid_h2, bool use_ML);
-void asym(const char * infile, const char * brudir, std::string version, YAMLbinstruct binStruct, int binnum, Block cut, int pid_h1, int pid_h2, bool use_ML, ANA_TYPE ana_type,  ASYM_TYPE asym_type);
+void create_sideband(const char * infile, const char * brudir, YAMLbinstruct binStruct, Block cut, int pid_h1, int pid_h2, bool use_ML);
+void asym(const char * infile, const char * brudir, std::string version, YAMLbinstruct binStruct, Block cut, int pid_h1, int pid_h2, bool use_ML, ANA_TYPE ana_type,  ASYM_TYPE asym_type);
 
 int calc_asymmetry(//const char * infile = "/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas12_dihadrons/projects/ana_v0/data/piplus_piminus/MC_RGA_inbending_merged.root",
                    //const char * infile = "./MC_RGA_inbending_merged.root",
@@ -28,9 +28,9 @@ int calc_asymmetry(//const char * infile = "/volatile/clas12/users/gmat/clas12an
 		   //                   std::string brudir  = "/work/clas12/users/gmat/clas12/clas12_dihadrons/projects/ana_v0/asym",
 		   std::string brudir  = "./bru",
                    const int binscheme = 0,
-                   const int binnum = 0,
                    const std::string cut_title = "v1",
                    bool use_ML = false,
+                   bool do_inject = false,
                    bool create_splot = false,
                    bool do_sweighted = false,
                    bool do_sideband = false,
@@ -63,7 +63,7 @@ int calc_asymmetry(//const char * infile = "/volatile/clas12/users/gmat/clas12an
     // If this is a Monte Carlo file, then we must inject the asymmetries
     std::string INFILE="";
     if (strstr(infile, "MC_") != NULL){
-        INFILE=std::string(infile) + ".inject." + binStruct.name + std::string(use_ML == true ? ".ML" : ".noML")  + std::string(do_sideband == true ? ".sideband" : ".splot" ) +  ".root";
+      INFILE=std::string(infile) + ".inject." + binStruct.name + std::string(use_ML == true ? ".ML." : ".noML.")  +  std::string(cut_title) + ".splot.root";
         // Delete the injected Monte carlo file after use
         if(remove_inject){   
             if (strstr(infile, "MC_") != NULL){
@@ -71,7 +71,7 @@ int calc_asymmetry(//const char * infile = "/volatile/clas12/users/gmat/clas12an
             }
             return 0;
         }
-        else if(create_splot){
+        else if(do_inject){
             injectDihadronAsym(infile,INFILE.c_str(),binStruct,pid_h1,pid_h2,2);
         }
         
@@ -146,18 +146,18 @@ int calc_asymmetry(//const char * infile = "/volatile/clas12/users/gmat/clas12an
         // If we are using pi0's
         if(pid_h1==111 || pid_h2==111){
             if(do_sideband){
-                create_sideband(INFILE.c_str(),BRUDIR.c_str(),binStruct, binnum, cut,pid_h1,pid_h2,use_ML);
-                asym(INFILE.c_str(), BRUDIR.c_str(), version, binStruct, binnum, cut, pid_h1, pid_h2, use_ML, SIDEBAND,  asym_type);
+                create_sideband(INFILE.c_str(),BRUDIR.c_str(),binStruct, cut,pid_h1,pid_h2,use_ML);
+                asym(INFILE.c_str(), BRUDIR.c_str(), version, binStruct, cut, pid_h1, pid_h2, use_ML, SIDEBAND,  asym_type);
             }
             if(create_splot){
                 create_sweights(INFILE.c_str(),BRUDIR.c_str(),binStruct, cut,pid_h1,pid_h2,use_ML);
             }
             if(do_sweighted){
-                asym(INFILE.c_str(), BRUDIR.c_str(), version, binStruct, binnum, cut, pid_h1, pid_h2, use_ML, SPLOT,  asym_type);
+                asym(INFILE.c_str(), BRUDIR.c_str(), version, binStruct, cut, pid_h1, pid_h2, use_ML, SPLOT,  asym_type);
             }
         }
         else{
-            asym(INFILE.c_str(), BRUDIR.c_str(), version, binStruct, binnum, cut, pid_h1, pid_h2, use_ML, STANDARD, asym_type);
+            asym(INFILE.c_str(), BRUDIR.c_str(), version, binStruct, cut, pid_h1, pid_h2, use_ML, STANDARD, asym_type);
         }
         
         break;
@@ -262,6 +262,7 @@ void create_sweights(const char * infile, const char * brudir, YAMLbinstruct bin
     RF.LoadData("dihadron",infile);
     
     //////////////////////////////////// Bins
+    // Not sure if this is still needed?
     // Load bin variables
     for (int i = 0; i < binStruct.numDimensions; i++) {
       std::string binName = binStruct.dimensionNames[i];
@@ -284,7 +285,7 @@ void create_sweights(const char * infile, const char * brudir, YAMLbinstruct bin
 }
 
 
-void create_sideband(const char * infile, const char * brudir, YAMLbinstruct binStruct, int binnum, Block cut, int pid_h1, int pid_h2, bool use_ML){
+void create_sideband(const char * infile, const char * brudir, YAMLbinstruct binStruct, Block cut, int pid_h1, int pid_h2, bool use_ML){
     
     const double p_thresh = 0.9; // ML cut
     std::string hel_str="hel";  // changes if we inject the Monte Carlo
@@ -344,7 +345,6 @@ void create_sideband(const char * infile, const char * brudir, YAMLbinstruct bin
     // perform sideband for each of the binnings
     const int N=binStruct.nBins;
     for(int n = 0; n < N; n++){
-        if(n!=binnum) continue;
         
         h->Reset(); // Clear binContents but keep bin sizes and range'
         
@@ -422,16 +422,36 @@ void create_sideband(const char * infile, const char * brudir, YAMLbinstruct bin
         for(int k = 0 ; k < 5 ; k++){
             bg->SetParameter(k,f_sdbnd->GetParameter(k+3));
         }
+        
+        // Calculate integrals
+        double signal_integral = sig->Integral(Mggmin, Mggmax);
+        double background_integral = bg->Integral(Mggmin, Mggmax);
+        double normalization_integral = hnorm->Integral(hnorm->FindBin(Mggmin), hnorm->FindBin(Mggmax));
+        double f_sdbnd_integral = f_sdbnd->Integral(Mggmin, Mggmax);
 
-        double u = 1-(bg->Integral(Mggmin,Mggmax)/sig->Integral(Mggmin,Mggmax));
+        // Calculate ratios
+        double u1 = signal_integral / normalization_integral;
+        double u2 = signal_integral / f_sdbnd_integral;
+        double u3 = 1 - (background_integral / normalization_integral);
+        double u4 = 1 - (background_integral / f_sdbnd_integral);
+        
         ///////////////////////////// Create TFile for saving output
         TFile *sdbnd_out = new TFile(Form("%s/outSdbndBins/%s/sideband.root",brudir,subdir.c_str()),"RECREATE");
-        TVectorD purity(1);
-        purity[0]=u;
+        TVectorD purity_1(1);
+        TVectorD purity_2(1);
+        TVectorD purity_3(1);
+        TVectorD purity_4(1);
+        purity_1[0]=u1;
+        purity_2[0]=u2;
+        purity_3[0]=u3;
+        purity_4[0]=u4;
         TVectorD sigregion(2);
         sigregion[0]=Mggmin;
         sigregion[1]=Mggmax;
-        sdbnd_out->WriteObject(&purity,"purity");
+        sdbnd_out->WriteObject(&purity_1,"purity_1");
+        sdbnd_out->WriteObject(&purity_2,"purity_2");
+        sdbnd_out->WriteObject(&purity_3,"purity_3");
+        sdbnd_out->WriteObject(&purity_4,"purity_4");
         sdbnd_out->WriteObject(&sigregion,"signal_region");
         f_sdbnd->Write();
         hnorm->Write();
@@ -449,7 +469,7 @@ void create_sideband(const char * infile, const char * brudir, YAMLbinstruct bin
 }
 
 
-void asym(const char * infile, const char * brudir, std::string version, YAMLbinstruct binStruct, int binnum, Block cut, int pid_h1, int pid_h2, bool use_ML, ANA_TYPE ana_type,  ASYM_TYPE asym_type){
+void asym(const char * infile, const char * brudir, std::string version, YAMLbinstruct binStruct, Block cut, int pid_h1, int pid_h2, bool use_ML, ANA_TYPE ana_type,  ASYM_TYPE asym_type){
 
     const double p_thresh = 0.9; // ML cut
     std::string hel_str="hel";  // changes if we inject the Monte Carlo
@@ -469,27 +489,18 @@ void asym(const char * infile, const char * brudir, std::string version, YAMLbin
                 process_azi_FM(FM,version,hel_str);
             else if(asym_type==TWOH)
                 process_2h_FM(FM,version,hel_str);
-            //////////////////////////////////// Bins
-            // Load bin variables
-//             for (int i = 0; i < binStruct.numDimensions; i++) {
-//               std::string binName = binStruct.dimensionNames[i];
-//               std::vector<double> binEdges = binStruct.binEdges[i];
-//               int numBins = binEdges.size();
-//               Double_t binEdgesArr[numBins];
-//               for (int j = 0; j < numBins; j++) {
-//                 if(inc==binnum)
-//                     binEdgesArr[j] = binEdges[j];
-//                 inc++;
-//               }
-//               FM.Bins().LoadBinVar(binName, numBins-1, binEdgesArr);
-//             }
             
-            std::vector<double> binMin, binMax;
-            getBinMinMax(binStruct, binnum, binMin, binMax);
+            //////////////////////////////////// Bins
+            //Load bin variables
             for (int i = 0; i < binStruct.numDimensions; i++) {
                 std::string binName = binStruct.dimensionNames[i];
-                Double_t binEdgesArr[2] = {binMin[i],binMax[i]};
-                FM.Bins().LoadBinVar(binName, 1, binEdgesArr);
+                std::vector<double> binEdges = binStruct.binEdges[i];
+                int numBins = binEdges.size();
+                Double_t binEdgesArr[numBins];
+                for (int j = 0; j < numBins; j++) {
+                    binEdgesArr[j] = binEdges[j];
+                }
+                FM.Bins().LoadBinVar(binName, numBins-1, binEdgesArr);
             }
             
             FM.LoadData("dihadron",infile);
@@ -497,6 +508,8 @@ void asym(const char * infile, const char * brudir, std::string version, YAMLbin
                 FM.Data().LoadWeights("Signal",Form("%s/outsPlotBins/Tweights.root",brudir));
             else
                 FM.Data().LoadWeights("BG",Form("%s/outsPlotBins/Tweights.root",brudir));
+            
+            
             Here::Go(&FM);
         }
     }
@@ -505,17 +518,20 @@ void asym(const char * infile, const char * brudir, std::string version, YAMLbin
         // Do signal+bkg and bkg regions separately
         for(int reg=0;reg<2;reg++){
             FitManager FM;
+
+            
             // We need to reapply the cuts made to generate the sideband plots
             if(reg==0){
                 FM.SetUp().SetOutDir(Form("%s/outObsBins_sdbnd_sigbg/",brudir));
             }else{
                 FM.SetUp().SetOutDir(Form("%s/outObsBins_sdbnd_bg/",brudir));
             }
+            
             if(asym_type==AZI)
                 process_azi_FM(FM,version,hel_str);
             else if(asym_type==TWOH)
                 process_2h_FM(FM,version,hel_str);
-
+            
             if(reg==0 && pid_h1==111 && pid_h2!=111){
                 FM.SetUp().LoadVariable("M1[0.106,0.166]");
             }else if(reg==1 && pid_h1==111 && pid_h2!=111){
@@ -571,34 +587,24 @@ void asym(const char * infile, const char * brudir, std::string version, YAMLbin
 
             // For loop over the cuts desired to apply them
             for(int j = 0 ; j < cut.vmin.size() ; j++){                    
-                FM.SetUp().LoadVariable(Form("%s[%f,%f]",cut.var.at(j).c_str(),cut.vmin.at(j),cut.vmax.at(j)));    
-                FM.SetUp().AddCut(Form("%s>%f",cut.var.at(j).c_str(),cut.vmin.at(j)));
-                FM.SetUp().AddCut(Form("%s<%f",cut.var.at(j).c_str(),cut.vmax.at(j)));  
+               FM.SetUp().LoadVariable(Form("%s[%f,%f]",cut.var.at(j).c_str(),cut.vmin.at(j),cut.vmax.at(j)));    
+               FM.SetUp().AddCut(Form("%s>%f",cut.var.at(j).c_str(),cut.vmin.at(j)));
+               FM.SetUp().AddCut(Form("%s<%f",cut.var.at(j).c_str(),cut.vmax.at(j)));  
             }
-
-
-            //////////////////////////////////// Bins
-            // Load bin variables
-//             for (int i = 0; i < binStruct.numDimensions; i++) {
-//               std::string binName = binStruct.dimensionNames[i];
-//               std::vector<double> binEdges = binStruct.binEdges[i];
-//               int numBins = binEdges.size();
-//               Double_t binEdgesArr[numBins];
-//               for (int j = 0; j < numBins; j++) {
-                
-//                 binEdgesArr[j] = binEdges[j];
-//               }
-//               FM.Bins().LoadBinVar(binName, numBins-1, binEdgesArr);
-//             }
             
-            std::vector<double> binMin, binMax;
-            getBinMinMax(binStruct, binnum, binMin, binMax);
+            //////////////////////////////////// Bins
+            //Load bin variables
             for (int i = 0; i < binStruct.numDimensions; i++) {
                 std::string binName = binStruct.dimensionNames[i];
-                Double_t binEdgesArr[2] = {binMin[i],binMax[i]};
-                FM.Bins().LoadBinVar(binName, 1, binEdgesArr);
+                std::vector<double> binEdges = binStruct.binEdges[i];
+                int numBins = binEdges.size();
+                Double_t binEdgesArr[numBins];
+                for (int j = 0; j < numBins; j++) {
+                    binEdgesArr[j] = binEdges[j];
+                }
+                FM.Bins().LoadBinVar(binName, numBins-1, binEdgesArr);
             }
-            
+        
             FM.LoadData("dihadron",infile);
             Here::Go(&FM);
         }
@@ -622,26 +628,18 @@ void asym(const char * infile, const char * brudir, std::string version, YAMLbin
         }
         
         //////////////////////////////////// Bins
-        // Load bin variables
-//         for (int i = 0; i < binStruct.numDimensions; i++) {
-//           std::string binName = binStruct.dimensionNames[i];
-//           std::vector<double> binEdges = binStruct.binEdges[i];
-//           int numBins = binEdges.size();
-//           Double_t binEdgesArr[numBins];
-//           for (int j = 0; j < numBins; j++) {
-//             binEdgesArr[j] = binEdges[j];
-//           }
-//           FM.Bins().LoadBinVar(binName, numBins-1, binEdgesArr);
-//         }
-        
-        std::vector<double> binMin, binMax;
-        getBinMinMax(binStruct, binnum, binMin, binMax);
+        //Load bin variables
         for (int i = 0; i < binStruct.numDimensions; i++) {
             std::string binName = binStruct.dimensionNames[i];
-            Double_t binEdgesArr[2] = {binMin[i],binMax[i]};
-            FM.Bins().LoadBinVar(binName, 1, binEdgesArr);
+            std::vector<double> binEdges = binStruct.binEdges[i];
+            int numBins = binEdges.size();
+            Double_t binEdgesArr[numBins];
+            for (int j = 0; j < numBins; j++) {
+                binEdgesArr[j] = binEdges[j];
+            }
+            FM.Bins().LoadBinVar(binName, numBins-1, binEdgesArr);
         }
-
+        
         FM.LoadData("dihadron",infile);
         Here::Go(&FM);
     }

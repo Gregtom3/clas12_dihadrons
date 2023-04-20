@@ -69,3 +69,72 @@ binningStructures:
         - "0.0*x"
         - "0.0*x"
         - "0.0*x"
+
+  - name: pTtot_binned
+    numDimensions: 1
+    dimensionNames: [pTtot]
+    binEdges:
+      - [0,0.15,0.25,0.35,0.45,0.55,0.7,0.9,2]
+    injectLabel: linear
+    inject_sigfuncs:
+        - "0.3*sin(6.28*x)"
+        - "0.0*x"
+        - "0.1*sin(6.28*x)"
+        - "0.0*x"
+        - "0.0*x"
+        - "0.0*x"
+        - "0.0*x"
+    inject_bgfuncs:
+        - "0.0*x"
+        - "0.0*x"
+        - "0.0*x"
+        - "0.0*x"
+        - "0.0*x"
+        - "0.0*x"
+        - "0.0*x"
+
+  - name: xF_binned
+    numDimensions: 1
+    dimensionNames: [xF]
+    binEdges:
+      - [-0.5,-0.15,0.05,0.15,0.25,0.35,0.45,0.55,0.7,1,2]
+    injectLabel: linear
+    inject_sigfuncs:
+        - "0.0*x"
+        - "0.0*x"
+        - "0.0*x"
+        - "0.0*x"
+        - "0.0*x"
+        - "0.0*x"
+        - "0.0*x"  
+    inject_bgfuncs:
+        - "-0.0*x"
+        - "-0.0*x"
+        - "0.0*x"
+        - "0.0*x"
+        - "0.0*x"
+        - "0.0*x"
+        - "0.0*x"
+        
+  - name: Mx_binned
+    numDimensions: 1
+    dimensionNames: [Mx]
+    binEdges:
+      - [-0.5,0.2,0.6,1,1.6,2,2.4,2.8,3.4,4]
+    injectLabel: linear
+    inject_sigfuncs:
+        - "0.05*x"
+        - "0.1*x"
+        - "0.15*x"
+        - "0.2*x"
+        - "0.25*x"
+        - "0.3*x"
+        - "0.35*x"  
+    inject_bgfuncs:
+        - "0.0*x"
+        - "0.0*x"
+        - "0.0*x"
+        - "0.0*x"
+        - "0.0*x"
+        - "0.0*x"
+        - "0.0*x"
