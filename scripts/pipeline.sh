@@ -75,7 +75,7 @@ wait3="job_photonMLtrain_"
 func3="./scripts/train_photonML.sh"
 
 # Call the function
-call_function "${func3}" "${wait3}" "${in3[@]}"
+#call_function "${func3}" "${wait3}" "${in3[@]}"
 
 
 
@@ -87,7 +87,7 @@ wait4="job_photonMLpredict_"
 func4="./scripts/predict_photonML.sh"
 
 # Call the function
-call_function "${func4}" "${wait4}" "${in4[@]}"
+#call_function "${func4}" "${wait4}" "${in4[@]}"
 
 
 
@@ -100,7 +100,7 @@ wait5="job_dihadron_"
 func5="./scripts/form_dihadrons.sh"
 
 # Call the function
-call_function "${func5}" "${wait5}" "${in5[@]}"
+#call_function "${func5}" "${wait5}" "${in5[@]}"
 
 
 # 6. merge_dihadrons.sh

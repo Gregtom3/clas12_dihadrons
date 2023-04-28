@@ -22,7 +22,7 @@ class CutManager{
  protected:
   // Protected member functions
   bool apply_electron_cuts(part);
-  bool apply_pion_cuts(part);
+  bool apply_pion_cuts(part,part);
   bool apply_photon_cuts(part,part);
   bool DC_fiducial_cut(part);
   bool DC_fiducial_cut_theta_phi(part);
@@ -30,13 +30,16 @@ class CutManager{
   bool chi2pid(part,int);
   bool EleSampFrac(part);
   bool minPiMomentum(part);
+  bool hadronStatus(part);
   bool VzCut(part);
   bool minEpcal(part);
   bool caloEdges(part,int);
   bool Ele3calo(part);
+  bool minEleMomentum(part);
   bool photonMinEtot(part);
   bool photonElectronAngle(part,part);
   bool photonBetaCut(part);
+  bool vz_e_pi(part,part);
  private:
         
   // Private member variables

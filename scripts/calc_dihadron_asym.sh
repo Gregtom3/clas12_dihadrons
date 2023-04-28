@@ -98,17 +98,17 @@ binyaml=$(cat $BINNING_FILE)
 # Count the number of times ".root" appears in the YAML file
 schemes=$(echo "$binyaml" | grep -o "numDimensions:" | wc -l)
 
-#CUT_TITLES=("v6" "v4" "v7" "v6" "v1" "v3")
+CUT_TITLES=("v6" "v4" "v7" "v6" "v1" "v3")
 #CUT_TITLES=("v1" "v1" "v1" "v1" "v1" "v1")
 #CUT_TITLES=("v6_21" "v6_21" "v6_21")
-CUT_TITLES=("v6")
+#CUT_TITLES=("v6")
 # Create pion pid pairs
-#pion_pairs=("piplus_piplus" "piplus_pi0" "piminus_pi0" "piminus_piminus" "pi0_pi0" "piplus_piminus")
+pion_pairs=("piplus_piplus" "piplus_pi0" "piminus_pi0" "piminus_piminus" "pi0_pi0" "piplus_piminus")
 #pion_pairs=("piplus_piminus" "piplus_pi0" )
-pion_pairs=("piplus_piminus") #"piplus_piplus" "piminus_piminus" )
+#pion_pairs=("piplus_piminus") #"piplus_piplus" "piminus_piminus" )
 # Create list of unique datasets
 #datasets=("MC_RGA_inbending" "MC_RGA_outbending" "Fall2018_RGA_inbending" "Fall2018_RGA_outbending" "Spring2019_RGA_inbending")
-datasets=("Fall2018_RGA_inbending" "Fall2018_RGA_outbending" "Spring2019_RGA_inbending")
+datasets=("Fall2018_RGA_inbending" "Fall2018_RGA_outbending" "Spring2019_RGA_inbending" "Fall2018Spring2019_RGA_inbending")
 #datasets=("Fall2018_RGA_inbending")
 
 # First write the scripts for the fitting code without ML (i.e. without pi0's)
@@ -234,7 +234,7 @@ EOF
 #!/bin/bash
 #SBATCH --account=clas12
 #SBATCH --partition=production
-#SBATCH --mem-per-cpu=4000
+#SBATCH --mem-per-cpu=8000
 #SBATCH --job-name=job_brudihadron_$file
 #SBATCH --cpus-per-task=8
 #SBATCH --time=24:00:00
@@ -268,7 +268,7 @@ EOF
 #!/bin/bash
 #SBATCH --account=clas12
 #SBATCH --partition=production
-#SBATCH --mem-per-cpu=4000
+#SBATCH --mem-per-cpu=8000
 #SBATCH --job-name=job_brudihadron_$file
 #SBATCH --cpus-per-task=8
 #SBATCH --time=24:00:00

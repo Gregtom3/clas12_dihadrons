@@ -7,15 +7,13 @@
 #include "../src/ParseText.C"
 
 
-int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2018/torus-1/pass1/v1/dst/train/nSidis/nSidis_005032.hipo",
-              //const char * hipoFile = "/cache/clas12/rg-a/production/montecarlo/clasdis/fall2018/torus-1/v1/bkg45nA_10604MeV/45nA_job_3051_0.hipo",
-              //const char * hipoFile = "/volatile/clas12/rg-c/production/dst/8.7.0_TBT/dst/train/sidisdvcs/sidisdvcs_016291.hipo",
-	      //const char * hipoFile = "/work/cebaf24gev/sidis/reconstructed/polarized-plus-10.5GeV-proton/hipo/0000.hipo",
-	      const char * outputFile = "hipo2tree.root",
-              const double _electron_beam_energy = 10.6,
+int hipo2tree(
+              const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2018/torus-1/pass1/v1/dst/train/nSidis/nSidis_005036.hipo",
+              const char * outputFile = "hipo2tree.root",
+              const double _electron_beam_energy = 10.604,
               const int pid_h1=211,
-              const int pid_h2=111,
-              const int maxEvents = 10000,
+              const int pid_h2=-211,
+              const int maxEvents = 1000000000,
               bool hipo_is_mc = false){
 
 
@@ -179,11 +177,12 @@ int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2
   bool do_QADB=(hipo_is_mc==false && std::string(hipoFile).find("/rg-c/")==std::string::npos);
   if(!do_QADB)
     _config_c12->db()->turnOffQADB();
-  
+
+
   // Configure PIDs for final state
   // -------------------------------------
   FS fs = get_FS(pid_h1,pid_h2);
-  _config_c12->addExactPid(11,1);     // Exactly 1 electron
+  _config_c12->addAtLeastPid(11,1);     // At least 1 electron
   if(fs.pid_h1!=0)    _config_c12->addAtLeastPid(fs.pid_h1,fs.num_h1);
   if(fs.pid_h2!=0)    _config_c12->addAtLeastPid(fs.pid_h2,fs.num_h2); // Doesn't run if duplicate final state
   
@@ -198,6 +197,9 @@ int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2
   // -------------------------------------
   auto &_c12=_chain.C12ref();
 
+  if(do_QADB)
+    _c12->db()->qadb_requireOkForAsymmetry(true);  
+    
   // Create RCDB Connection
   // -------------------------------------
   clas12::clas12databases::SetRCDBRootConnection("/work/clas12/users/gmat/clas12/clas12_dihadrons/utils/rcdb.root"); 
@@ -216,9 +218,11 @@ int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2
 
   int whileidx=0;
   int _ievent=0;
+  int _evnum=0; // from RUN::config
+  int badAsym=0;
   while(_chain.Next()==true && (whileidx < maxEvents || maxEvents < 0)){
     if(whileidx%10000==0 && whileidx!=0){
-      std::cout << whileidx << " events read | " << _ievent*100.0/whileidx << "% passed event selection" << std::endl;
+      std::cout << whileidx << " events read | " << _ievent*100.0/whileidx << "% passed event selection | " << badAsym << " events skipped from QADB" << std::endl;
     }
 
     auto event = _c12->event();
@@ -235,7 +239,15 @@ int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2
     
     _cm.set_run(run);
     _cm.set_run_period(std::string(hipoFile));
-      
+
+    // Skip events that are not ok for asymmetry analysis based on QADB
+    _evnum = _c12->getBank(_idx_RUNconfig)->getInt(_ievnum,0);
+    if(do_QADB){
+        if(!_c12->db()->qa()->isOkForAsymmetry(run,_evnum)){
+            badAsym++;
+            continue;
+        }
+    }
     // Get helicity
     // -------------------------------------
     
@@ -247,6 +259,11 @@ int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2
         hel = event->getHelicity();
       }
       
+    // Skip helicity==0 events
+    // May need to be revisited for non-asymmetry analyses
+    // -------------------------------------
+    if(!hipo_is_mc && hel==0)
+        continue;
     
     // Get polarization
     // -------------------------------------
@@ -303,7 +320,6 @@ int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2
 
       partstruct.chi2 = particle->getChi2Pid();
       partstruct.theta = particle->getTheta();
-      if(partstruct.theta*180/PI<5 || partstruct.theta*180/PI>35) continue;
       partstruct.eta = _kin.eta(partstruct.theta);
       partstruct.phi = particle->getPhi();
       partstruct.p = particle->getP();
@@ -322,21 +338,59 @@ int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2
       partstruct.vz = particle->par()->getVz();
       partstruct.status = particle->getStatus();
       partstruct.E = _kin.E(partstruct.m,partstruct.p);
-      
-      if(partstruct.pid==11){//only electron is assumed to be the scattered e
-	Q2=_kin.Q2(_electron_beam_energy,partstruct.E,_kin.cth(partstruct.px,partstruct.py,partstruct.pz));
-	y=_kin.y(_electron_beam_energy,partstruct.E);
-        if(y>0.8)
-	  continue;
-	nu=_kin.nu(_electron_beam_energy,partstruct.E);
-	W=_kin.W(Q2,Mp,nu);
-	x=_kin.x(Q2,s,y);
+    
+      // Ensure hadrons are not in CD
+      if (partstruct.pid == 2212 || partstruct.pid == -2212 ||
+        partstruct.pid == 2112 ||
+        partstruct.pid == -321 || partstruct.pid == -211 ||
+        partstruct.pid == 211 || partstruct.pid == 321) {
+          if(partstruct.status>=4000 && partstruct.status<5000)
+              continue;
       }
+      
       _hipoInterface.loadBankData(_c12,partstruct);
       vec_particles.push_back(partstruct);
           
     }
     
+      
+    // Code for determine the scattered electron from REC::Particle
+    // --> Find pid==11 particle with largest energy
+    // -->   If no electron is found, skip
+    // --> Check if the status of the maximum energy electron is in FD
+    // -->   Skip if not (i.e. always skip events if the max energy electron was not in FD)
+    // --> Set that particle as the scattered electron
+    int idx_e=-1;
+    double max_energy = -1; 
+    for (int i = 0; i < vec_particles.size(); i++) {
+      part partstruct = vec_particles[i];
+      // check if the particle is an electron
+      if (partstruct.pid == 11) {
+        // compare energy with the current maximum and update if necessary
+        if (partstruct.E > max_energy) {
+          max_energy = partstruct.E;
+          idx_e=i;
+         }
+       }
+    }
+    
+    if(idx_e==-1){
+        continue; // No scattered electron passing the above conditions found
+    }
+    
+    // Get the scattered electron
+    part scattered_electron = vec_particles[idx_e];
+    if((scattered_electron.status <= -3000 || scattered_electron.status > -2000)) continue; // Max E electron has bad status
+    vec_particles[idx_e].is_scattered_electron=1;
+    Q2=_kin.Q2(_electron_beam_energy,scattered_electron.E,_kin.cth(scattered_electron.px,scattered_electron.py,scattered_electron.pz));
+    y=_kin.y(_electron_beam_energy,scattered_electron.E);
+    if(y>0.8)
+        continue;
+    nu=_kin.nu(_electron_beam_energy,scattered_electron.E);
+    W=_kin.W(Q2,Mp,nu);
+    x=_kin.x(Q2,s,y);
+    
+      
     // Apply the cuts to make a new vec_particles
     // Calls the CutManager which parses through the vector
     // and makes relevant cuts for each particle
@@ -353,7 +407,7 @@ int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2
     int num_h1=0;
     int num_h2=0;
     for(part particle : vec_particles){
-      if(particle.pid==11) num_e++;
+      if(particle.pid==11 && particle.is_scattered_electron==1) num_e++;
       else if(particle.pid==fs.pid_h1) num_h1++;
       else if(particle.pid==fs.pid_h2) num_h2++;
     }
@@ -415,6 +469,7 @@ int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2
         truenu=_kin.nu(_electron_beam_energy,partstruct.trueE);
         trueW=_kin.W(trueQ2,Mp,truenu);
         truex=_kin.x(trueQ2,s,truey);
+        partstruct.is_scattered_electron=1;
       }
       
       // Add particle to list
@@ -428,7 +483,7 @@ int hipo2tree(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2
         float dphi = abs(vec_particles[i].phi - vec_mcparticles[j].truephi)*180/PI;
         float dE = abs(vec_particles[i].E - vec_mcparticles[j].trueE);
         
-        if (dth<2 && (dphi<4 || abs(dphi-2*PI)<4) && dE<5){
+        if (dth<2 && (dphi<4 || abs(dphi-2*PI)<4) && dE<1){
 	  // Perform Pairing
 	  vec_particles[i].truepx = vec_mcparticles[j].truepx;
 	  vec_particles[i].truepy = vec_mcparticles[j].truepy;

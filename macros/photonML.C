@@ -314,8 +314,10 @@ int photonML(const char * input_file = "/volatile/clas12/users/gmat/clas12analys
                 }
             }
             else if(pid[jpart]==11){
-                R_e = R;
-                dE_e = E[ipart] - E[jpart];
+                if(R<R_e || R_e==0){
+                    R_e = R;
+                    dE_e = E[ipart] - E[jpart];
+                }
             }
             else{
                 continue;

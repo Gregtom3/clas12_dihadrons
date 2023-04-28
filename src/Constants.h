@@ -6,14 +6,50 @@ const float PI=3.14159265;
 const double Mp = 0.938272;
 const double Me = 0.000511;
 
+inline string runPeriod(int run){
+      if     (run>= 5032 && run<= 5332) return "Fall2018_RGA_inbending";
+      else if(run>= 5333 && run<= 5666) return "Fall2018_RGA_outbending";
+      else if(run>= 6616 && run<= 6783) return "Spring2019_RGA_inbending";
+      else if(run>= 6156 && run<= 6603) return "Spring2019_RGB_inbending";
+      else if(run>= 11093 && run<=11283) return "Fall2019_RGB_outbending";
+      else if(run>=11284 && run<=11300) return "Fall2019_RGB_BAND_inbending";
+      else if(run>=11323 && run<=11571) return "Spring2020_RGB_inbending";
+      else if(run==11) return "MC_RGA_outbending";
+      else if(run==-11) return "MC_RGA_inbending";
+      else if(run==22) return "MC_RGB_outbending";
+      else if(run==-22) return "MC_RGB_inbending";
+      else{
+          cout << "Unknown run period from run " << run << "...returning ???" << endl;
+          return "???";
+      }
+}
 // Returns run polarization if "v" is true
 // Returns run polarization error if "v" is false
 inline float runPolarization(int run, bool v=true){
+  /* RGA */
   if     (run>= 5032 && run<= 5332) return v? 0.8592 : 0.01290; // rga_fa18, before Wien angle change
   else if(run>= 5333 && run<= 5666) return v? 0.8922 : 0.02509; // rga_fa18, after Wien angle change
   else if(run>= 6616 && run<= 6783) return v? 0.8453 : 0.01474; // rga_sp19 https://logbooks.jlab.org/entry/3677077
-  else
+  /* RGB */
+  else if(run>= 6142 && run<= 6149) return v? 0.81132 : 0.01505; // rgb_sp19
+  else if(run>= 6150 && run<= 6188) return v? 0.82137 : 0.01491; // https://clasweb.jlab.org/wiki/images/c/ca/Moller_Runs_15Jan.pdf
+  else if(run>= 6189 && run<= 6260) return v? 0.83598 : 0.01475;
+  else if(run>= 6261 && run<= 6339) return v? 0.80770 : 0.01449;
+  else if(run>= 6340 && run<= 6342) return v? 0.85536 : 0.01484;
+  else if(run>= 6344 && run<= 6399) return v? 0.87038 : 0.01474;
+  else if(run>= 6420 && run<= 6476) return v? 0.88214 : 0.01502;
+  else if(run>= 6479 && run<= 6532) return v? 0.86580 : 0.01460;
+  else if(run>= 6533 && run<= 6603) return v? 0.87887 : 0.01454;
+  else if(run>=11013 && run<=11309) return v? 0.84983 : 0.02929; // rgb_fa19
+  else if(run>=11323 && run<=11334) return v? 0.87135 : 0.01464; // rgb_wi20
+  else if(run>=11335 && run<=11387) return v? 0.85048 : 0.01530;
+  else if(run>=11389 && run<=11571) return v? 0.84262 : 0.01494; // NOTE: table last updated 1/15/2020, but run ended on 1/30
+  /* MC */
+  else if(run==11) return v? 0.86 : 0.0; // MC
+  else {
+    fprintf(stderr,"ERROR: RundepPolarization unknown for run %d\n",run);
     return 0.0;
+  };
 };
 
 // Returns beam energy based on run
@@ -44,11 +80,22 @@ inline bool runHelicityFlip(int run){
 };
 
 inline int runTorusBending(int run){
-  if     (run>= 5032 && run<= 5332) return -1; // rga_fa18, before Wien angle change
-  else if(run>= 5333 && run<= 5666) return +1; // rga_fa18, after Wien angle change
-  else if(run>= 6616 && run<= 6783) return -1; // rga_sp19 https://logbooks.jlab.org/entry/3677077
-  else
-    return 0.0;
+  if     (run>= 5032 && run<= 5419) return -1;  // rga_inbending_fa18
+  else if(run>= 5422 && run<= 5666) return 1; // rga_outbending_fa18
+  else if(run>= 6616 && run<= 6783) return -1;  // rga_inbending_sp19
+  else if(run>= 6156 && run<= 6603) return -1;  // rgb_inbending_sp19
+  else if(run>=11093 && run<=11283) return 1; // rgb_outbending_fa19
+  else if(run>=11284 && run<=11300) return -1;  // rgb_BAND_inbending_fa19
+  else if(run>=11323 && run<=11571) return -1;  // rgb_inbending_wi20
+  else if(run==11) {
+    return 1;
+  }
+  else if(run==-11){
+    return -1;
+  }
+  else{
+    return 0;
+  }
 };
 
 inline float runTarget(std::string target){
@@ -398,7 +445,7 @@ bool sampFracInfo(int _runNumber, double (&sfMu)[3][6], double (&sfSigma)[3][6])
     // sfSigma[1][0] = 0.1752;  sfSigma[1][1] = 0.1975;  sfSigma[1][2] = 0.1458;  sfSigma[1][3] = 0.1787;  sfSigma[1][4] = 0.0414;  sfSigma[1][5] = 0.2873;
     // sfSigma[2][0] = -0.0405; sfSigma[2][1] = -0.2537; sfSigma[2][2] = 0.2474;  sfSigma[2][3] = 0.4116;  sfSigma[2][4] = 1.2172;  sfSigma[2][5] = -0.4651;
   }
-  else if(_runNumber==11) { // MC
+  else if(_runNumber==11 || _runNumber==-11) { // MC
     for(int s=0; s<6; s++) {
       sfMu[0][s] = 0.248605;
       sfMu[1][s] = -0.844221;

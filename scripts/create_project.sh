@@ -32,7 +32,7 @@ rmdir_red () {
         printf "\t%.s" $(seq 1 "$2")
     fi
     printred "Waiting 10 seconds before...rm -r $1"
-    sleep 10
+    #sleep 10
     rm -r $1
 }
 
@@ -152,12 +152,18 @@ get_hipo_dirs()
     #declare -a hipofiles
     local version=$1
     local rungroup=$2
-    
     if [ $rungroup == "rg-a" ]; then
         if [ $version == "MC" ]; then
             declare -a hipodirs=("/cache/clas12/$rungroup/production/montecarlo/clasdis/fall2018/torus-1/v1/bkg45nA_10604MeV/" "/cache/clas12/$rungroup/production/montecarlo/clasdis/fall2018/torus+1/v1/bkg50nA_10604MeV/")
         elif [ $version == "nSidis" ]; then
             declare -a hipodirs=("/cache/clas12/$rungroup/production/recon/fall2018/torus-1/pass1/v1/dst/train/nSidis/" "/cache/clas12/$rungroup/production/recon/fall2018/torus+1/pass1/v1/dst/train/nSidis/" "/cache/clas12/$rungroup/production/recon/spring2019/torus-1/pass1/v1/dst/train/nSidis/")
+        fi
+    fi
+    if [ $rungroup == "rg-b" ]; then
+        if [ $version == "MC" ]; then
+            declare -a hipodirs=("/cache/clas12/rg-a/production/montecarlo/clasdis/fall2018/torus-1/v1/bkg45nA_10604MeV/" "/cache/clas12/rg-a/production/montecarlo/clasdis/fall2018/torus+1/v1/bkg50nA_10604MeV/")
+        elif [ $version == "sidisdvcs" ]; then
+            declare -a hipodirs=("/cache/clas12/rg-b/production/recon/spring2019/torus-1/pass1/v0/dst/train/sidisdvcs/" "/cache/clas12/rg-b/production/recon/fall2019/torus+1/pass1/v1/dst/train/sidisdvcs/" "/cache/clas12/rg-b/production/recon/fall2019/torus+1/pass1/v1/dst/train/sidisdvcs/" "/cache/clas12/rg-b/production/recon/spring2020/torus-1/pass1/v1/dst/train/sidisdvcs/")
         fi
     fi
     if [ $rungroup == "rg-c" ]; then
@@ -184,6 +190,12 @@ function hipo_beamE_runNumber {
             read runNumber <<< $(basename $hipo | grep -oP '(?<=_job_).*(?=.hipo)')
         else
             read runNumber <<< $(basename $hipo | grep -oP '(?<='$ana'_00).*(?=.hipo)')
+        fi
+    elif [ $rungroup == "rg-b" ]; then
+        if [ $ana == "MC" ]; then
+            read runNumber <<< $(basename $hipo | grep -oP '(?<=_job_).*(?=.hipo)')
+        else
+            read runNumber <<< $(basename $hipo | sed -E 's/sidisdvcs_0*([0-9]+)\.hipo/\1/')
         fi
     elif [ $rungroup == "rg-c" ]; then
         if [ $ana == "MC" ]; then
@@ -226,7 +238,7 @@ function hipo_beamE_runNumber {
 
 #Call the function
 
-rungroups=("rg-a")
+rungroups=("rg-b")
 #rungroups=("rg-c")
 versions=("data" "MC")
 
@@ -237,12 +249,16 @@ do
     do
         if [ $rungroup == "rg-a" ]; then
             rg="RGA"
+        elif [ $rungroup == "rg-b" ]; then
+            rg="RGB"
         elif [ $rungroup == "rg-c" ]; then
             rg="RGC"
         fi
         
         if [ $rungroup == "rg-a" ] && [ "$ana" == "data" ]; then
             ana="nSidis"
+        elif [ $rungroup == "rg-b" ] && [ "$ana" == "data" ]; then
+            ana="sidisdvcs"
         elif [ $rungroup == "rg-c" ] && [ "$ana" == "data" ]; then
             ana="sidisdvcs"
         fi
@@ -266,6 +282,7 @@ do
                 fi
 
                 read runNumber beamE <<< $(hipo_beamE_runNumber $hipo $ana $rungroup)
+                echo $hipo $runNumber
                 slurmshell=$FARMOUT_DIR/shell/hipo2tree_${ana}_${runNumber}.sh
                 slurmslurm=$FARMOUT_DIR/slurm/hipo2tree_${ana}_${runNumber}.slurm
 

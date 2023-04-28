@@ -144,8 +144,9 @@ done
 # Create pion pid pairs for the ML portion
 pion_pairs=("piplus_pi0" "piminus_pi0" "pi0_pi0")
 # Create list of unique datasets
-datasets=("Fall2018_RGA_inbending" "Fall2018_RGA_outbending" "Spring2019_RGA_inbending" "MC_RGA_inbending" "MC_RGA_outbending" "MC_RGC" "Data_RGC")
+#datasets=("Fall2018_RGA_inbending" "Fall2018_RGA_outbending" "Spring2019_RGA_inbending" "MC_RGA_inbending" "MC_RGA_outbending" "MC_RGC" "Data_RGC")
 
+datasets=("Spring2019_RGB_inbending" "Fall2019_RGB_outbending" "Spring2020_RGB_inbending" "MC_RGA_inbending" "MC_RGA_outbending")
 # Returns the monte carlo dataset used to train the appropriate model
 function dataset_to_model() {
     case "$1" in
@@ -169,6 +170,15 @@ function dataset_to_model() {
             ;;
         "Data_RGC")
             echo "MC_RGC"
+            ;;
+        "Spring2019_RGB_inbending")
+            echo "MC_RGA_inbending"
+            ;;
+        "Fall2019_RGB_outbending")
+            echo "MC_RGA_outbending"
+            ;;
+        "Spring2020_RGB_inbending")
+            echo "MC_RGA_inbending"
             ;;
     esac
 }

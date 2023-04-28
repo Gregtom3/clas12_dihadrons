@@ -93,7 +93,9 @@ mkdir_green "$FARMOUT_DIR/shell"
 
 
 # Create list of unique datasets
-datasets=("Fall2018_RGA_inbending" "Fall2018_RGA_outbending" "Spring2019_RGA_inbending" "MC_RGA_inbending" "MC_RGA_outbending" "Data_RGC" "MC_RGC")
+#datasets=("Fall2018_RGA_inbending" "Fall2018_RGA_outbending" "Spring2019_RGA_inbending" "MC_RGA_inbending" "MC_RGA_outbending" "Data_RGC" "MC_RGC" "Fall2018Spring2019_RGA_inbending")
+#datasets=("Fall2018Spring2019_RGA_inbending")
+datasets=("Spring2019_RGB_inbending" "Fall2019_RGB_outbending" "Spring2020_RGB_inbending" "MC_RGA_inbending" "MC_RGA_outbending")
 
 # Loop over pion pairs
 for pion_pair in "${pion_pairs[@]}"; do

@@ -73,6 +73,8 @@ int dihadronBuilder(const char *input_file="hipo2tree.root",
     std::string particleNames ="";
     // Determine the pids from the file (see function)
     getPIDs(string(input_file),pid_h1,pid_h2,particleNames);
+    pid_h1=211;
+    pid_h2=-211;
     // Read the TFile
     TFile *f = new TFile(input_file,"UPDATE");
     // Read the TTree
@@ -274,15 +276,20 @@ int dihadronBuilder(const char *input_file="hipo2tree.root",
         TLorentzVector trueelectron;
         TLorentzVector q; // virtual photon
         TLorentzVector trueq;
+        int idx_e=-1;
+        double max_e=-1;
         for (int i=0; i<Nmax; i++){
             if(pid[i]==11){
-                electron.SetPxPyPzE(px[i],py[i],pz[i],E[i]);
-                trueelectron.SetPxPyPzE(truepx[i],truepy[i],truepz[i],trueE[i]);
-                q=init_electron-electron;
-                trueq=init_electron-trueelectron;
-                break;
+                if(E[i]>max_e){
+                    idx_e=i;
+                    max_e=E[i];
+                }
             }
-        } 
+        }
+        electron.SetPxPyPzE(px[idx_e],py[idx_e],pz[idx_e],E[idx_e]);
+        trueelectron.SetPxPyPzE(truepx[idx_e],truepy[idx_e],truepz[idx_e],trueE[idx_e]);
+        q=init_electron-electron;
+        trueq=init_electron-trueelectron;
         //Loop over all particles in the event to determine hadron indecies
 
         for(int i = 0; i<Nmax; i++){
@@ -417,6 +424,29 @@ int dihadronBuilder(const char *input_file="hipo2tree.root",
                 is_CFR_2=is_CFR[j];
             }
             
+            if(pid_h1==pid_h2){
+                z1 = kin.z(init_target,h1,q);
+                z2 = kin.z(init_target,h2,q);
+                if(z1<z2){
+                    TLorentzVector temp = h1;
+                    h2=h1;
+                    h1=temp;
+                    TLorentzVector truetemp = h1;
+                    trueh2=trueh1;
+                    trueh1=truetemp;
+                    std::swap(p_11,p_21);
+                    std::swap(p_12,p_22);
+                    std::swap(truepid_11,truepid_21);
+                    std::swap(truepid_12,truepid_22);
+                    std::swap(truepid_1,truepid_2);
+                    std::swap(trueparentid_1,trueparentid_2);
+                    std::swap(trueparentpid_1,trueparentpid_2);
+                    std::swap(trueparentparentid_1,trueparentparentid_2);
+                    std::swap(trueparentparentpid_1,trueparentparentpid_2);
+                    std::swap(is_CFR_1,is_CFR_2);
+                }
+            }
+            
             // Build the dihadron
             dihadron = h1+h2;
             truedihadron = trueh1+trueh2;
@@ -486,20 +516,14 @@ int dihadronBuilder(const char *input_file="hipo2tree.root",
             
             // Determine if this would've been a good event without ML
             isGoodEventWithoutML=1;
-            isGoodEventWithoutML*=(xF1>0&&xF2>0);
-            isGoodEventWithoutML*=(z<0.95);
             if(pid_h1==111){
                 isGoodEventWithoutML*=(E[i]>0.6);
                 isGoodEventWithoutML*=(E[ii]>0.6);
-            }else{
-                isGoodEventWithoutML*=(h1.P()>1.25);
             }
             
             if(pid_h2==111){
                 isGoodEventWithoutML*=(E[j]>0.6);
                 isGoodEventWithoutML*=(E[jj]>0.6);
-            }else{
-                isGoodEventWithoutML*=(h2.P()>1.25);
             }
             
             outtree->Fill();
