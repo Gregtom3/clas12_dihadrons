@@ -108,9 +108,9 @@ pion_pairs=("piplus_piplus" "piplus_pi0" "piminus_pi0" "piminus_piminus" "pi0_pi
 #pion_pairs=("piplus_piminus") #"piplus_piplus" "piminus_piminus" )
 # Create list of unique datasets
 #datasets=("MC_RGA_inbending" "MC_RGA_outbending" "Fall2018_RGA_inbending" "Fall2018_RGA_outbending" "Spring2019_RGA_inbending")
-datasets=("Fall2018_RGA_inbending" "Fall2018_RGA_outbending" "Spring2019_RGA_inbending" "Fall2018Spring2019_RGA_inbending")
+#datasets=("Fall2018_RGA_inbending" "Fall2018_RGA_outbending" "Spring2019_RGA_inbending" "Fall2018Spring2019_RGA_inbending")
 #datasets=("Fall2018_RGA_inbending")
-
+datasets=("Spring2019_RGB_inbending" "Fall2019_RGB_outbending" "Spring2020_RGB_inbending")
 # First write the scripts for the fitting code without ML (i.e. without pi0's)
 for ((i=0; i<${#pion_pairs[@]}; i++)); do
   pion_pair=${pion_pairs[$i]}

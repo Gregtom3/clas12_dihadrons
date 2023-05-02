@@ -1,8 +1,8 @@
 #!/bin/bash
 
-PROJECT_NAME="ana_v2"
-nFiles=5000
-nEvents=1000000000
+PROJECT_NAME="ana_test_RGB"
+nFiles=5
+nEvents=50000
 model_list="model_params_gbt_only_full.yaml"
 ml_branch="gbt_0_calo" # <model name>_<track/calo>
                        # See model_list in machine_learning/photonID/params_folder

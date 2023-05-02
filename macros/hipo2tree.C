@@ -8,13 +8,14 @@
 
 
 int hipo2tree(
-              const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2018/torus-1/pass1/v1/dst/train/nSidis/nSidis_005036.hipo",
+	      //             const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2018/torus-1/pass1/v1/dst/train/nSidis/nSidis_005036.hipo",
+	      const char * hipoFile = "/cache/clas12/rg-a/production/montecarlo/clasdis/fall2018/torus+1/v1/bkg50nA_10604MeV/50nA_OB_job_3313_0.hipo",
               const char * outputFile = "hipo2tree.root",
               const double _electron_beam_energy = 10.604,
               const int pid_h1=211,
-              const int pid_h2=-211,
-              const int maxEvents = 1000000000,
-              bool hipo_is_mc = false){
+              const int pid_h2=111,
+              const int maxEvents = 100000,
+              bool hipo_is_mc = true){
 
 
 
@@ -185,7 +186,7 @@ int hipo2tree(
   _config_c12->addAtLeastPid(11,1);     // At least 1 electron
   if(fs.pid_h1!=0)    _config_c12->addAtLeastPid(fs.pid_h1,fs.num_h1);
   if(fs.pid_h2!=0)    _config_c12->addAtLeastPid(fs.pid_h2,fs.num_h2); // Doesn't run if duplicate final state
-  
+
   // Add RUN::config bank
   // -------------------------------------
   int _idx_RUNconfig = _config_c12->addBank("RUN::config");

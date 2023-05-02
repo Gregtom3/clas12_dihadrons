@@ -32,7 +32,7 @@ rmdir_red () {
         printf "\t%.s" $(seq 1 "$2")
     fi
     printred "Waiting 10 seconds before...rm -r $1"
-    #sleep 10
+    sleep 10
     rm -r $1
 }
 
@@ -95,13 +95,13 @@ mkdir_green "$VOLATILE_DIR/data"
 mkdir_green "$VOLATILE_DIR/asym"
 
 # Create pion pid pairs
-pion_pairs=("piplus_piplus" "piplus_pi0" "piminus_pi0" "piminus_piminus" "pi0_pi0" "piplus_piminus")
+pion_pairs=("piplus_pi0" "piplus_piplus" "piminus_pi0" "piminus_piminus" "pi0_pi0" "piplus_piminus")
 declare -A pion_pairs_pids
 pion_pairs_pids[0,0]=211
-pion_pairs_pids[0,1]=211
+pion_pairs_pids[0,1]=111
 
 pion_pairs_pids[1,0]=211
-pion_pairs_pids[1,1]=111
+pion_pairs_pids[1,1]=211
 
 pion_pairs_pids[2,0]=-211
 pion_pairs_pids[2,1]=111
@@ -163,7 +163,7 @@ get_hipo_dirs()
         if [ $version == "MC" ]; then
             declare -a hipodirs=("/cache/clas12/rg-a/production/montecarlo/clasdis/fall2018/torus-1/v1/bkg45nA_10604MeV/" "/cache/clas12/rg-a/production/montecarlo/clasdis/fall2018/torus+1/v1/bkg50nA_10604MeV/")
         elif [ $version == "sidisdvcs" ]; then
-            declare -a hipodirs=("/cache/clas12/rg-b/production/recon/spring2019/torus-1/pass1/v0/dst/train/sidisdvcs/" "/cache/clas12/rg-b/production/recon/fall2019/torus+1/pass1/v1/dst/train/sidisdvcs/" "/cache/clas12/rg-b/production/recon/fall2019/torus+1/pass1/v1/dst/train/sidisdvcs/" "/cache/clas12/rg-b/production/recon/spring2020/torus-1/pass1/v1/dst/train/sidisdvcs/")
+            declare -a hipodirs=("/cache/clas12/rg-b/production/recon/spring2019/torus-1/pass1/v0/dst/train/sidisdvcs/" "/cache/clas12/rg-b/production/recon/fall2019/torus+1/pass1/v1/dst/train/sidisdvcs/" "/cache/clas12/rg-b/production/recon/spring2020/torus-1/pass1/v1/dst/train/sidisdvcs/")
         fi
     fi
     if [ $rungroup == "rg-c" ]; then
@@ -231,6 +231,7 @@ function hipo_beamE_runNumber {
         if [[ $hipo==*"10.5GeV"* ]]; then
             beamE=10.5
         fi
+        beamE=10.604
     fi
     #Return the two values
     echo "$runNumber $beamE"
@@ -239,8 +240,10 @@ function hipo_beamE_runNumber {
 #Call the function
 
 rungroups=("rg-b")
+#rungroups=("rg-a")
 #rungroups=("rg-c")
 versions=("data" "MC")
+#versions=("MC")
 
 for ana in "${versions[@]}"
 do

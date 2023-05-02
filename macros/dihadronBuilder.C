@@ -73,8 +73,6 @@ int dihadronBuilder(const char *input_file="hipo2tree.root",
     std::string particleNames ="";
     // Determine the pids from the file (see function)
     getPIDs(string(input_file),pid_h1,pid_h2,particleNames);
-    pid_h1=211;
-    pid_h2=-211;
     // Read the TFile
     TFile *f = new TFile(input_file,"UPDATE");
     // Read the TTree

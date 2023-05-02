@@ -109,8 +109,8 @@ std::vector<TString> getFilesInDir(const char* path, const std::string &version)
 
 int getRunNumber(const std::string &filename, const std::string &version)
 {
-    int i1_values[] = {0, 11, 7, 14};
-    int i2_values[] = {4, 4, 4, 5};
+    int i1_values[] = {0, 11, 7, 14, 14};
+    int i2_values[] = {4, 4, 4, 5, 4};
 
     for (int i = 0; i < 4; i++) {
         int i1 = i1_values[i];
@@ -132,9 +132,13 @@ bool shouldKeepFile(const std::string &filename, int runNumber, const std::strin
 
     if (filename.find("MC_RGA") != std::string::npos && version.find("MC_RGA") == std::string::npos) return false;
 
+    if (filename.find("MC_RGB") != std::string::npos && version.find("MC_RGB") == std::string::npos) return false;
+
     if (filename.find("nSidis_RGA") != std::string::npos && (version.find("2018_RGA") == std::string::npos && version.find("2019_RGA") == std::string::npos)) return false;
 
     if (filename.find("sidisdvcs_RGC") != std::string::npos && (version.find("Data_RGC") == std::string::npos)) return false;
+
+    if (filename.find("sidisdvcs_RGB") != std::string::npos && (version.find("2019_RGB") == std::string::npos) && (version.find("2020_RGB") == std::string::npos)) return false;
 
     if (filename.find("MC_RGC") != std::string::npos && (version.find("MC_RGC") == std::string::npos)) return false;
 

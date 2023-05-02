@@ -55,7 +55,7 @@ wait1="job_hipo2tree"
 func1="./scripts/create_project.sh"
 
 # Call the function
-#call_function "${func1}" "${wait1}" "${in1[@]}"
+call_function "${func1}" "${wait1}" "${in1[@]}"
 
 # 2. preproess_photonML.sh
 # (Creates TTree for machine learning)
@@ -65,7 +65,7 @@ wait2="job_photonML_"
 func2="./scripts/preprocess_photonML.sh"
 
 # Call the function
-#call_function "${func2}" "${wait2}" "${in2[@]}"
+call_function "${func2}" "${wait2}" "${in2[@]}"
 
 # 3. train_photonML.sh
 # (Performs training on Monte Carlo)
@@ -75,7 +75,7 @@ wait3="job_photonMLtrain_"
 func3="./scripts/train_photonML.sh"
 
 # Call the function
-#call_function "${func3}" "${wait3}" "${in3[@]}"
+call_function "${func3}" "${wait3}" "${in3[@]}"
 
 
 
@@ -87,7 +87,7 @@ wait4="job_photonMLpredict_"
 func4="./scripts/predict_photonML.sh"
 
 # Call the function
-#call_function "${func4}" "${wait4}" "${in4[@]}"
+call_function "${func4}" "${wait4}" "${in4[@]}"
 
 
 
@@ -100,7 +100,7 @@ wait5="job_dihadron_"
 func5="./scripts/form_dihadrons.sh"
 
 # Call the function
-#call_function "${func5}" "${wait5}" "${in5[@]}"
+call_function "${func5}" "${wait5}" "${in5[@]}"
 
 
 # 6. merge_dihadrons.sh
