@@ -9,13 +9,14 @@
 
 int hipo2tree(
 	      //             const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2018/torus-1/pass1/v1/dst/train/nSidis/nSidis_005036.hipo",
-	      const char * hipoFile = "/cache/clas12/rg-a/production/montecarlo/clasdis/fall2018/torus+1/v1/bkg50nA_10604MeV/50nA_OB_job_3313_0.hipo",
+	      //const char * hipoFile = "/cache/clas12/rg-a/production/montecarlo/clasdis/fall2018/torus+1/v1/bkg50nA_10604MeV/50nA_OB_job_3313_0.hipo",
+	      const char * hipoFile = "/cache/clas12/rg-b/production/recon/spring2020/torus-1/pass1/v1/dst/train/sidisdvcs/sidisdvcs_011494.hipo",
               const char * outputFile = "hipo2tree.root",
               const double _electron_beam_energy = 10.604,
               const int pid_h1=211,
-              const int pid_h2=111,
+              const int pid_h2=-211,
               const int maxEvents = 100000,
-              bool hipo_is_mc = true){
+              bool hipo_is_mc = false){
 
 
 
@@ -240,7 +241,6 @@ int hipo2tree(
     
     _cm.set_run(run);
     _cm.set_run_period(std::string(hipoFile));
-
     // Skip events that are not ok for asymmetry analysis based on QADB
     _evnum = _c12->getBank(_idx_RUNconfig)->getInt(_ievnum,0);
     if(do_QADB){
@@ -249,6 +249,7 @@ int hipo2tree(
             continue;
         }
     }
+
     // Get helicity
     // -------------------------------------
     
@@ -259,7 +260,7 @@ int hipo2tree(
       {
         hel = event->getHelicity();
       }
-      
+
     // Skip helicity==0 events
     // May need to be revisited for non-asymmetry analyses
     // -------------------------------------
@@ -307,7 +308,6 @@ int hipo2tree(
     }
     
     whileidx++;
-      
     // Loop over reconstructed particles
     // -------------------------------------------------------
     auto particles=_c12->getDetParticles();
@@ -378,7 +378,6 @@ int hipo2tree(
     if(idx_e==-1){
         continue; // No scattered electron passing the above conditions found
     }
-    
     // Get the scattered electron
     part scattered_electron = vec_particles[idx_e];
     if((scattered_electron.status <= -3000 || scattered_electron.status > -2000)) continue; // Max E electron has bad status
