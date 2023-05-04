@@ -59,6 +59,33 @@ else
   exit 1
 fi
 
+
+# Take the user's input
+if [[ -n "$2" ]]; then
+    configuration=$2
+else
+    read -p "Please enter the pipeline configuration (rg-a, rg-b, rg-ab, rg-c): " configuration
+fi
+
+# Check if the entered configuration is valid
+if [[ $configuration != "rg-a" && $configuration != "rg-b" && $configuration != "rg-ab" && $configuration != "rg-c" ]]; then
+    echo "Invalid configuration: $configuration"
+    exit 1
+fi
+
+# Set the variables based on the configuration
+if [[ $configuration == "rg-a" ]]; then
+    datasets=("Fall2018_RGA_inbending" "Fall2018_RGA_outbending" "Spring2019_RGA_inbending" "MC_RGA_inbending" "MC_RGA_outbending")
+elif [[ $configuration == "rg-b" ]]; then
+    datasets=("Spring2019_RGB_inbending" "Fall2019_RGB_outbending" "Spring2020_RGB_inbending" "MC_RGA_inbending" "MC_RGA_outbending")
+elif [[ $configuration == "rg-ab" ]]; then
+    datasets=("Fall2018_RGA_inbending" "Fall2018_RGA_outbending" "Spring2019_RGA_inbending" "Spring2019_RGB_inbending" "Fall2019_RGB_outbending" "Spring2020_RGB_inbending" "MC_RGA_inbending" "MC_RGA_outbending")
+elif [[ $configuration == "rg-c" ]]; then
+    datasets=("MC_RGC" "Data_RGC")
+fi
+
+
+
 VOLATILE_DIR="$volatile/clas12_dihadrons/projects/$PROJECT_NAME"
 DATA_DIR="$VOLATILE_DIR/data"
 FARMOUT_DIR="$farmout"
@@ -91,11 +118,6 @@ mkdir_green "$FARMOUT_DIR/err"
 mkdir_green "$FARMOUT_DIR/slurm"
 mkdir_green "$FARMOUT_DIR/shell"
 
-
-# Create list of unique datasets
-#datasets=("Fall2018_RGA_inbending" "Fall2018_RGA_outbending" "Spring2019_RGA_inbending" "MC_RGA_inbending" "MC_RGA_outbending" "Data_RGC" "MC_RGC" "Fall2018Spring2019_RGA_inbending")
-#datasets=("Fall2018Spring2019_RGA_inbending")
-datasets=("Spring2019_RGB_inbending" "Fall2019_RGB_outbending" "Spring2020_RGB_inbending" "MC_RGB_inbending" "MC_RGB_outbending")
 
 # Loop over pion pairs
 for pion_pair in "${pion_pairs[@]}"; do

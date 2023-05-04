@@ -146,6 +146,34 @@ else
     read -p "Please enter the number of events per file: " nEvents
 fi
 
+# Take the user's input
+if [[ -n "$5" ]]; then
+    configuration=$5
+else
+    read -p "Please enter the pipeline configuration (rg-a, rg-b, rg-ab, rg-c): " configuration
+fi
+
+# Check if the entered configuration is valid
+if [[ $configuration != "rg-a" && $configuration != "rg-b" && $configuration != "rg-ab" && $configuration != "rg-c" ]]; then
+    echo "Invalid configuration: $configuration"
+    exit 1
+fi
+
+# Set the variables based on the configuration
+if [[ $configuration == "rg-a" ]]; then
+    rungroups=("rg-a" "rg-a")
+    versions=("data" "MC")
+elif [[ $configuration == "rg-b" ]]; then
+    rungroups=("rg-b" "rg-b")
+    versions=("data" "MC")
+elif [[ $configuration == "rg-ab" ]]; then
+    rungroups=("rg-a" "rg-a" "rg-b")
+    versions=("data" "MC" "data")
+elif [[ $configuration == "rg-c" ]]; then
+    rungroups=("rg-c" "rg-c")
+    versions=("data" "MC")
+fi
+
 # Define a function that returns the hipo files for analysis
 get_hipo_dirs()
 {
@@ -238,62 +266,54 @@ function hipo_beamE_runNumber {
 }
 
 #Call the function
+for ((z=0; z<${#versions[@]}; z++)); do
+    ana=${versions[z]}
+    rungroup=${rungroups[z]}
+    printblue "VERSION=$ana RUNGROUP=$rungroup"
+    if [ $rungroup == "rg-a" ]; then
+        rg="RGA"
+    elif [ $rungroup == "rg-b" ]; then
+        rg="RGB"
+    elif [ $rungroup == "rg-c" ]; then
+        rg="RGC"
+    fi
 
-rungroups=("rg-b")
-#rungroups=("rg-a")
-#rungroups=("rg-c")
-versions=("data" "MC")
-#versions=("MC")
+    if [ $rungroup == "rg-a" ] && [ "$ana" == "data" ]; then
+        ana="nSidis"
+    elif [ $rungroup == "rg-b" ] && [ "$ana" == "data" ]; then
+        ana="sidisdvcs"
+    elif [ $rungroup == "rg-c" ] && [ "$ana" == "data" ]; then
+        ana="sidisdvcs"
+    fi
 
-for ana in "${versions[@]}"
-do
-    printblue "VERSION=$ana"
-    for rungroup in "${rungroups[@]}"
+    printgreen "\tRUNGROUP=$rungroup"
+    if [ "$ana" == "nSidis" ] || [ "$ana" == "sidisdvcs" ]; then
+        hipo_is_mc=0
+    else
+        hipo_is_mc=1
+    fi
+    hipodirs=$(get_hipo_dirs $ana "$rungroup")
+    for hipodir in ${hipodirs[@]}
     do
-        if [ $rungroup == "rg-a" ]; then
-            rg="RGA"
-        elif [ $rungroup == "rg-b" ]; then
-            rg="RGB"
-        elif [ $rungroup == "rg-c" ]; then
-            rg="RGC"
-        fi
-        
-        if [ $rungroup == "rg-a" ] && [ "$ana" == "data" ]; then
-            ana="nSidis"
-        elif [ $rungroup == "rg-b" ] && [ "$ana" == "data" ]; then
-            ana="sidisdvcs"
-        elif [ $rungroup == "rg-c" ] && [ "$ana" == "data" ]; then
-            ana="sidisdvcs"
-        fi
-        
-        printgreen "\tRUNGROUP=$rungroup"
-        if [ "$ana" == "nSidis" ] || [ "$ana" == "sidisdvcs" ]; then
-            hipo_is_mc=0
-        else
-            hipo_is_mc=1
-        fi
-        hipodirs=$(get_hipo_dirs $ana "$rungroup")
-        for hipodir in ${hipodirs[@]}
+        i=0
+        for hipo in "$hipodir"*.hipo
         do
-            i=0
-            for hipo in "$hipodir"*.hipo
-            do
-                if [ $i -eq $nFiles ]; then
-                    break
-                else
-                    i=$((i+1))
-                fi
+            if [ $i -eq $nFiles ]; then
+                break
+            else
+                i=$((i+1))
+            fi
 
-                read runNumber beamE <<< $(hipo_beamE_runNumber $hipo $ana $rungroup)
-                echo $hipo $runNumber
-                slurmshell=$FARMOUT_DIR/shell/hipo2tree_${ana}_${runNumber}.sh
-                slurmslurm=$FARMOUT_DIR/slurm/hipo2tree_${ana}_${runNumber}.slurm
+            read runNumber beamE <<< $(hipo_beamE_runNumber $hipo $ana $rungroup)
+            echo $hipo $runNumber
+            slurmshell=$FARMOUT_DIR/shell/hipo2tree_${ana}_${runNumber}.sh
+            slurmslurm=$FARMOUT_DIR/slurm/hipo2tree_${ana}_${runNumber}.slurm
 
-                touch -f $slurmshell
-                touch -f $slurmslurm
+            touch -f $slurmshell
+            touch -f $slurmslurm
 
-                chmod +x $slurmshell
-                cat >> $slurmslurm << EOF
+            chmod +x $slurmshell
+            cat >> $slurmslurm << EOF
 #!/bin/bash
 #SBATCH --account=clas12
 #SBATCH --partition=production
@@ -306,23 +326,22 @@ do
 $slurmshell
 EOF
 
-                echo "#!/bin/tcsh" >> $slurmshell
-                echo "source /group/clas12/packages/setup.csh" >> $slurmshell
-                echo "module load clas12/pro" >> $slurmshell
+            echo "#!/bin/tcsh" >> $slurmshell
+            echo "source /group/clas12/packages/setup.csh" >> $slurmshell
+            echo "module load clas12/pro" >> $slurmshell
 
-                # For loop over each dihadron pair
-                j=0
-                for pair in "${pion_pairs[@]}"; do
-                    outfile="$VOLATILE_DIR/data/$pair/${ana}_${rg}_${runNumber}.root"
-                    pid1=${pion_pairs_pids[${j},0]}
-                    pid2=${pion_pairs_pids[${j},1]}
-                    echo "clas12root -b -q $PWD/macros/hipo2tree.C\(\\\"${hipo}\\\",\\\"${outfile}\\\",$beamE,$pid1,$pid2,$nEvents,$hipo_is_mc\)" >> $slurmshell
-                    j=$((j+1))
-                done
-                
-                echo "Submitting slurm job for $hipo"
-                sbatch --quiet $slurmslurm
+            # For loop over each dihadron pair
+            j=0
+            for pair in "${pion_pairs[@]}"; do
+                outfile="$VOLATILE_DIR/data/$pair/${ana}_${rg}_${runNumber}.root"
+                pid1=${pion_pairs_pids[${j},0]}
+                pid2=${pion_pairs_pids[${j},1]}
+                echo "clas12root -b -q $PWD/macros/hipo2tree.C\(\\\"${hipo}\\\",\\\"${outfile}\\\",$beamE,$pid1,$pid2,$nEvents,$hipo_is_mc\)" >> $slurmshell
+                j=$((j+1))
             done
+
+            echo "Submitting slurm job for $hipo"
+            sbatch --quiet $slurmslurm
         done
     done
 done

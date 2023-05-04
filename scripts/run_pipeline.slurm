@@ -1,12 +1,12 @@
 #!/bin/bash
 
-PROJECT_NAME="ana_test_RGB"
-nFiles=5
-nEvents=50000
+PROJECT_NAME="ana_v0"
+nFiles=2
+nEvents=5000
 model_list="model_params_gbt_only_full.yaml"
 ml_branch="gbt_0_calo" # <model name>_<track/calo>
                        # See model_list in machine_learning/photonID/params_folder
-
+configuration="rg-ab"   # rg-a , rg-b , rg-ab , rg-c
 
 #SBATCH --account=clas12
 #SBATCH --partition=production
@@ -17,5 +17,5 @@ ml_branch="gbt_0_calo" # <model name>_<track/calo>
 #SBATCH --output=out_${PROJECT_NAME}.out
 #SBATCH --error=err_${PROJECT_NAME}.err
 
-bash ./scripts/pipeline.sh ${PROJECT_NAME} ${nFiles} ${nEvents} ${model_list} ${ml_branch}
+bash ./scripts/pipeline.sh ${PROJECT_NAME} ${nFiles} ${nEvents} ${model_list} ${ml_branch} ${configuration}
 

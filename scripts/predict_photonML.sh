@@ -141,12 +141,35 @@ for file in $(find $PROJECT_DIR -name "*_model_*"); do
     fi
 done
 
+
+# Take the user's input
+if [[ -n "$3" ]]; then
+    configuration=$3
+else
+    read -p "Please enter the pipeline configuration (rg-a, rg-b, rg-ab, rg-c): " configuration
+fi
+
+# Check if the entered configuration is valid
+if [[ $configuration != "rg-a" && $configuration != "rg-b" && $configuration != "rg-ab" && $configuration != "rg-c" ]]; then
+    echo "Invalid configuration: $configuration"
+    exit 1
+fi
+
+# Set the variables based on the configuration
+if [[ $configuration == "rg-a" ]]; then
+    datasets=("Fall2018_RGA_inbending" "Fall2018_RGA_outbending" "Spring2019_RGA_inbending" "MC_RGA_inbending" "MC_RGA_outbending")
+elif [[ $configuration == "rg-b" ]]; then
+    datasets=("Spring2019_RGB_inbending" "Fall2019_RGB_outbending" "Spring2020_RGB_inbending" "MC_RGA_inbending" "MC_RGA_outbending")
+elif [[ $configuration == "rg-ab" ]]; then
+    datasets=("Fall2018_RGA_inbending" "Fall2018_RGA_outbending" "Spring2019_RGA_inbending" "Spring2019_RGB_inbending" "Fall2019_RGB_outbending" "Spring2020_RGB_inbending" "MC_RGA_inbending" "MC_RGA_outbending")
+elif [[ $configuration == "rg-c" ]]; then
+    datasets=("MC_RGC" "Data_RGC")
+fi
+
+
 # Create pion pid pairs for the ML portion
 pion_pairs=("piplus_pi0" "piminus_pi0" "pi0_pi0")
-# Create list of unique datasets
-#datasets=("Fall2018_RGA_inbending" "Fall2018_RGA_outbending" "Spring2019_RGA_inbending" "MC_RGA_inbending" "MC_RGA_outbending" "MC_RGC" "Data_RGC")
 
-datasets=("Spring2019_RGB_inbending" "Fall2019_RGB_outbending" "Spring2020_RGB_inbending" "MC_RGA_inbending" "MC_RGA_outbending")
 # Returns the monte carlo dataset used to train the appropriate model
 function dataset_to_model() {
     case "$1" in

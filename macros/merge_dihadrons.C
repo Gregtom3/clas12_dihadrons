@@ -1,79 +1,6 @@
 #include <dirent.h>
 #include <sys/types.h>
 #include "../src/Constants.h"
-// std::vector<TString> getFilesInDir(const char* path, string version)
-// {
-
-//   std::vector<TString> files;
-//   DIR *dir;
-//   struct dirent *ent;
-//   int nmin = 0;
-//   int nmax = 0;
-//   int i1 = 0;
-//   int i2 = 4;
-//   if(version=="Fall2018_RGA_inbending"){
-//     nmin = 5032;
-//     nmax = 5332;
-//     i1 = 11;
-//   }
-//   else if(version=="Fall2018_RGA_outbending"){
-//     nmin = 5333;
-//     nmax = 5666;
-//     i1 = 11;
-//   }
-//   else if(version=="Spring2019_RGA_inbending"){
-//     nmin = 6616;
-//     nmax = 6783;
-//     i1 = 11;
-//   }
-//   else if(version=="MC_RGA_inbending"){
-//     nmin = 3051;
-//     nmax = 3304;
-//     i1 = 7;
-//   }
-//   else if(version=="MC_RGA_outbending"){
-//     nmin = 3313;
-//     nmax = 3327;
-//     i1 = 7;
-//   }
-//   else if(version=="MC_RGC"){
-//     nmin = 0;
-//     nmax = 1000;
-//     i1 = 7;
-//   }
-//   else if(version=="Data_RGC"){
-//     nmin = 0;
-//     nmax = 20000;
-//     i1 = 14;
-//     i2 = 5;
-//   }
-
-//   if ((dir = opendir (path)) != NULL) {
-//     while ((ent = readdir (dir)) != NULL) {
-//       std::string filename = ent->d_name;
-//       cout << filename << endl;
-//       if (filename.length()<=5) continue;
-//       if (filename.substr(filename.length() - 5) != ".root") continue;
-//       if (filename.find("merged") != std::string::npos) continue;
-//       if (filename.find("MC_RGA") != std::string::npos && version.find("MC_RGA") == std::string::npos)
-//             continue;
-//       if (filename.find("nSidis_RGA") != std::string::npos && (version.find("2018_RGA")==std::string::npos && version.find("2019_RGA")==std::string::npos))
-//           continue;
-//       if (filename.find("sidisdvcs_RGC") != std::string::npos && (version.find("Data_RGC")==std::string::npos))
-//           continue;
-//       if (filename.find("MC_RGC") != std::string::npos && (version.find("MC_RGC")==std::string::npos))
-//           continue;
-//       std::string numberString = filename.substr(i1, i2);
-//       int number = std::stoi(numberString);
-//       if (number <= nmax && number >= nmin) {
-//           files.push_back(string(path)+string("/") + filename);
-//       }
-//     }
-//     closedir (dir);
-//   } 
-  
-//   return files;
-// }
 
 // Function prototypes
 int getRunNumber(const std::string &filename, const std::string &version);
@@ -91,15 +18,27 @@ std::vector<TString> getFilesInDir(const char* path, const std::string &version)
 
             // Skip short filenames and non-root files
             if (filename.length() <= 5 || filename.substr(filename.length() - 5) != ".root") continue;
+	    if (filename.find("merged") != std::string::npos) continue;
 
             // Get the run number based on the filename and version
-            int runNumber = getRunNumber(filename, version);
-
-            // Determine if the file should be kept based on the run number and other conditions
+	    //            int runNumber = getRunNumber(filename, version);
+	    TFile * fIn = new TFile(TString(std::string(path) + std::string("/") + filename));
+        if (!fIn->GetListOfKeys()->Contains("dihadron")) {
+            std::cout << "Bad: TTree 'dihadron' not found in file " << filename << "...skipping file..." << std::endl;
+            continue;
+        }
+	    TTree * tIn = (TTree*)fIn->Get("dihadron");
+	    int runNumber;
+	    tIn->SetBranchAddress("run", &runNumber);
+	    // Get the first event's "run" value
+	    tIn->GetEntry(0);
+	    // Determine if the file should be kept based on the run number and other conditions
             if (shouldKeepFile(filename, runNumber, version)) {
                 files.push_back(std::string(path) + std::string("/") + filename);
                 cout << filename << endl;
             }
+	    fIn->Close();
+	    delete fIn;
         }
         closedir(dir);
     }
@@ -141,10 +80,12 @@ bool shouldKeepFile(const std::string &filename, int runNumber, const std::strin
     if (filename.find("sidisdvcs_RGB") != std::string::npos && (version.find("2019_RGB") == std::string::npos) && (version.find("2020_RGB") == std::string::npos)) return false;
 
     if (filename.find("MC_RGC") != std::string::npos && (version.find("MC_RGC") == std::string::npos)) return false;
+    
 
     string runPeriodFromConstants = runPeriod(runNumber);
-    
     if (version == runPeriodFromConstants) return true;
+    else if (version == "MC_RGB_inbending" && (runPeriodFromConstants=="MC_RGA_inbending")) return true;
+    else if (version == "MC_RGB_outbending" && (runPeriodFromConstants=="MC_RGA_outbending")) return true;
     else if (version == "Fall2018Spring2019_RGA_inbending" && (runPeriodFromConstants=="Fall2018_RGA_inbending" || runPeriodFromConstants=="Spring2019_RGA_inbending")) return true;
     else if (version == "Fall2018Spring2019_RGA_inbendingoutbending" && (runPeriodFromConstants=="Fall2018_RGA_inbending"||runPeriodFromConstants=="Fall2018_RGA_outbending"||runPeriodFromConstants=="Spring2019_RGA_inbending")) return true;
     
@@ -162,6 +103,12 @@ int merge_dihadrons(
   string outfile = string(rootdir)+"/"+string(version)+"_merged.root";
   // Get files to merge
   auto files = getFilesInDir(rootdir,string(version));
+    
+    
+  //------------------------------------------
+  // MERGE THE DIHADRON TTREE
+  // -----------------------------------------
+
   // Create large TChain
   TChain *chain = new TChain("dihadron");
   for(int i = 0 ; i < files.size() ; i++){
@@ -196,6 +143,48 @@ int merge_dihadrons(
 
   // Close TFile
   F->Close();
+    
+    
+    
+  //------------------------------------------
+  // MERGE THE DIHADRON_CUTS TTREE
+  // This TTree contains less events because the default cuts are placed (including ML)
+  // -----------------------------------------
+  string outfile_cuts = string(rootdir)+"/"+string(version)+"_merged_cuts.root";
+  // Create large TChain
+  TChain *chain_cuts = new TChain("dihadron_cuts");
+  for(int i = 0 ; i < files.size() ; i++){
+    cout << i+1 << " of " << files.size() << endl;
+    chain_cuts->Add(files.at(i));
+  }
+
+  // Merge the TTrees into the outfile
+  chain_cuts->Merge(outfile_cuts.c_str());
+
+  // Reopen the outfile
+  TFile *F_cuts = new TFile(outfile_cuts.c_str(),"UPDATE");
+
+  // Load in the merged TTree
+  TTree *t_cuts = (TTree*)F_cuts->Get("dihadron");
+
+  // Create ID branch for brufit
+  double fgID_cuts=0;
+  TBranch *bfgId_cuts = t_cuts->Branch("fggID",&fgID_cuts,"fggID/D"); // create new branch
+  const int N_cuts = t_cuts->GetEntries();
+  for(int i = 0; i < N_cuts; ++i){
+    t_cuts->GetEntry(i); // load in all TBranches
+    bfgId_cuts->Fill(); // Fill only the new TBranch
+    fgID_cuts+=1;
+  }  
+  
+  // Print final TTree
+  t_cuts->Print();
+
+  // Overwrite merged TTree without the fgID branch
+  t_cuts->Write(0,TObject::kOverwrite);
+
+  // Close TFile
+  F_cuts->Close();
         
   return 0;
 } 

@@ -73,6 +73,8 @@ int dihadronBuilder(const char *input_file="hipo2tree.root",
     std::string particleNames ="";
     // Determine the pids from the file (see function)
     getPIDs(string(input_file),pid_h1,pid_h2,particleNames);
+    pid_h1=211;
+    pid_h2=-211;
     // Read the TFile
     TFile *f = new TFile(input_file,"UPDATE");
     // Read the TTree
@@ -233,7 +235,11 @@ int dihadronBuilder(const char *input_file="hipo2tree.root",
     outtree->Branch("p_12", &p_12,"p_12/D");
     outtree->Branch("p_21", &p_21,"p_21/D");
     outtree->Branch("p_22", &p_22,"p_22/D");
-
+    
+    // Clone the outtree to only fill it if the cuts pass
+    TTree *outtree_clone = outtree->CloneTree(-1, "fast");
+    outtree_clone->SetName("dihadron_cuts");
+    
     // Kinematics Object
     Kinematics kin;
 
@@ -524,14 +530,38 @@ int dihadronBuilder(const char *input_file="hipo2tree.root",
                 isGoodEventWithoutML*=(E[jj]>0.6);
             }
             
+            // Determine if we should fill the cloned TTree if it passes our cuts
+            bool fill_clone = true;
+            fill_clone*=(z<0.95);
+            fill_clone*=(xF1>0&&xF2>0);
+            if((pid_h1==211&&pid_h2==-211)||(pid_h1==211&&pid_h2==111)){
+                fill_clone*=(Mx>1.5);
+            }
+            if(pid_h1==211||pid_h1==-211){
+                fill_clone*=(P_1>1.25);
+            }
+            if(pid_h2==211||pid_h2==-211){
+                fill_clone*=(P_2>1.25);
+            }
+            if(pid_h1==111){
+                fill_clone*=(p_11>0.9&&p_12>0.9);
+            }
+            if(pid_h2==111){
+                fill_clone*=(p_21>0.9&&p_22>0.9);
+            }
+            if(fill_clone){
+                outtree_clone->Fill();
+            }
             outtree->Fill();
             fgID++;
         } // end dihadron loop
     }// end event loop
 
    
-    cout << "Writing TTree with " << outtree->GetEntries() << " entries" << endl;
+    cout << "Writing Total TTree with " << outtree->GetEntries() << " entries" << endl;
+    cout << "Writing Cut TTree with " << outtree_clone->GetEntries() << " entries" << endl;
     outtree->Write();
+    outtree_clone->Write();
     f->Close();
     cout << "Done" << endl;
     return 0;

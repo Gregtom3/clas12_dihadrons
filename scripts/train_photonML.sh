@@ -81,6 +81,29 @@ else
 fi
 
 
+# Take the user's input
+if [[ -n "$3" ]]; then
+    configuration=$3
+else
+    read -p "Please enter the pipeline configuration (rg-a, rg-b, rg-ab, rg-c): " configuration
+fi
+
+# Check if the entered configuration is valid
+if [[ $configuration != "rg-a" && $configuration != "rg-b" && $configuration != "rg-ab" && $configuration != "rg-c" ]]; then
+    echo "Invalid configuration: $configuration"
+    exit 1
+fi
+
+# Set the variables based on the configuration
+if [[ $configuration == "rg-a" ]]; then
+    monte_carlos=("MC_RGA_inbending" "MC_RGA_outbending")
+elif [[ $configuration == "rg-b" ]]; then
+    monte_carlos=("MC_RGA_inbending" "MC_RGA_outbending")
+elif [[ $configuration == "rg-ab" ]]; then
+    monte_carlos=("MC_RGA_inbending" "MC_RGA_outbending")
+elif [[ $configuration == "rg-c" ]]; then
+    monte_carlos=("MC_RGC")
+fi
 
 
 
@@ -104,9 +127,6 @@ pion_pairs_pids[1,1]=111
 
 pion_pairs_pids[2,0]=111
 pion_pairs_pids[2,1]=111
-
-# Create separate trainable models for the different Monte Carlos
-monte_carlos=("MC_RGA_inbending" "MC_RGA_outbending" "MC_RGC")
 
 # Create separate trainable models using either calo or track training
 nn_types=("calo" "track")
@@ -132,7 +152,12 @@ for pid_pair in "${pion_pairs[@]}"; do
 #SBATCH --time=24:00:00
 #SBATCH --output=$FARMOUT_DIR/log/train_photonML_${pid_pair}_${mc}_${nn_type}.out
 #SBATCH --error=$FARMOUT_DIR/err/train_photonML_${pid_pair}_${mc}_${nn_type}.err
-/u/apps/python3/3.8.7/bin/python3 $PWD/machine_learning/photonID/train.py "$rootdir" "$mc" "$PARAMS" "$nn_type" "$MODEL_DIR/photonID/$pid_pair"
+source /etc/profile.d/modules.sh
+module unload root
+module unload python
+module load python3/3.9.7
+module load root
+/apps/python3/3.9.7/bin/python3 $PWD/machine_learning/photonID/train.py "$rootdir" "$mc" "$PARAMS" "$nn_type" "$MODEL_DIR/photonID/$pid_pair"
 EOF
     echo "Submitting slurm job for ${pid_pair} , ${mc} , ${nn_type}"
     sbatch --quiet $slurmslurm

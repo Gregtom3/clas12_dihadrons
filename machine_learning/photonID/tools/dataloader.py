@@ -175,7 +175,8 @@ def load_params(inyaml=""):
 #Finally, the function prints the amount of files found and returns the root_files list.
 def load_files(rootdir="",
                SUBDATA="",
-               test=0):
+               test=0,
+               Nmax=9999):
     
     if(test==1):
         return [rootdir+"/MC_3051_0.root"]
@@ -197,6 +198,8 @@ def load_files(rootdir="",
                 foundFile=True
             if(foundFile):
                 root_files.append(rootdir+"/"+file)
+            if(len(root_files)==Nmax):
+                break
                 
     print(len(root_files),"root files found for the ML train/test")
     

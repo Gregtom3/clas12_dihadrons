@@ -6,7 +6,7 @@ nEvents=$3
 model_list="$4"
 ml_branch="$5" # <model name>_<track/calo>
                        # See model_list in machine_learning/photonID/params_folder
-
+configuration="$6"
 
 
 
@@ -50,7 +50,7 @@ module load clas12/pro
 # 1. create_project.sh
 # (Converts hipo files to TTrees with cuts)
 # ----------------------------------------
-in1=("-o" $PROJECT_NAME $nFiles $nEvents)
+in1=("-o" $PROJECT_NAME $nFiles $nEvents $configuration)
 wait1="job_hipo2tree"
 func1="./scripts/create_project.sh"
 
@@ -70,7 +70,7 @@ call_function "${func2}" "${wait2}" "${in2[@]}"
 # 3. train_photonML.sh
 # (Performs training on Monte Carlo)
 # ----------------------------------------
-in3=($PROJECT_NAME $model_list)
+in3=($PROJECT_NAME $model_list $configuration)
 wait3="job_photonMLtrain_"
 func3="./scripts/train_photonML.sh"
 
@@ -82,7 +82,7 @@ call_function "${func3}" "${wait3}" "${in3[@]}"
 # 4. predict_photonML.sh
 # (Uses trained model to make predictions on MC and Data)
 # ----------------------------------------
-in4=($PROJECT_NAME $ml_branch)
+in4=($PROJECT_NAME $ml_branch $configuration)
 wait4="job_photonMLpredict_"
 func4="./scripts/predict_photonML.sh"
 
@@ -106,7 +106,7 @@ call_function "${func5}" "${wait5}" "${in5[@]}"
 # 6. merge_dihadrons.sh
 # (Merge the TTrees by data versions)
 # ----------------------------------------
-in6=($PROJECT_NAME)
+in6=($PROJECT_NAME $configuration)
 wait6="job_merge_"
 func6="./scripts/merge_dihadrons.sh"
 
