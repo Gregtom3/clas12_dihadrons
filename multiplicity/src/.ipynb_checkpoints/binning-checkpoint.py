@@ -159,7 +159,24 @@ class BinManager:
         rect_values, custom_values = self.convert_to_rect_custom_values(values)
         return self.get_bin_ids(rect_values,custom_values)[0]
     
-    
+    def print_bins_from_values(self,values):
+        unique_id = self.get_unique_id_from_values(values)
+        s = ''.join([key+f"={value} , " for key, value in values.items()])
+        print("Unique ID for",s,"--->",unique_id)
+        self.print_bins_from_unique_id(unique_id)
+        
+    def print_bins_from_unique_id(self,unique_id):
+        bin_edges = self.get_bins_from_unique_id(unique_id)
+        print("Bin edges for Unique id",unique_id,"\n"+25*"==")
+        self.print_bins_from_bin_edges(bin_edges)
+       
+    def print_bins_from_bin_edges(self,bin_edges):
+        for be in bin_edges:
+            if(type(be)==list):
+                for _be in be:
+                    print(_be)
+            else:
+                print(be,"\n")
 
 class RectBinFactory:
     def __init__(self):
@@ -202,7 +219,7 @@ class CustomBinFactory:
         
         for line in lines:
             # Iterate over the additional lines
-            line = self.replace_elements(line)
+            line = replace_elements_with_brackets(line,self.pars)
             # Replace elements in the line
             new_bin.append("(" + line + ")")
             # Add the modified line to the new bin list

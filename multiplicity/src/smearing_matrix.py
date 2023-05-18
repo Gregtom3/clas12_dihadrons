@@ -67,6 +67,7 @@ class SmearingMatrix:
 
         # Set zero entries to NaN to make them invisible
         M[M == 0] = np.nan
+        
 
         # Set zero entries to white color
         cmap = matplotlib.colormaps["viridis"]
