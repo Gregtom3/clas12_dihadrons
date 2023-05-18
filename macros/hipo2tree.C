@@ -1,4 +1,5 @@
 #include "../src/CutManager.C"
+#include "../src/CLAS12Analysis.C"
 #include "../src/HipoBankInterface.C"
 #include "../src/Constants.h"
 #include "../src/Structs.h"
@@ -8,15 +9,15 @@
 
 
 int hipo2tree(
-	      //             const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2018/torus-1/pass1/v1/dst/train/nSidis/nSidis_005036.hipo",
-	      const char * hipoFile = "/cache/clas12/rg-a/production/montecarlo/clasdis/fall2018/torus+1/v1/bkg50nA_10604MeV/50nA_OB_job_3313_0.hipo",
+	                   const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2018/torus-1/pass1/v1/dst/train/nSidis/nSidis_005032.hipo",
+	      //const char * hipoFile = "/cache/clas12/rg-a/production/montecarlo/clasdis/fall2018/torus+1/v1/bkg50nA_10604MeV/50nA_OB_job_3313_0.hipo",
 	      //const char * hipoFile = "/cache/clas12/rg-b/production/recon/spring2020/torus-1/pass1/v1/dst/train/sidisdvcs/sidisdvcs_011494.hipo",
               const char * outputFile = "hipo2tree.root",
               const double _electron_beam_energy = 10.6041,
               const int pid_h1=211,
               const int pid_h2=-211,
               const int maxEvents = 500000000,
-              bool hipo_is_mc = true)
+              bool hipo_is_mc = false)
 {
 
 
@@ -210,42 +211,45 @@ int hipo2tree(
   clas12::clas12databases::SetRCDBRootConnection("/work/clas12/users/gmat/clas12/clas12_dihadrons/utils/rcdb.root"); 
   clas12::clas12databases db;
   
-  // Create CLAS12Analysis Objects
+  // Add Analysis Objects
   // -------------------------------------
-  HipoBankInterface _hipoInterface = HipoBankInterface(_c12);
   CutManager _cm = CutManager();
-  Kinematics _kin;
+  CLAS12Analysis clas12ana = CLAS12Analysis(_c12,_electron_beam_energy);
 
-  // Create particle struct vector
-  // -------------------------------------
+  // Add Analysis Structs
+  // -------------------------------------  
   std::vector<part> vec_particles;
   std::vector<part> vec_mcparticles;
-
+  DIS_EVENT reco_event;
+  DIS_EVENT   mc_event;
+    
+    
+    
   int whileidx=0;
   int _ievent=0;
   int badAsym=0;
-  bool do_rcdb_info=true;
+    
   while(_chain.Next()==true && (whileidx < maxEvents || maxEvents < 0)){
     if(whileidx%10000==0 && whileidx!=0){
       std::cout << whileidx << " events read | " << _ievent*100.0/whileidx << "% passed event selection | " << badAsym << " events skipped from QADB" << std::endl;
     }
+      
     whileidx++;
     auto event = _c12->event();
     
-    // Clear vectors
-    vec_particles.clear();
-    vec_mcparticles.clear();
-      
     // Get run specific information
     // -------------------------------------
     run = _c12->getBank(_idx_RUNconfig)->getInt(_irun,0);
+    _evnum = _c12->getBank(_idx_RUNconfig)->getInt(_ievnum,0);
+      
     if(hipo_is_mc)
       run *= _c12->getBank(_idx_RUNconfig)->getFloat(_itorus,0); // Multiply run number by torus bending
     
     _cm.set_run(run);
     _cm.set_run_period(std::string(hipoFile));
+    
+    
     // Skip events that are not ok for asymmetry analysis based on QADB
-    _evnum = _c12->getBank(_idx_RUNconfig)->getInt(_ievnum,0);
     if(do_QADB){
         if(!_c12->db()->qa()->isOkForAsymmetry(run,_evnum)){
             badAsym++;
@@ -255,17 +259,9 @@ int hipo2tree(
 
     // Get helicity
     // -------------------------------------
-    
-    if(runHelicityFlip(run)){
-      hel = -event->getHelicity();
-    }
-    else
-      {
-        hel = event->getHelicity();
-      }
+    hel = runHelicityFlip(run) * event->getHelicity();
 
     // Skip helicity==0 events
-    // May need to be revisited for non-asymmetry analyses
     // -------------------------------------
     if(!hipo_is_mc && hel==0)
         continue;
@@ -273,258 +269,72 @@ int hipo2tree(
     // Get polarization
     // -------------------------------------
     Pol = runPolarization(run);
-    
-    // Get RCDB Info
-    // -------------------------------------
-    if(do_rcdb_info){
-        do_rcdb_info=false; // one time thing
-        if(_cm.get_run_period()==RGC && hipo_is_mc==false){
-          // This is a convoluted way of reading the RCDB, but I don't know the "more correct way"
-          auto c12 = _chain.GetC12Reader();
-          c12->connectDataBases(&db);
-          if(!do_QADB)
-            c12->db()->turnOffQADB();
-          auto& rcdbData = c12->rcdb()->current();
-          target_string = TString(rcdbData.target);
-          if(target_string.Contains("NH3")){A=17;}
-          else if(target_string.Contains("ND3")){A=20;}
-          else if(target_string.Contains("C")){A=12;}
-          else{A=-999;}
-          cout << target_string << " " << A << endl;
-        }else if(_cm.get_run_period()==RGC && hipo_is_mc==true){
-          if(std::string(hipoFile).find("proton")!=std::string::npos){ A=1; target_string="p";}
-          else if(std::string(hipoFile).find("neutron")!=std::string::npos) {A=1; target_string="n";}
-          else {
-              cout << "Unknown RGC target for hipoFile="<<hipoFile<<"...Aborting..."<<endl;
-              return -1;
-          }
-        }else if(_cm.get_run_period()==RGA){
-            A=1;
-            target_string="p";
-        }else if(_cm.get_run_period()==RGB){
-            A=2;
-            target_string="d";
-        }else{
-              cout << "Unknown target for hipoFile="<<hipoFile<<"...Aborting..."<<endl;
-              return -1;
-        }
-        fOut->WriteObject(&target_string,"Target");
-    }
-    
-
-    // Loop over reconstructed particles
-    // -------------------------------------------------------
-    auto particles=_c12->getDetParticles();
-    for(unsigned int idx = 0 ; idx < particles.size() ; idx++){
-      // Create new part struct
-      part partstruct;
-      // Extract each particle from event one-at-a-time
-      // -------------------------------------------------------
-      auto particle = particles.at(idx);
-      partstruct.pid = particle->getPid(); 
-
-      partstruct.chi2 = particle->getChi2Pid();
-      partstruct.theta = particle->getTheta();
-      partstruct.eta = _kin.eta(partstruct.theta);
-      partstruct.phi = particle->getPhi();
-      partstruct.p = particle->getP();
-      partstruct.px = _kin.Px(partstruct.p,partstruct.theta,partstruct.phi);
-      partstruct.py = _kin.Py(partstruct.p,partstruct.theta,partstruct.phi);
-      partstruct.pz = _kin.Pz(partstruct.p,partstruct.theta,partstruct.phi);
-      partstruct.pt = _kin.Pt(partstruct.px,partstruct.py);
-      if(partstruct.pid!=22)
-        partstruct.m = particle->getPdgMass();
-      else
-        partstruct.m = 0;
-      partstruct.beta = particle->getBeta();
-      partstruct.pindex = particle->getIndex();
-      partstruct.vx = particle->par()->getVx();
-      partstruct.vy = particle->par()->getVy();
-      partstruct.vz = particle->par()->getVz();
-      partstruct.status = particle->getStatus();
-      partstruct.E = _kin.E(partstruct.m,partstruct.p);
-    
-      // Ensure hadrons are not in CD
-      if (partstruct.pid == 2212 || partstruct.pid == -2212 ||
-        partstruct.pid == 2112 ||
-        partstruct.pid == -321 || partstruct.pid == -211 ||
-        partstruct.pid == 211 || partstruct.pid == 321) {
-          if(partstruct.status>=4000 && partstruct.status<5000)
-              continue;
-      }
       
-      _hipoInterface.loadBankData(_c12,partstruct);
-      vec_particles.push_back(partstruct);
-          
-    }
-    
       
-    // Code for determine the scattered electron from REC::Particle
-    // --> Find pid==11 particle with largest energy
-    // -->   If no electron is found, skip
-    // --> Check if the status of the maximum energy electron is in FD
-    // -->   Skip if not (i.e. always skip events if the max energy electron was not in FD)
-    // --> Set that particle as the scattered electron
-    int idx_e=-1;
-    double max_energy = -1; 
-    for (int i = 0; i < vec_particles.size(); i++) {
-      part partstruct = vec_particles[i];
-      // check if the particle is an electron
-      if (partstruct.pid == 11) {
-        // compare energy with the current maximum and update if necessary
-        if (partstruct.E > max_energy) {
-          max_energy = partstruct.E;
-          idx_e=i;
-         }
-       }
-    }
-    
-    if(idx_e==-1){
-        continue; // No scattered electron passing the above conditions found
-    }
-    // Get the scattered electron
-    part scattered_electron = vec_particles[idx_e];
-    E_e = scattered_electron.E;
-    theta_e = scattered_electron.theta;
-    phi_e = scattered_electron.phi;
-    
-    vec_particles[idx_e].is_scattered_electron=1;
-    Q2=_kin.Q2(_electron_beam_energy,scattered_electron.E,_kin.cth(scattered_electron.px,scattered_electron.py,scattered_electron.pz));
-    y=_kin.y(_electron_beam_energy,scattered_electron.E);     
-    // Cut away high y
-    if(y>0.8)
-        continue; 
-    nu=_kin.nu(_electron_beam_energy,scattered_electron.E);
-    W=_kin.W(Q2,Mp,nu);
-    x=_kin.x(Q2,s,y);
+    // *******************************************************************
+    //     Reconstructed Particles
+    //
 
+    vec_particles = clas12ana.load_reco_particles(_c12);
       
+      
+    int idx_scattered_ele = clas12ana.find_reco_scattered_electron(vec_particles);
+      
+      
+    if(idx_scattered_ele==-1)
+        continue; // No scattered electron found
+      
+      
+    vec_particles[idx_scattered_ele].is_scattered_electron=1;
+      
+      
+    reco_event = clas12ana.calc_reco_event_variables(vec_particles);
+      
+    x = reco_event.x;
+    y = reco_event.y;
+    Q2= reco_event.Q2;
+    nu= reco_event.nu;
+    W = reco_event.W;
+      
+      
+    if(y > 0.8)
+        continue; // Maximum y cut
+      
+      
+    vec_particles = _cm.filter_particles(vec_particles); // Apply Cuts
+      
+      
+    if(clas12ana.reco_event_contains_final_state(vec_particles,fs)==false)
+          continue; // Missing final state particles needed for event 
+    
+    // *******************************************************************
+    //     Monte Carlo Generated Particles
+    //  
+      
+    if(hipo_is_mc){
+
+
+
+        vec_mcparticles = clas12ana.load_mc_particles(_c12);
+
+
+        mc_event = clas12ana.calc_mc_event_variables(vec_mcparticles);
+
+
+        clas12ana.match_mc_to_reco(vec_particles, vec_mcparticles);
+
+        truex = mc_event.truex;
+        truey = mc_event.truey;
+        trueQ2= mc_event.trueQ2;
+        truenu= mc_event.truenu;
+        trueW = mc_event.trueW;
         
-    // Toss events where the REC::Particle scattered electron was not in the FD
-    if((scattered_electron.status <= -3000 || scattered_electron.status > -2000)) continue; // Max E electron has bad status
-
+    }
       
-    // Apply the cuts to make a new vec_particles
-    // Calls the CutManager which parses through the vector
-    // and makes relevant cuts for each particle
     // 
-    // Return a list of filtered particles
-    // -------------------------------------------------
-      
-    vec_particles = _cm.filter_particles(vec_particles);
-    
-    // Determine if this filtered list still contains the final state
-    // particles we are interested in. If not, next event
-    // -------------------------------------------------
-    int num_e=0;
-    int num_h1=0;
-    int num_h2=0;
-    for(part particle : vec_particles){
-      if(particle.pid==11 && particle.is_scattered_electron==1) num_e++;
-      else if(particle.pid==fs.pid_h1) num_h1++;
-      else if(particle.pid==fs.pid_h2) num_h2++;
-    }
+    //
+    // *******************************************************************
 
-    if(num_e<1 || num_h1 < fs.num_h1 || num_h2 < fs.num_h2) {
-      continue;
-    }
-
-      
-      
-    // Loop over all Monte Carlo particles
-    // -------------------------------------
-    auto mcparticles=_c12->mcparts();
-    for(int idx = 0 ; idx < mcparticles->getRows() && hipo_is_mc ; idx++){
-      part partstruct;
-      if(mcparticles->getType(idx)!=1) // Reject non-final state
-        {continue;} 
-      partstruct.truepid = mcparticles->getPid(idx);
-      partstruct.truepx = mcparticles->getPx(idx);
-      partstruct.truepy = mcparticles->getPy(idx);
-      partstruct.truepz = mcparticles->getPz(idx);
-      partstruct.truem = mcparticles->getMass(idx);
-      partstruct.truept = _kin.Pt(partstruct.truepx,partstruct.truepy);
-      partstruct.truep  = _kin.P(partstruct.truepx,partstruct.truepy,partstruct.truepz);
-      partstruct.trueE  = _kin.E(partstruct.truem,partstruct.truep);
-
-      partstruct.truetheta = _kin.th(partstruct.truept,partstruct.truepz);
-      partstruct.trueeta = _kin.eta(partstruct.truetheta);
-      partstruct.truephi   = _kin.phi(partstruct.truepx,partstruct.truepy);
-
-      partstruct.truevx = mcparticles->getVx(idx);
-      partstruct.truevy = mcparticles->getVy(idx);
-      partstruct.truevz = mcparticles->getVz(idx);
-
-      partstruct.trueparentid = mcparticles->getParent(idx)-1;
-      partstruct.trueparentpid = mcparticles->getPid(partstruct.trueparentid);
-      partstruct.trueparentparentid = mcparticles->getParent(partstruct.trueparentid)-1;
-      if(partstruct.trueparentparentid==-1){
-          partstruct.trueparentparentpid = -999;
-      }else{
-          partstruct.trueparentparentpid = mcparticles->getPid(partstruct.trueparentparentid);
-      }
-      // for loop over the idxs until we find if this particle came from CFR
-      int parent_idx = mcparticles->getParent(idx)-1;
-      int parent_pid = 0;
-      while(parent_idx>=0){
-          parent_pid = mcparticles->getPid(parent_idx);
-          if(parent_pid==0){break;}
-          if(6-abs(parent_pid)>=0){
-              partstruct.is_CFR=1;
-              break;
-          }
-          parent_idx = mcparticles->getParent(parent_idx)-1;
-      }
-      if(partstruct.is_CFR!=1) partstruct.is_CFR=0;
-      if(partstruct.truepid==11 && partstruct.trueparentid==0){ // scattered electron
-        trueQ2=_kin.Q2(_electron_beam_energy,partstruct.trueE,_kin.cth(partstruct.truepx,partstruct.truepy,partstruct.truepz));
-        truey=_kin.y(_electron_beam_energy,partstruct.trueE);
-        truenu=_kin.nu(_electron_beam_energy,partstruct.trueE);
-        trueW=_kin.W(trueQ2,Mp,truenu);
-        truex=_kin.x(trueQ2,s,truey);
-        partstruct.is_scattered_electron=1;
-      }
-      
-      // Add particle to list
-      vec_mcparticles.push_back(partstruct);
-    }
-
-      
-    
-    // Perform MC<-->Reco particle matching
-    // ---------------------------------------------
-    for (int i=0; i < vec_particles.size(); i++){
-      for (int j=0; j < vec_mcparticles.size(); j++){
-        float dth = abs(vec_particles[i].theta - vec_mcparticles[j].truetheta)*180/PI;
-        float dphi = abs(vec_particles[i].phi - vec_mcparticles[j].truephi)*180/PI;
-        float dE = abs(vec_particles[i].E - vec_mcparticles[j].trueE);
-        
-        if (dth<2 && (dphi<4 || abs(dphi-2*PI)<4) && dE<1){
-	  // Perform Pairing
-	  vec_particles[i].truepx = vec_mcparticles[j].truepx;
-	  vec_particles[i].truepy = vec_mcparticles[j].truepy;
-	  vec_particles[i].truepz = vec_mcparticles[j].truepz;
-	  vec_particles[i].truep = vec_mcparticles[j].truep;
-	  vec_particles[i].truept = vec_mcparticles[j].truept;
-	  vec_particles[i].trueE = vec_mcparticles[j].trueE;
-	  vec_particles[i].truem = vec_mcparticles[j].truem;
-	  vec_particles[i].truetheta = vec_mcparticles[j].truetheta;
-	  vec_particles[i].trueeta = vec_mcparticles[j].trueeta;
-	  vec_particles[i].truephi = vec_mcparticles[j].truephi;
-	  vec_particles[i].truevx = vec_mcparticles[j].truevx;
-	  vec_particles[i].truevy = vec_mcparticles[j].truevy;
-	  vec_particles[i].truevz = vec_mcparticles[j].truevz;
-      vec_particles[i].is_CFR = vec_mcparticles[j].is_CFR;
-	  vec_particles[i].truepid = vec_mcparticles[j].truepid;
-	  vec_particles[i].trueparentid = vec_mcparticles[j].trueparentid;
-	  vec_particles[i].trueparentpid = vec_mcparticles[j].trueparentpid;
-      vec_particles[i].trueparentparentid = vec_mcparticles[j].trueparentparentid;
-	  vec_particles[i].trueparentparentpid = vec_mcparticles[j].trueparentparentpid;
-	  break;
-	}
-      }
-    }
-      
     // Loop over all particles and fill variables for the TTree
     // --------------------------------------------------------
     Nmax=vec_particles.size();
