@@ -139,7 +139,7 @@ for file in $files; do
 #SBATCH --partition=production
 #SBATCH --mem-per-cpu=2000
 #SBATCH --job-name=job_dihadron_$file
-#SBATCH --cpus-per-task=2
+#SBATCH --cpus-per-task=1
 #SBATCH --time=24:00:00
 #SBATCH --output=$FARMOUT_DIR/log/dihadron_$file.out
 #SBATCH --error=$FARMOUT_DIR/err/dihadron_$file.err
