@@ -45,7 +45,7 @@ inline float runPolarization(int run, bool v=true){
   else if(run>=11335 && run<=11387) return v? 0.85048 : 0.01530;
   else if(run>=11389 && run<=11571) return v? 0.84262 : 0.01494; // NOTE: table last updated 1/15/2020, but run ended on 1/30
   /* MC */
-  else if(run==11) return v? 0.86 : 0.0; // MC
+  else if(run==11 || run==-11) return v? 0.86 : 0.0; // MC
   else {
     fprintf(stderr,"ERROR: RundepPolarization unknown for run %d\n",run);
     return 0.0;
@@ -62,7 +62,7 @@ inline float runBeamEnergy(int run){
   else if(run>=11284 && run<=11300) return 4.17179; // rgb fall BAND_FT 19
   else if(run>=11323 && run<=11571) return 10.3894; // rgb winter 20 (RCDB may still be incorrect)
   else if(run>=12000) return 10.559; // rgc 
-  else if(run==11 || run==-11)                  return 10.6041; // MC for RGA inbending
+  else if(run==11 || run==-11 || run==22 || run==-22 || run==33 || run==-33)                  return 10.6041; // MC RGA,RGB
   else {
     return 0.0;
   };
@@ -87,10 +87,10 @@ inline int runTorusBending(int run){
   else if(run>=11093 && run<=11283) return 1; // rgb_outbending_fa19
   else if(run>=11284 && run<=11300) return -1;  // rgb_BAND_inbending_fa19
   else if(run>=11323 && run<=11571) return -1;  // rgb_inbending_wi20
-  else if(run==11) {
+  else if(run==11 || run==22) {
     return 1;
   }
-  else if(run==-11){
+  else if(run==-11 || run==-22){
     return -1;
   }
   else{

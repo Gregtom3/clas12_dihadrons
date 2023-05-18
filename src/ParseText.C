@@ -45,6 +45,16 @@ std::string getVersion(const char *c =""){
     return prefix;
 }
 
+// Input --> "/path/to/file/<version>_merged_cuts.root"
+// Output --> "<version>"
+std::string getVersion2(const char *c =""){
+    std::string s(c);
+    std::size_t lastSlash = s.find_last_of('/');
+    std::string filename = s.substr(lastSlash + 1);
+    std::string prefix = filename.substr(0, filename.find("_merged_cuts.root"));
+    return prefix;
+}
+
 
 std::string get_dir_from_binstruct_idx(YAMLbinstruct binStruct, int binnum){
     std::string dir="";

@@ -12,26 +12,24 @@ public:
     BinRegion() : id(nextId++) {}
 
     void addBoundary(const std::string& expr) {
-        boundaries.push_back(parseBoundary(expr));
-        str_boundaries.push_back(expr);
+        TFormula formula(("formula_" + std::to_string(id) + "_" + std::to_string(boundaryFormulas.size())).c_str(), expr.c_str());
+        boundaryFormulas.push_back(formula);
     }
 
     void insertChild(const std::shared_ptr<BinRegion>& child) {
-        // Child adopts parent boundary functions
-        for (const auto& boundary : boundaries) {
-            child->boundaries.push_back(boundary);
+        // Child adopts parent boundaries
+        for (auto& formula : boundaryFormulas) {
+            child->boundaryFormulas.push_back(formula);
         }
-        // Child adopts parent boundary strings
-        for (const auto& boundary : str_boundaries) {
-            child->str_boundaries.push_back(boundary);
-        }
-        
         children.push_back(child);
     }
 
-    bool isInside(const std::map<string, double>& coords) const {
-        for (const auto& boundary : boundaries) {
-            if (!boundary(coords)) {
+    bool isInside(const std::map<std::string, double>& coords) const {
+        for (TFormula formula : boundaryFormulas) {
+            for (const auto& coord : coords) {
+                formula.SetParameter(coord.first.c_str(), coord.second);
+            }
+            if (formula.Eval(0) <= 0.0) {
                 return false;
             }
         }
@@ -40,15 +38,15 @@ public:
 
     void print() const {
         std::cout << "(  ";
-        for (const auto& boundary : str_boundaries) {
-            std::cout << boundary << "  ";
+        for (const auto& boundary : boundaryFormulas) {
+            std::cout << boundary.GetExpFormula() << "  ";
         }
         std::cout << ")" << std::endl;
     }
     
     void print(std::ostream& out) const {
-        for (const auto& boundary : str_boundaries) {
-            out << boundary << "\n";
+        for (const auto& boundary : boundaryFormulas) {
+            out << boundary.GetExpFormula() << "\n";
         }
     }
     
@@ -70,39 +68,13 @@ public:
     size_t numChildren() const {
         return children.size();
     }
-    
+
     static std::atomic<int> nextId;
 
 private:
     int id;
-    using BoundaryFunction = std::function<bool(const std::map<std::string, double>&)>;
-    std::vector<BoundaryFunction> boundaries;
-    std::vector<string> str_boundaries;
+    std::vector<TFormula> boundaryFormulas;
     std::vector<std::shared_ptr<BinRegion>> children;
-
-    static BoundaryFunction parseBoundary(const std::string& expr) {
-        auto replaceVariables = [](const std::string& expr, const std::map<std::string, double>& coords) {
-            std::string replacedExpr = expr;
-            for (const auto& coord : coords) {
-                std::string var = coord.first;
-                std::string value = std::to_string(coord.second);
-                size_t pos = 0;
-                while ((pos = replacedExpr.find(var, pos)) != std::string::npos) {
-                    replacedExpr.replace(pos, var.length(), value);
-                    pos += value.length();
-                }
-            }
-            return replacedExpr;
-        };
-
-        return [replaceVariables, expr](const std::map<std::string, double>& coords) {
-            std::string replacedExpr = replaceVariables(expr, coords);
-            TFormula formula("my_formula", replacedExpr.c_str());
-            // Evaluate the formula with the given coordinates
-            return formula.Eval(0) > 0.0;
-        };        
-    }
-
 };
 
 std::atomic<int> BinRegion::nextId(0);
@@ -156,7 +128,11 @@ public:
     void serialize(std::ostream& out) const {
         serializeRegion(root, out);
     }
-
+    
+    int findLowestLevelChild(const std::map<std::string, double>& coords) const {
+        return findLowestLevelChild(coords, root);
+    }
+    
 private:
     std::shared_ptr<BinRegion> root;
 
@@ -168,6 +144,30 @@ private:
         } else {
             out << "unique id: " << region->getId() << std::endl;
             region->print(out);
+        }
+    }
+    
+    int findLowestLevelChild(const std::map<std::string, double>& coords, const std::shared_ptr<BinRegion>& region) const {
+        if (region->hasChildren()) {
+            int foundChildId = -1;
+            for (size_t i = 0; i < region->numChildren(); ++i) {
+                int childId = findLowestLevelChild(coords, region->getChild(i));
+                if (childId != -1) {
+                    if (foundChildId == -1) {
+                        foundChildId = childId;
+                    } else {
+                        std::cerr << "Error: Data falls into more than one lowest level child boundary." << std::endl;
+                        return -1;
+                    }
+                }
+            }
+            return foundChildId;
+        } else {
+            if (region->isInside(coords)) {
+                return region->getId();
+            } else {
+                return -1;
+            }
         }
     }
 };
