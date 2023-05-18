@@ -9,27 +9,28 @@
 
 int hipo2tree(
 	      //             const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2018/torus-1/pass1/v1/dst/train/nSidis/nSidis_005036.hipo",
-	      //const char * hipoFile = "/cache/clas12/rg-a/production/montecarlo/clasdis/fall2018/torus+1/v1/bkg50nA_10604MeV/50nA_OB_job_3313_0.hipo",
-	      const char * hipoFile = "/cache/clas12/rg-b/production/recon/spring2020/torus-1/pass1/v1/dst/train/sidisdvcs/sidisdvcs_011494.hipo",
+	      const char * hipoFile = "/cache/clas12/rg-a/production/montecarlo/clasdis/fall2018/torus+1/v1/bkg50nA_10604MeV/50nA_OB_job_3313_0.hipo",
+	      //const char * hipoFile = "/cache/clas12/rg-b/production/recon/spring2020/torus-1/pass1/v1/dst/train/sidisdvcs/sidisdvcs_011494.hipo",
               const char * outputFile = "hipo2tree.root",
-              const double _electron_beam_energy = 10.604,
+              const double _electron_beam_energy = 10.6041,
               const int pid_h1=211,
               const int pid_h2=-211,
-              const int maxEvents = 100000,
-              bool hipo_is_mc = false){
+              const int maxEvents = 500000000,
+              bool hipo_is_mc = true)
+{
 
 
 
   // Open TTree and declare branches
   // -------------------------------------
   TFile *fOut = new TFile(outputFile,"RECREATE");
-  TTree* tree = new TTree("EventTree","EventTree");
+  TTree *tree = new TTree("EventTree","EventTree");
 
   int run;
   TString target_string = "";
   // Reconstructed variables
   double x, y, W, nu,Pol,Q2;
-  int hel;
+  int hel, _evnum; // from RUN::config;
   double s=pow(Mp,2)+pow(Me,2)+2*Mp*_electron_beam_energy;
 
   // Monte Carlo Info
@@ -56,8 +57,10 @@ int hipo2tree(
   int sector[Nmax];
   double traj_x1[Nmax], traj_y1[Nmax], traj_z1[Nmax], traj_x2[Nmax], traj_y2[Nmax], traj_z2[Nmax], traj_x3[Nmax], traj_y3[Nmax], traj_z3[Nmax];
   int A;
+  double E_e, theta_e, phi_e;
   // Set branches
   tree->Branch("A",&A,"A/I");  
+  tree->Branch("evnum",&_evnum,"evnum/I");  
   tree->Branch("run",&run,"run/I");
   tree->Branch("Pol",&Pol,"Pol/D");
   tree->Branch("Nmax",&Nmax,"Nmax/I");
@@ -115,7 +118,7 @@ int hipo2tree(
   tree->Branch("trueparentpid", trueparentpid, "trueparentpid[Nmax]/I");
   tree->Branch("trueparentparentid", trueparentparentid, "trueparentparentid[Nmax]/I");
   tree->Branch("trueparentparentpid", trueparentparentpid, "trueparentparentpid[Nmax]/I");
-    
+
   tree->Branch("pcal_sector", pcal_sector, "pcal_sector[Nmax]/I");
   tree->Branch("pcal_e", pcal_e, "pcal_e[Nmax]/D");
   tree->Branch("pcal_x", pcal_x, "pcal_x[Nmax]/D");
@@ -162,7 +165,7 @@ int hipo2tree(
   tree->Branch("traj_x3", traj_x3, "traj_x3[Nmax]/D");
   tree->Branch("traj_y3", traj_y3, "traj_y3[Nmax]/D");
   tree->Branch("traj_z3", traj_z3, "traj_z3[Nmax]/D");
-    
+
   tree->Branch("nphe_ltcc", nphe_ltcc, "nphe_ltcc[Nmax]/D");
   tree->Branch("nphe_htcc", nphe_htcc, "nphe_htcc[Nmax]/D");  
     
@@ -220,13 +223,13 @@ int hipo2tree(
 
   int whileidx=0;
   int _ievent=0;
-  int _evnum=0; // from RUN::config
   int badAsym=0;
+  bool do_rcdb_info=true;
   while(_chain.Next()==true && (whileidx < maxEvents || maxEvents < 0)){
     if(whileidx%10000==0 && whileidx!=0){
       std::cout << whileidx << " events read | " << _ievent*100.0/whileidx << "% passed event selection | " << badAsym << " events skipped from QADB" << std::endl;
     }
-
+    whileidx++;
     auto event = _c12->event();
     
     // Clear vectors
@@ -273,7 +276,8 @@ int hipo2tree(
     
     // Get RCDB Info
     // -------------------------------------
-    if(whileidx==0){
+    if(do_rcdb_info){
+        do_rcdb_info=false; // one time thing
         if(_cm.get_run_period()==RGC && hipo_is_mc==false){
           // This is a convoluted way of reading the RCDB, but I don't know the "more correct way"
           auto c12 = _chain.GetC12Reader();
@@ -307,7 +311,7 @@ int hipo2tree(
         fOut->WriteObject(&target_string,"Target");
     }
     
-    whileidx++;
+
     // Loop over reconstructed particles
     // -------------------------------------------------------
     auto particles=_c12->getDetParticles();
@@ -380,16 +384,25 @@ int hipo2tree(
     }
     // Get the scattered electron
     part scattered_electron = vec_particles[idx_e];
-    if((scattered_electron.status <= -3000 || scattered_electron.status > -2000)) continue; // Max E electron has bad status
+    E_e = scattered_electron.E;
+    theta_e = scattered_electron.theta;
+    phi_e = scattered_electron.phi;
+    
     vec_particles[idx_e].is_scattered_electron=1;
     Q2=_kin.Q2(_electron_beam_energy,scattered_electron.E,_kin.cth(scattered_electron.px,scattered_electron.py,scattered_electron.pz));
-    y=_kin.y(_electron_beam_energy,scattered_electron.E);
+    y=_kin.y(_electron_beam_energy,scattered_electron.E);     
+    // Cut away high y
     if(y>0.8)
-        continue;
+        continue; 
     nu=_kin.nu(_electron_beam_energy,scattered_electron.E);
     W=_kin.W(Q2,Mp,nu);
     x=_kin.x(Q2,s,y);
-    
+
+      
+        
+    // Toss events where the REC::Particle scattered electron was not in the FD
+    if((scattered_electron.status <= -3000 || scattered_electron.status > -2000)) continue; // Max E electron has bad status
+
       
     // Apply the cuts to make a new vec_particles
     // Calls the CutManager which parses through the vector
@@ -475,6 +488,9 @@ int hipo2tree(
       // Add particle to list
       vec_mcparticles.push_back(partstruct);
     }
+
+      
+    
     // Perform MC<-->Reco particle matching
     // ---------------------------------------------
     for (int i=0; i < vec_particles.size(); i++){

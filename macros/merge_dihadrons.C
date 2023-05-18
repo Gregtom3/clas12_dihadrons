@@ -165,7 +165,7 @@ int merge_dihadrons(
   TFile *F_cuts = new TFile(outfile_cuts.c_str(),"UPDATE");
 
   // Load in the merged TTree
-  TTree *t_cuts = (TTree*)F_cuts->Get("dihadron");
+  TTree *t_cuts = (TTree*)F_cuts->Get("dihadron_cuts");
 
   // Create ID branch for brufit
   double fgID_cuts=0;

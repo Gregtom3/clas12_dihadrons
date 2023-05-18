@@ -1,3 +1,5 @@
+#include "../src/CutManager.C"
+#include "../src/HipoBankInterface.C"
 #include "../src/Constants.h"
 #include "../src/Structs.h"
 #include "../src/Kinematics.C"
@@ -135,13 +137,16 @@ int hipoLUND2tree(const char * input_file = "/cache/clas12/rg-a/production/monte
   // Configure PIDs for final state
   // -------------------------------------
   FS fs = get_FS(pid_h1,pid_h2);  
-    
+  _config_c12->addAtLeastPid(11,1);     // At least 1 electron  
   // Create CLAS12Analysis Objects
   // -------------------------------------
+  HipoBankInterface _hipoInterface = HipoBankInterface(_c12);
+  CutManager _cm = CutManager();
   Kinematics _kin;
     
   // Create particle struct vector
   // -------------------------------------
+  std::vector<part> recparts;
   std::vector<part> mcparts;
     
   // Declare TLorentzVectors
@@ -171,6 +176,7 @@ int hipoLUND2tree(const char * input_file = "/cache/clas12/rg-a/production/monte
 
     // Clear vectors
     mcparts.clear();
+    recparts.clear();
     h1_idxs.clear();
     h2_idxs.clear();
     dihadron_idxs.clear();
@@ -187,6 +193,79 @@ int hipoLUND2tree(const char * input_file = "/cache/clas12/rg-a/production/monte
         return -1;
     }
       
+    
+    // Loop over reconstructed particles
+    // -------------------------------------------------------
+    auto particles=_c12->getDetParticles();
+    for(unsigned int idx = 0 ; idx < particles.size() ; idx++){
+      // Create new part struct
+      part partstruct;
+      // Extract each particle from event one-at-a-time
+      // -------------------------------------------------------
+      auto particle = particles.at(idx);
+      partstruct.pid = particle->getPid(); 
+
+      partstruct.chi2 = particle->getChi2Pid();
+      partstruct.theta = particle->getTheta();
+      partstruct.eta = _kin.eta(partstruct.theta);
+      partstruct.phi = particle->getPhi();
+      partstruct.p = particle->getP();
+      partstruct.px = _kin.Px(partstruct.p,partstruct.theta,partstruct.phi);
+      partstruct.py = _kin.Py(partstruct.p,partstruct.theta,partstruct.phi);
+      partstruct.pz = _kin.Pz(partstruct.p,partstruct.theta,partstruct.phi);
+      partstruct.pt = _kin.Pt(partstruct.px,partstruct.py);
+      if(partstruct.pid!=22)
+        partstruct.m = particle->getPdgMass();
+      else
+        partstruct.m = 0;
+      partstruct.beta = particle->getBeta();
+      partstruct.pindex = particle->getIndex();
+      partstruct.vx = particle->par()->getVx();
+      partstruct.vy = particle->par()->getVy();
+      partstruct.vz = particle->par()->getVz();
+      partstruct.status = particle->getStatus();
+      partstruct.E = _kin.E(partstruct.m,partstruct.p);
+    
+      // Ensure hadrons are not in CD
+      if (partstruct.pid == 2212 || partstruct.pid == -2212 ||
+        partstruct.pid == 2112 ||
+        partstruct.pid == -321 || partstruct.pid == -211 ||
+        partstruct.pid == 211 || partstruct.pid == 321) {
+          if(partstruct.status>=4000 && partstruct.status<5000)
+              continue;
+      }
+      
+      _hipoInterface.loadBankData(_c12,partstruct);
+      recparts.push_back(partstruct);
+          
+    }
+      
+    // Code for determine the scattered electron from REC::Particle
+    // --> Find pid==11 particle with largest energy
+    // -->   If no electron is found, skip
+    // --> Check if the status of the maximum energy electron is in FD
+    // -->   Skip if not (i.e. always skip events if the max energy electron was not in FD)
+    // --> Set that particle as the scattered electron
+    int idx_e=-1;
+    double max_energy = -1; 
+    for (int i = 0; i < recparts.size(); i++) {
+      part partstruct = recparts[i];
+      // check if the particle is an electron
+      if (partstruct.pid == 11) {
+        // compare energy with the current maximum and update if necessary
+        if (partstruct.E > max_energy) {
+          max_energy = partstruct.E;
+          idx_e=i;
+         }
+       }
+    }
+    
+    if(idx_e==-1){
+        continue; // No scattered electron passing the above conditions found
+    }  
+    
+    // Loop over MC Particles
+    // -------------------------------------------------------------------------
     auto mcparticles=_c12->mcparts();
     for(int idx = 0 ; idx < mcparticles->getRows() ; idx++){
       int pid = mcparticles->getPid(idx);
