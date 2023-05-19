@@ -52,6 +52,105 @@ FS get_FS(int pid_h1, int pid_h2){
   return fs;
 } 
 
+struct EVENT_INFO {
+    int A = 0;
+    int evnum = 0;
+    int fgId=0;
+    int run=0;
+    float torus=0;
+    double Pol=0;
+    int hel=0;
+    int uID=0;
+};
+
+struct EVENT {
+    
+    double x=-999;
+    double y=-999;
+    double Q2=-999;
+    double nu=-999;
+    double W=-999;
+    double M1=-999;
+    double M2=-999;
+    double M12=-999;
+    double Mh=-999;
+    double phi_h=-999;
+    double phi_R0=-999;
+    double phi_R1=-999;
+    double th=-999;
+    double z1=-999;
+    double z2=-999;
+    double z=-999;
+    double xF1=-999;
+    double xF2=-999;
+    double xF=-999;
+    double Mx=-999;
+    double phi_h1=-999;
+    double phi_h2=-999;
+    double delta_phi_h=-999;
+    double pT1=-999;
+    double pT2=-999;
+    double pTtot=-999;
+    double P1=-999;
+    double P2=-999;
+    double Ptot=-999;
+    
+    double truex=-999;
+    double truey=-999;
+    double trueQ2=-999;
+    double truenu=-999;
+    double trueW=-999;
+    double trueM1 = -999;
+    double trueM2 = -999;
+    double trueM12 = -999;
+    double trueMh = -999;
+    double truephi_h = -999;
+    double truephi_R0 = -999;
+    double truephi_R1 = -999;
+    double trueth = -999;
+    double truez1 = -999;
+    double truez2 = -999;
+    double truez = -999;
+    double truexF1 = -999;
+    double truexF2 = -999;
+    double truexF = -999;
+    double trueMx = -999;
+    double truephi_h1 = -999;
+    double truephi_h2 = -999;
+    double truedelta_phi_h = -999;
+    double truepT1 = -999;
+    double truepT2 = -999;
+    double truepTtot = -999;
+    double trueP1 = -999;
+    double trueP2 = -999;
+    double truePtot = -999;
+    
+    int truepid_1=-999;
+    int truepid_2=-999;
+    int truepid_11=-999;
+    int truepid_12=-999;
+    int truepid_21=-999;
+    int truepid_22=-999;
+    int trueparentpid_1=-999;
+    int trueparentpid_2=-999;
+    int trueparentid_1=-999;
+    int trueparentid_2=-999;
+    int trueparentparentpid_1=-999;
+    int trueparentparentpid_2=-999;
+    int trueparentparentid_1=-999;
+    int trueparentparentid_2=-999;
+    
+    int MCmatch=0;
+    int isGoodEventWithoutML=0;
+    int is_CFR_1=0;
+    int is_CFR_2=0;
+    
+    double p_11=-999;
+    double p_12=-999;
+    double p_21=-999;
+    double p_22=-999;
+};
+
 struct part{
   // Reconstructed Info
   int pindex=-999;
