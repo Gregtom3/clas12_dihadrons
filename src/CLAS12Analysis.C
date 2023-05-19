@@ -1,4 +1,5 @@
 #include "CLAS12Analysis.h"
+#include "Constants.h"
 
 CLAS12Analysis::CLAS12Analysis(){}
 
@@ -17,8 +18,39 @@ CLAS12Analysis::CLAS12Analysis(const std::unique_ptr<clas12::clas12reader>& _c12
     _electron_beam_energy = beamE;
     s = init_electron.M2()+target.M2()+2*target.M()*_electron_beam_energy;
 }
+// ***********************************************************************************************************************
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void CLAS12Analysis::set_run_config(const std::unique_ptr<clas12::clas12reader>& _c12){
+    _idx_RUNconfig = _c12->addBank("RUN::config");
+    _irun = _c12->getBankOrder(_idx_RUNconfig,"run");
+    _ievnum = _c12->getBankOrder(_idx_RUNconfig,"event");
+    _itorus = _c12->getBankOrder(_idx_RUNconfig,"torus");
+}
 
-
+EVENT_INFO CLAS12Analysis::get_event_info(const std::unique_ptr<clas12::clas12reader>& _c12){
+    
+    auto event = _c12->event(); // to get helicity
+    
+    EVENT_INFO event_info;
+    event_info.run = _c12->getBank(_idx_RUNconfig)->getInt(_irun,0);
+    event_info.torus = _c12->getBank(_idx_RUNconfig)->getFloat(_itorus,0);
+    if(event_info.run==11){
+        event_info.run *= event_info.torus;
+    }
+    event_info.evnum = _c12->getBank(_idx_RUNconfig)->getInt(_ievnum,0);
+    event_info.hel   = event->getHelicity() * runHelicityFlip(event_info.run);
+    event_info.Pol = runPolarization(event_info.run);
+    
+    return event_info;
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void CLAS12Analysis::set_beams(TLorentzVector eIn, TLorentzVector pIn){
+    init_electron = eIn;
+    target = pIn;
+    _electron_beam_energy = eIn.E();
+    s = init_electron.M2()+target.M2()+2*target.M()*_electron_beam_energy;
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 std::vector<part> CLAS12Analysis::load_reco_particles(const std::unique_ptr<clas12::clas12reader>& _c12){
     
     std::vector<part> vec_particles;
@@ -73,7 +105,7 @@ std::vector<part> CLAS12Analysis::load_reco_particles(const std::unique_ptr<clas
 }
 
 
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 std::vector<part> CLAS12Analysis::load_mc_particles(const std::unique_ptr<clas12::clas12reader>& _c12){
     
     
@@ -136,7 +168,7 @@ std::vector<part> CLAS12Analysis::load_mc_particles(const std::unique_ptr<clas12
     return vec_mcparticles;
     
 }
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 bool CLAS12Analysis::reco_event_contains_final_state(std::vector<part> vec_particles, FS fs){
     int num_e=0;
     int num_h1=0;
@@ -153,7 +185,7 @@ bool CLAS12Analysis::reco_event_contains_final_state(std::vector<part> vec_parti
     return true;
 
 }
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int CLAS12Analysis::find_reco_scattered_electron(std::vector<part>& vec_particles){
     // Code for determine the scattered electron from REC::Particle
     // --> Find pid==11 particle with largest energy
@@ -187,8 +219,8 @@ int CLAS12Analysis::find_reco_scattered_electron(std::vector<part>& vec_particle
     
     return idx_e;
 }
-
-DIS_EVENT CLAS12Analysis::calc_reco_event_variables(std::vector<part> parts){
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+EVENT CLAS12Analysis::calc_reco_event_variables(std::vector<part> parts){
     
     part scattered_electron;
     for(auto p: parts){
@@ -203,7 +235,7 @@ DIS_EVENT CLAS12Analysis::calc_reco_event_variables(std::vector<part> parts){
         cout << "ERROR: No rec::scattered electron found..." << endl;
     }
     
-    DIS_EVENT event;
+    EVENT event;
     event.Q2=_kin.Q2(_electron_beam_energy,scattered_electron.E,
                _kin.cth(scattered_electron.px,scattered_electron.py,scattered_electron.pz));
     event.y=_kin.y(_electron_beam_energy,scattered_electron.E);     
@@ -213,8 +245,8 @@ DIS_EVENT CLAS12Analysis::calc_reco_event_variables(std::vector<part> parts){
 
     return event;
 }
-
-DIS_EVENT CLAS12Analysis::calc_mc_event_variables(std::vector<part> parts){
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+EVENT CLAS12Analysis::calc_mc_event_variables(std::vector<part> parts){
     
     part scattered_electron;
     for(auto p: parts){
@@ -229,7 +261,7 @@ DIS_EVENT CLAS12Analysis::calc_mc_event_variables(std::vector<part> parts){
         cout << "ERROR: No mc::scattered electron found..." << endl;
     }
     
-    DIS_EVENT event;
+    EVENT event;
     event.trueQ2=_kin.Q2(_electron_beam_energy,scattered_electron.trueE,
                _kin.cth(scattered_electron.truepx,scattered_electron.truepy,scattered_electron.truepz));
     event.truey=_kin.y(_electron_beam_energy,scattered_electron.trueE);     
@@ -240,7 +272,7 @@ DIS_EVENT CLAS12Analysis::calc_mc_event_variables(std::vector<part> parts){
     return event;
 }
 
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void CLAS12Analysis::match_mc_to_reco(std::vector<part>& vec_particles,
                                       std::vector<part>& vec_mcparticles){
     
@@ -280,3 +312,104 @@ void CLAS12Analysis::match_mc_to_reco(std::vector<part>& vec_particles,
 }
 
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void CLAS12Analysis::generate_combinations(std::vector<int>& input, int num, int start_idx, std::vector<int>& curr_combination, std::vector<std::vector<int>>& result) {
+    if (num == 0) {
+        result.push_back(curr_combination);
+        return;
+    }
+    for (int i = start_idx; i <= input.size() - num; i++) {
+        curr_combination.push_back(input[i]);
+        generate_combinations(input, num - 1, i + 1, curr_combination, result);
+        curr_combination.pop_back();
+    }
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+std::vector<std::vector<int>> CLAS12Analysis::unique_combinations(std::vector<int> input, int num) {
+    std::vector<std::vector<int>> result;
+    std::vector<int> curr_combination;
+    std::sort(input.begin(), input.end());
+
+    generate_combinations(input, num, 0, curr_combination, result);
+    return result;
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+std::vector<std::vector<int>> CLAS12Analysis::remove_duplicates(std::vector<std::vector<int>> input) {
+    std::vector<std::vector<int>> output;
+
+    // Store the original indices and sort each inner vector based on the values
+    std::vector<std::vector<size_t>> indices(input.size());
+    for (size_t i = 0; i < input.size(); ++i) {
+        indices[i].resize(input[i].size());
+        std::iota(indices[i].begin(), indices[i].end(), 0);
+
+        std::sort(indices[i].begin(), indices[i].end(),
+                  [&](size_t a, size_t b) { return input[i][a] < input[i][b]; });
+        std::sort(input[i].begin(), input[i].end());
+    }
+
+    // Sort and remove duplicates from the outer vector
+    std::sort(input.begin(), input.end());
+    input.erase(std::unique(input.begin(), input.end()), input.end());
+
+    // Restore the original order of the inner vectors
+    for (size_t i = 0; i < input.size(); ++i) {
+        std::vector<int> temp(input[i].size());
+        for (size_t j = 0; j < input[i].size(); ++j) {
+            temp[indices[i][j]] = input[i][j];
+        }
+        input[i] = temp;
+    }
+
+    return input;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+std::vector<std::vector<int>> CLAS12Analysis::dihadron_idxs(int pid_h1, int pid_h2, int pid[], int Nmax){
+    
+    std::vector<int> h1_idxs;
+    std::vector<int> h2_idxs;
+    std::vector<std::vector<int>> twoh_idxs;
+    for(int i = 0; i<Nmax; i++){
+        if(pid[i]==pid_h1 || (pid[i]==22 && pid_h1==111)) h1_idxs.push_back(i);
+        if(pid[i]==pid_h2 || (pid[i]==22 && pid_h2==111)) h2_idxs.push_back(i);
+    }
+    
+
+    //Now form all possible dihadron index pairs
+    if(pid_h1==pid_h2 && pid_h1!=111){twoh_idxs=unique_combinations(h1_idxs,2); }
+    else if(pid_h1==pid_h2 && pid_h1==111){twoh_idxs=unique_combinations(h1_idxs,4);}
+    else if(pid_h1!=pid_h2 && pid_h1==111 && pid_h2 != 111){
+        for(int i = 0 ; i < h2_idxs.size(); i++){
+            for(int j = 0 ; j < h1_idxs.size(); j++){
+                for(int k = j+1 ; k < h1_idxs.size(); k++){
+                    std::vector<int> dihadron_idx = {h1_idxs.at(j),h1_idxs.at(k),h2_idxs.at(i)}; // 2 photons at start
+                    twoh_idxs.push_back(dihadron_idx);
+                }
+            }
+        }
+    }
+    else if(pid_h1!=pid_h2 && pid_h1!=111 && pid_h2 == 111){
+        for(int i = 0 ; i < h1_idxs.size(); i++){
+            for(int j = 0 ; j < h2_idxs.size(); j++){
+                for(int k = j+1 ; k < h2_idxs.size(); k++){
+                    std::vector<int> dihadron_idx = {h1_idxs.at(i),h2_idxs.at(j),h2_idxs.at(k)}; // 2 photons at end
+                    twoh_idxs.push_back(dihadron_idx);
+                }
+            }
+        }
+    }
+    else{
+        for(int i = 0 ; i < h1_idxs.size(); i++){
+            for(int j = 0 ; j < h2_idxs.size(); j++){
+                std::vector<int> dihadron_idx = {h1_idxs.at(i), h2_idxs.at(j)};
+                twoh_idxs.push_back(dihadron_idx);
+            }
+        }
+    }
+
+    // Remove any instance of duplicate dihadrons
+    twoh_idxs = remove_duplicates(twoh_idxs);
+    
+    return twoh_idxs;
+}
