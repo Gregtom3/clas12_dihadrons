@@ -20,7 +20,9 @@ public:
     std::vector<part> load_reco_particles(const std::unique_ptr<clas12::clas12reader>&);
     std::vector<part> load_mc_particles(const std::unique_ptr<clas12::clas12reader>&);
     int find_reco_scattered_electron(std::vector<part>&);
+    int find_mc_scattered_electron(std::vector<part>&);
     bool reco_event_contains_final_state(std::vector<part>, FS);
+    bool reco_event_contains_scattered_electron(std::vector<part>);
     
     EVENT_INFO get_event_info(const std::unique_ptr<clas12::clas12reader>&);
     EVENT calc_reco_event_variables(std::vector<part>);
@@ -29,7 +31,10 @@ public:
     void match_mc_to_reco(std::vector<part>&, std::vector<part>&);
     
     std::vector<std::vector<int>> dihadron_idxs(int,int,int[],int);
-    
+    std::vector<std::vector<int>> dihadron_idxs(int,int,std::vector<int>);
+    std::vector<std::vector<int>> dihadron_idxs(int,int,std::vector<part>);
+    void fill_mc_reco_dihadron_variables(EVENT &, EVENT &, TLorentzVector, TLorentzVector, TLorentzVector, TLorentzVector, std::vector<part>, std::vector<int>, int,int);
+    void fill_reco_dihadron_variables(EVENT &, TLorentzVector, TLorentzVector, std::vector<part>, std::vector<int>, int,int);
 protected:
     // Dihadron indexing code
     void generate_combinations(std::vector<int>& input, int num, int start_idx, std::vector<int>& curr_combination, std::vector<std::vector<int>>& result);

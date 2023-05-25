@@ -257,48 +257,12 @@ int hipo2tree_multiplicity_mc(
     gen_nu = mc_event.truenu;
     gen_Q2 = mc_event.trueQ2;
     gen_W = mc_event.trueW;
-//     gen_z = -999;
-//     gen_xF1 = -999;
-//     gen_xF2 = -999;
-//     gen_xF = -999;
-//     gen_pT1 = -999;
-//     gen_pT2 = -999;
-//     gen_pTtot = -999;
-//     gen_phi_h = -999;
-//     gen_phi_R0 = -999;
-//     gen_phi_R1 = -999;
-//     gen_th = -999;
-//     gen_E_e = -999;
-//     gen_theta_e = -999;
-//     gen_phi_e = -999;
-//     gen_Mh = -999;
-//     gen_Mx = -999;
-//     gen_z1 = -999;
-//     gen_z2 = -999;
 
     rec_x = reco_event.x;
     rec_y = reco_event.y;
     rec_nu = reco_event.nu;
     rec_Q2 = reco_event.Q2;
     rec_W = reco_event.W;
-//     rec_z = -999;
-//     rec_xF1 = -999;
-//     rec_xF2 = -999;
-//     rec_xF = -999;
-//     rec_pT1 = -999;
-//     rec_pT2 = -999;
-//     rec_pTtot = -999;
-//     rec_phi_h = -999;
-//     rec_phi_R0 = -999;
-//     rec_phi_R1 = -999;
-//     rec_th = -999;
-//     rec_E_e = -999;
-//     rec_theta_e = -999;
-//     rec_phi_e = -999;
-//     rec_Mh = -999;
-//     rec_Mx = -999;
-//     rec_z1 = -999;
-//     rec_z2 = -999;
 
 
     //Loop over all particles in the event to find electron

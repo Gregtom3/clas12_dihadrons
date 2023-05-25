@@ -2,7 +2,7 @@
 #include "Constants.h"
 
 CLAS12Analysis::CLAS12Analysis(){}
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 CLAS12Analysis::CLAS12Analysis(const std::unique_ptr<clas12::clas12reader>& _c12, TLorentzVector eIn, TLorentzVector pIn){
     hipoBankInterface = HipoBankInterface(_c12);
     init_electron = eIn;
@@ -26,7 +26,7 @@ void CLAS12Analysis::set_run_config(const std::unique_ptr<clas12::clas12reader>&
     _ievnum = _c12->getBankOrder(_idx_RUNconfig,"event");
     _itorus = _c12->getBankOrder(_idx_RUNconfig,"torus");
 }
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 EVENT_INFO CLAS12Analysis::get_event_info(const std::unique_ptr<clas12::clas12reader>& _c12){
     
     auto event = _c12->event(); // to get helicity
@@ -119,6 +119,7 @@ std::vector<part> CLAS12Analysis::load_mc_particles(const std::unique_ptr<clas12
       part partstruct;
       if(mcparticles->getType(idx)!=1) // Reject non-final state
         {continue;} 
+      partstruct.pid = mcparticles->getPid(idx);
       partstruct.truepid = mcparticles->getPid(idx);
       partstruct.truepx = mcparticles->getPx(idx);
       partstruct.truepy = mcparticles->getPy(idx);
@@ -186,6 +187,13 @@ bool CLAS12Analysis::reco_event_contains_final_state(std::vector<part> vec_parti
 
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+bool CLAS12Analysis::reco_event_contains_scattered_electron(std::vector<part> vec_particles){
+    for(part particle : vec_particles){
+      if(particle.pid==11 && particle.is_scattered_electron==1) return true;
+    }
+    return false;
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int CLAS12Analysis::find_reco_scattered_electron(std::vector<part>& vec_particles){
     // Code for determine the scattered electron from REC::Particle
     // --> Find pid==11 particle with largest energy
@@ -218,6 +226,16 @@ int CLAS12Analysis::find_reco_scattered_electron(std::vector<part>& vec_particle
             return -1;
     
     return idx_e;
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+int CLAS12Analysis::find_mc_scattered_electron(std::vector<part>& vec_mcparticles){
+    for (int i = 0 ; i < vec_mcparticles.size(); i++){
+        part partstruct = vec_mcparticles[i];
+        if(partstruct.is_scattered_electron)
+            return i;
+        
+    }
+    return -1;
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 EVENT CLAS12Analysis::calc_reco_event_variables(std::vector<part> parts){
@@ -271,7 +289,210 @@ EVENT CLAS12Analysis::calc_mc_event_variables(std::vector<part> parts){
     
     return event;
 }
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void CLAS12Analysis::fill_mc_reco_dihadron_variables(EVENT &mc_event, EVENT &reco_event, TLorentzVector q, TLorentzVector trueq, TLorentzVector electron , TLorentzVector trueelectron, std::vector<part> vec_particles, std::vector<int> dihadron_idx, int pid_h1, int pid_h2){
+    int i=0;
+    int ii=0;
+    int j=0;
+    int jj=0;
+    if(pid_h1==111){
+        i=dihadron_idx.at(0);
+        ii=dihadron_idx.at(1);
+    }else{
+        i=dihadron_idx.at(0);
+    }
+    if(pid_h2==111&&pid_h1!=111){
+        j=dihadron_idx.at(1);
+        jj=dihadron_idx.at(2);
+    }else if(pid_h2==111&&pid_h1==111){
+        j=dihadron_idx.at(2);
+        jj=dihadron_idx.at(3);
+    }else if(pid_h1==111){
+        j=dihadron_idx.at(2);
+    }else{
+        j=dihadron_idx.at(1);
+    }
 
+    mc_event.i=i; reco_event.i=i;
+    mc_event.ii=ii; reco_event.ii=ii;
+    mc_event.j=j; reco_event.j=j;
+    mc_event.jj=jj; reco_event.jj=jj;
+    
+    TLorentzVector h1;
+    TLorentzVector trueh1;
+    TLorentzVector h2;
+    TLorentzVector trueh2;
+    TLorentzVector dihadron;
+    TLorentzVector truedihadron;
+
+    if (pid_h1 == 111) {
+        h1.SetPxPyPzE(vec_particles[i].px + vec_particles[ii].px,
+                       vec_particles[i].py + vec_particles[ii].py,
+                       vec_particles[i].pz + vec_particles[ii].pz,
+                       vec_particles[i].E + vec_particles[ii].E);
+        trueh1.SetPxPyPzE(vec_particles[i].truepx + vec_particles[ii].truepx,
+                           vec_particles[i].truepy + vec_particles[ii].truepy,
+                           vec_particles[i].truepz + vec_particles[ii].truepz,
+                           vec_particles[i].trueE + vec_particles[ii].trueE);
+    } else {
+        h1.SetPxPyPzE(vec_particles[i].px, vec_particles[i].py, vec_particles[i].pz, vec_particles[i].E);
+        trueh1.SetPxPyPzE(vec_particles[i].truepx, vec_particles[i].truepy,
+                           vec_particles[i].truepz, vec_particles[i].trueE);
+    }
+
+    if (pid_h2 == 111) {
+        h2.SetPxPyPzE(vec_particles[j].px + vec_particles[jj].px,
+                       vec_particles[j].py + vec_particles[jj].py,
+                       vec_particles[j].pz + vec_particles[jj].pz,
+                       vec_particles[j].E + vec_particles[jj].E);
+        trueh2.SetPxPyPzE(vec_particles[j].truepx + vec_particles[jj].truepx,
+                           vec_particles[j].truepy + vec_particles[jj].truepy,
+                           vec_particles[j].truepz + vec_particles[jj].truepz,
+                           vec_particles[j].trueE + vec_particles[jj].trueE);
+    } else {
+        h2.SetPxPyPzE(vec_particles[j].px, vec_particles[j].py, vec_particles[j].pz, vec_particles[j].E);
+        trueh2.SetPxPyPzE(vec_particles[j].truepx, vec_particles[j].truepy,
+                           vec_particles[j].truepz, vec_particles[j].trueE);
+    }
+    
+    if(pid_h1==pid_h2){
+        double z1 = _kin.z(target,h1,q);
+        double z2 = _kin.z(target,h2,q);
+        if(z1<z2){
+            TLorentzVector temp = h1;
+            h2=h1;
+            h1=temp;
+            TLorentzVector truetemp = h1;
+            trueh2=trueh1;
+            trueh1=truetemp;
+        }
+    }
+
+    // Build the dihadron
+    dihadron = h1+h2;
+    truedihadron = trueh1+trueh2;
+    // fill results
+
+    reco_event.Mh = dihadron.M();
+    reco_event.phi_h = _kin.phi_h(q,init_electron,h1,h2);
+    reco_event.pT1 = _kin.Pt(q,h1,target);
+    reco_event.pT2 = _kin.Pt(q,h2,target);
+    reco_event.pTtot = _kin.Pt(q,dihadron,target);
+    reco_event.phi_R0 = _kin.phi_R(q,init_electron,h1,h2,0);
+    reco_event.phi_R1 = _kin.phi_R(q,init_electron,h1,h2,1);
+    reco_event.th     = _kin.com_th(h1,h2);
+    reco_event.xF1 = _kin.xF(q,h1,target,reco_event.W);
+    reco_event.xF2 = _kin.xF(q,h2,target,reco_event.W);
+    reco_event.xF     = _kin.xF(q,dihadron,target,reco_event.W);
+    reco_event.z1 = _kin.z(target,h1,q);
+    reco_event.z2 = _kin.z(target,h2,q);
+    reco_event.z = reco_event.z1+reco_event.z2;
+    reco_event.Mx = (init_electron+target-electron-dihadron).M();
+
+    mc_event.trueMh = truedihadron.M();
+    mc_event.truephi_h = _kin.phi_h(trueq,init_electron,trueh1,trueh2);
+    mc_event.truepT1 = _kin.Pt(trueq,trueh1,target);
+    mc_event.truepT2 = _kin.Pt(trueq,trueh2,target);
+    mc_event.truepTtot = _kin.Pt(trueq,truedihadron,target);
+    mc_event.truephi_R0 = _kin.phi_R(trueq,init_electron,trueh1,trueh2,0);
+    mc_event.truephi_R1 = _kin.phi_R(trueq,init_electron,trueh1,trueh2,1);
+    mc_event.trueth     = _kin.com_th(trueh1,trueh2);
+    mc_event.truexF1 = _kin.xF(trueq,trueh1,target,mc_event.trueW);
+    mc_event.truexF2 = _kin.xF(trueq,trueh2,target,mc_event.trueW);
+    mc_event.truexF     = _kin.xF(trueq,truedihadron,target,mc_event.trueW);
+    mc_event.truez1 = _kin.z(target,trueh1,trueq);
+    mc_event.truez2 = _kin.z(target,trueh2,trueq);
+    mc_event.truez = mc_event.truez1+mc_event.truez2;
+    mc_event.trueMx = (init_electron+target-trueelectron-truedihadron).M();
+    
+    if(trueelectron.E()>0&&trueh1.E()>0&&trueh2.E()>0) mc_event.MCmatch=1;
+    else mc_event.MCmatch = 0;
+    
+    
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void CLAS12Analysis::fill_reco_dihadron_variables(EVENT &reco_event, TLorentzVector q, TLorentzVector electron ,  std::vector<part> vec_particles, std::vector<int> dihadron_idx, int pid_h1, int pid_h2){
+    int i=0;
+    int ii=0;
+    int j=0;
+    int jj=0;
+    if(pid_h1==111){
+        i=dihadron_idx.at(0);
+        ii=dihadron_idx.at(1);
+    }else{
+        i=dihadron_idx.at(0);
+    }
+    if(pid_h2==111&&pid_h1!=111){
+        j=dihadron_idx.at(1);
+        jj=dihadron_idx.at(2);
+    }else if(pid_h2==111&&pid_h1==111){
+        j=dihadron_idx.at(2);
+        jj=dihadron_idx.at(3);
+    }else if(pid_h1==111){
+        j=dihadron_idx.at(2);
+    }else{
+        j=dihadron_idx.at(1);
+    }
+
+    reco_event.i=i;
+    reco_event.ii=ii;
+    reco_event.j=j;
+    reco_event.jj=jj;
+    
+    TLorentzVector h1;
+    TLorentzVector h2;
+    TLorentzVector dihadron;
+
+    if (pid_h1 == 111) {
+        h1.SetPxPyPzE(vec_particles[i].px + vec_particles[ii].px,
+                       vec_particles[i].py + vec_particles[ii].py,
+                       vec_particles[i].pz + vec_particles[ii].pz,
+                       vec_particles[i].E + vec_particles[ii].E);
+    } else {
+        h1.SetPxPyPzE(vec_particles[i].px, vec_particles[i].py, vec_particles[i].pz, vec_particles[i].E);
+    }
+
+    if (pid_h2 == 111) {
+        h2.SetPxPyPzE(vec_particles[j].px + vec_particles[jj].px,
+                       vec_particles[j].py + vec_particles[jj].py,
+                       vec_particles[j].pz + vec_particles[jj].pz,
+                       vec_particles[j].E + vec_particles[jj].E);
+    } else {
+        h2.SetPxPyPzE(vec_particles[j].px, vec_particles[j].py, vec_particles[j].pz, vec_particles[j].E);
+    }
+    
+    if(pid_h1==pid_h2){
+        double z1 = _kin.z(target,h1,q);
+        double z2 = _kin.z(target,h2,q);
+        if(z1<z2){
+            TLorentzVector temp = h1;
+            h2=h1;
+            h1=temp;
+        }
+    }
+
+    // Build the dihadron
+    dihadron = h1+h2;
+    // fill results
+
+    reco_event.Mh = dihadron.M();
+    reco_event.phi_h = _kin.phi_h(q,init_electron,h1,h2);
+    reco_event.pT1 = _kin.Pt(q,h1,target);
+    reco_event.pT2 = _kin.Pt(q,h2,target);
+    reco_event.pTtot = _kin.Pt(q,dihadron,target);
+    reco_event.phi_R0 = _kin.phi_R(q,init_electron,h1,h2,0);
+    reco_event.phi_R1 = _kin.phi_R(q,init_electron,h1,h2,1);
+    reco_event.th     = _kin.com_th(h1,h2);
+    reco_event.xF1 = _kin.xF(q,h1,target,reco_event.W);
+    reco_event.xF2 = _kin.xF(q,h2,target,reco_event.W);
+    reco_event.xF     = _kin.xF(q,dihadron,target,reco_event.W);
+    reco_event.z1 = _kin.z(target,h1,q);
+    reco_event.z2 = _kin.z(target,h2,q);
+    reco_event.z = reco_event.z1+reco_event.z2;
+    reco_event.Mx = (init_electron+target-electron-dihadron).M();
+    
+    
+}
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void CLAS12Analysis::match_mc_to_reco(std::vector<part>& vec_particles,
                                       std::vector<part>& vec_mcparticles){
@@ -303,6 +524,21 @@ void CLAS12Analysis::match_mc_to_reco(std::vector<part>& vec_particles,
 	  vec_particles[i].trueparentpid = vec_mcparticles[j].trueparentpid;
       vec_particles[i].trueparentparentid = vec_mcparticles[j].trueparentparentid;
 	  vec_particles[i].trueparentparentpid = vec_mcparticles[j].trueparentparentpid;
+            
+      vec_mcparticles[j].px = vec_particles[i].px;
+      vec_mcparticles[j].py = vec_particles[i].py;
+      vec_mcparticles[j].pz = vec_particles[i].pz;
+      vec_mcparticles[j].p = vec_particles[i].p;
+      vec_mcparticles[j].pt = vec_particles[i].pt;
+      vec_mcparticles[j].E = vec_particles[i].E;
+      vec_mcparticles[j].m = vec_particles[i].m;
+      vec_mcparticles[j].theta = vec_particles[i].theta;
+      vec_mcparticles[j].eta = vec_particles[i].eta;
+      vec_mcparticles[j].phi = vec_particles[i].phi;
+      vec_mcparticles[j].vx = vec_particles[i].vx;
+      vec_mcparticles[j].vy = vec_particles[i].vy;
+      vec_mcparticles[j].vz = vec_particles[i].vz;
+      vec_mcparticles[j].is_CFR = vec_particles[i].is_CFR;
 	  break;
 	}
       }
@@ -413,3 +649,24 @@ std::vector<std::vector<int>> CLAS12Analysis::dihadron_idxs(int pid_h1, int pid_
     
     return twoh_idxs;
 }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+std::vector<std::vector<int>> CLAS12Analysis::dihadron_idxs(int pid_h1, int pid_h2, std::vector<int> pid){
+
+    int* pidArray = pid.data();
+    int size = pid.size();
+    
+    return dihadron_idxs(pid_h1,pid_h2,pidArray,size);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+std::vector<std::vector<int>> CLAS12Analysis::dihadron_idxs(int pid_h1, int pid_h2, std::vector<part> vec_particles){
+
+    std::vector<int> pid;
+    for(auto particle: vec_particles){
+        pid.push_back(particle.pid);
+    }
+    
+    return dihadron_idxs(pid_h1,pid_h2,pid);
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
