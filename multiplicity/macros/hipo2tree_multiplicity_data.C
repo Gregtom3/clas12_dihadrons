@@ -148,8 +148,7 @@ int hipo2tree_multiplicity_data(
   std::vector<part> vec_particles;
   std::vector<part> vec_mcparticles;
   EVENT_INFO event_info;
-  EVENT reco_event;
-  EVENT   mc_event;
+  EVENT event;
 
   // Declare TLorentzVectors
   // -------------------------------------
@@ -196,8 +195,8 @@ int hipo2tree_multiplicity_data(
     if(idx_scattered_ele==-1)
       continue; // No scattered electron found
     vec_particles[idx_scattered_ele].is_scattered_electron=1;
-    reco_event = clas12ana.calc_reco_event_variables(vec_particles);
-    if(reco_event.y > 0.8)
+    clas12ana.fill_reco_event_variables(event, vec_particles);
+    if(event.y > 0.8)
       continue; // Maximum y cut
     vec_particles = _cm.filter_particles(vec_particles); // Apply Cuts
     if(clas12ana.reco_event_contains_final_state(vec_particles,fs)==false)
@@ -206,15 +205,15 @@ int hipo2tree_multiplicity_data(
     //
     // *******************************************************************
 
-    reco_tree->FillTree(vec_particles,reco_event,mc_event,event_info);
+    reco_tree->FillTree(vec_particles,event,event_info);
       
     // Set the event variables to 0
 
-    rec_x = reco_event.x;
-    rec_y = reco_event.y;
-    rec_nu = reco_event.nu;
-    rec_Q2 = reco_event.Q2;
-    rec_W = reco_event.W;
+    rec_x = event.x;
+    rec_y = event.y;
+    rec_nu = event.nu;
+    rec_Q2 = event.Q2;
+    rec_W = event.W;
 
 
     //Loop over all particles in the event to find electron
@@ -237,25 +236,25 @@ int hipo2tree_multiplicity_data(
     for(int a = 0 ; a < dihadron_idxs.size() ; a++){
         std::vector<int> dihadron_idx = dihadron_idxs.at(a);
         
-        clas12ana.fill_reco_dihadron_variables(reco_event, q, electron, vec_particles, dihadron_idx, pid_h1, pid_h2);
+        clas12ana.fill_reco_dihadron_variables(event, q, electron, vec_particles, dihadron_idx, pid_h1, pid_h2);
             
-        rec_z = reco_event.z;
-        rec_xF1 = reco_event.xF1;
-        rec_xF2 = reco_event.xF2;
-        rec_xF = reco_event.xF;
-        rec_pT1 = reco_event.pT1;
-        rec_pT2 = reco_event.pT2;
-        rec_pTtot = reco_event.pTtot;
-        rec_phi_h = reco_event.phi_h;
-        rec_phi_R0 = reco_event.phi_R0;
-        rec_phi_R1 = reco_event.phi_R1;
-        rec_th = reco_event.th;
-        rec_Mh = reco_event.Mh;
-        rec_Mx = reco_event.Mx;
-        rec_z1 = reco_event.z1;
-        rec_z2 = reco_event.z2;
+        rec_z = event.z;
+        rec_xF1 = event.xF1;
+        rec_xF2 = event.xF2;
+        rec_xF = event.xF;
+        rec_pT1 = event.pT1;
+        rec_pT2 = event.pT2;
+        rec_pTtot = event.pTtot;
+        rec_phi_h = event.phi_h;
+        rec_phi_R0 = event.phi_R0;
+        rec_phi_R1 = event.phi_R1;
+        rec_th = event.th;
+        rec_Mh = event.Mh;
+        rec_Mx = event.Mx;
+        rec_z1 = event.z1;
+        rec_z2 = event.z2;
             
-        rec_passDihadron = checkDihadronCuts(pid_h1,pid_h2,rec_Mx,rec_z,rec_xF1,rec_xF2,idx_scattered_ele, vec_particles, reco_event.i, reco_event.ii, reco_event.j, reco_event.jj,false);
+        rec_passDihadron = checkDihadronCuts(pid_h1,pid_h2,rec_Mx,rec_z,rec_xF1,rec_xF2,idx_scattered_ele, vec_particles, event.i, event.ii, event.j, event.jj,false);
         
         tree->Fill();
         

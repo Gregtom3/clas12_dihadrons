@@ -36,7 +36,7 @@ class SmearingMatrix:
         
         ####
         for root_file in tqdm(self.root_files):
-            rect_values , true_rect_values , custom_values , true_custom_values = self.dataloader.read_binned_data_from_file(root_file)
+            rect_values , true_rect_values , custom_values , true_custom_values = self.dataloader.read_binned_data_from_mc_file(root_file)
             self.fill_smearing_matrix(rect_values , true_rect_values , custom_values , true_custom_values)
         ####
         
@@ -50,9 +50,17 @@ class SmearingMatrix:
         true_bins = self.bin_manager.get_bin_ids(true_rect_values,true_custom_values)
         reco_bins = self.bin_manager.get_bin_ids(rect_values,custom_values)
         
-        for true_bin, reco_bin in zip(true_bins, reco_bins):
+        for idx,_ in enumerate(true_bins):
+            
             # Update the smearing matrix
-            self.smearing_matrix[true_bin, reco_bin] += 1
+            true_bin = true_bins[idx]
+            reco_bin = reco_bins[idx]
+            if(self.dataloader.hit_arr[idx]==1):
+                self.smearing_matrix[reco_bin, true_bin] += 1
+            elif(self.dataloader.miss_arr[idx]==1):
+                reco_bins[idx] = -1
+            elif(self.dataloader.fake_arr[idx]==1):
+                true_bins[idx] = -1
         
         self.true_bins = np.append(self.true_bins,true_bins)
         self.reco_bins = np.append(self.reco_bins,reco_bins)
@@ -80,8 +88,8 @@ class SmearingMatrix:
             plt.imshow(M)
 
         # Set large axis labels and figure title
-        plt.xlabel("Reco Bin",fontsize=12)
-        plt.ylabel("True Bin",fontsize=12)
+        plt.xlabel("True Bin",fontsize=12)
+        plt.ylabel("Reco Bin",fontsize=12)
         plt.title("Smearing Matrix",fontsize=15)
 
         # Add color bar with label

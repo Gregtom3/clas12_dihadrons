@@ -1,11 +1,13 @@
 from utils import *
 import numpy as np
+
+
 class BinManager:
     def __init__(self):
         
         # Declare a default variable to be a "dummy" bin
-        self.default_variable = "x"    
-        self.default_range = [-9999,9999] 
+        self.default_variable = "rec_x"    
+        self.default_range = [-99999,99999] 
         
         self.rect_names = [self.default_variable]
         self.rect_bins = [self.default_range]
@@ -14,16 +16,19 @@ class BinManager:
                               ([{self.default_variable}]<{self.default_range[1]})"]
         
         self.total_bins = 1
+        self.has_rect_bins = False
+        self.has_custom_bins = False
         
     def load_factory(self, factory):
         if type(factory)==RectBinFactory:
             self.rect_names = factory.pars
             self.rect_bins  = factory.bins
-                
+            self.has_rect_bins = True
+            
         elif type(factory)==CustomBinFactory:
             self.custom_names = factory.pars
             self.custom_bins  = factory.bins
-        
+            self.has_custom_bins = True
         else:
             raise ValueError("Unknown factory type",type(factory))
         
@@ -32,7 +37,6 @@ class BinManager:
     def set_total_bins(self):
         # Calculate the total number of bins
         self.total_bins = int(np.prod([len(edges) - 1 for edges in self.rect_bins]) * len(self.custom_bins)) + 1
-        
     
     def get_bin_ids(self, rect_values, custom_values):
         
@@ -95,32 +99,51 @@ class BinManager:
         '''
         
         custom_bins = self.custom_bins
+        
         # Replace variables in the bin expression with corresponding arrays
+        
+        for key, _ in values.items():
+            if "gen_" in key:
+                custom_bins = [cb.replace("rec_", "gen_") for cb in custom_bins]
+            break
+            
         for key, value in values.items():
             custom_bins=[cb.replace(f"[{key}]", f"values['{key}']") for cb in custom_bins]
 
+            
         bin_ids = None
+        
         for idx, cb in enumerate(custom_bins):
-
             mask = eval(cb)
+            
             if idx>0:
                 bin_ids += np.where(mask, idx, -1) + 1  # Set bin index as True value
             else:
                 bin_ids = np.where(mask, idx, -1)  # Set bin index as True value
-        return bin_ids    
-        
+        return bin_ids 
     
-    def get_bins_from_unique_id(self, bin_id):
-        
-        '''
-            Returns the bins for a given bin_id.
-        '''
+    def get_all_rect_bin_ids_from_rect_bin_id(self,rect_bin_id):
+        # Get the indices for the rectangular bins
+        factors = np.cumprod([len(edges) - 1 for edges in self.rect_bins[::-1]])[:-1][::-1]
+        indices = []
+        for factor in factors:
+            index, rect_bin_id = divmod(rect_bin_id, factor)
+            indices.append(index)
+        indices.append(rect_bin_id)
+        return indices
+    
+    def get_bin_ids_from_unique_id(self,bin_id):
         
         if bin_id == 0:
             raise ValueError("bin_id cannot be 0")
 
         bin_id -= 1  # Offset due to overflow/underflow bins
         rect_bin_id, custom_bin_id = divmod(bin_id, len(self.custom_bins))
+        return rect_bin_id,custom_bin_id
+    
+    def get_bins_from_unique_id(self, bin_id):
+        
+        rect_bin_id, custom_bin_id = self.get_bin_ids_from_unique_id(bin_id)
 
         # Get the indices for the rectangular bins
         factors = np.cumprod([len(edges) - 1 for edges in self.rect_bins[::-1]])[:-1][::-1]
@@ -138,6 +161,18 @@ class BinManager:
     
         return rect_bins, custom_bins
 
+    def get_tcut_from_unique_id(self,unique_id):
+        
+        '''
+            Given a bin's unique id, return the TCut for drawing from within that bin
+        '''
+        
+        rect_bins, custom_bin = self.get_bins_from_unique_id(unique_id)
+        rect_bins = "&".join(rect_bins)
+        rect_bin = rect_bins.replace("[","").replace("]","").replace("&","&&")
+        custom_bin = custom_bin.replace("[","").replace("]","").replace("&","&&")
+        tcut = "&&".join([rect_bin,custom_bin])
+        return tcut
 
     def convert_to_rect_custom_values(self, values):
         
@@ -218,6 +253,7 @@ class CustomBinFactory:
             # Add the curve definition to the new bin list
         
         for line in lines:
+            
             # Iterate over the additional lines
             line = replace_elements_with_brackets(line,self.pars)
             # Replace elements in the line
@@ -237,4 +273,7 @@ class CustomBinFactory:
     def get_custom_names(self):
         return self.pars
         # Return the list of parameter names
+
+        
+        
     
