@@ -38,7 +38,10 @@ EVENT_INFO CLAS12Analysis::get_event_info(const std::unique_ptr<clas12::clas12re
         event_info.run *= event_info.torus;
     }
     event_info.evnum = _c12->getBank(_idx_RUNconfig)->getInt(_ievnum,0);
-    event_info.hel   = event->getHelicity() * runHelicityFlip(event_info.run);
+    event_info.hel   = event->getHelicity();
+    if(runHelicityFlip(event_info.run))
+        event_info.hel*=-1;
+    
     event_info.Pol = runPolarization(event_info.run);
     
     return event_info;
@@ -214,8 +217,7 @@ int CLAS12Analysis::find_reco_scattered_electron(std::vector<part>& vec_particle
          }
        }
     }
-    
-    
+       
     
     if(idx_e==-1) return -1;
     
@@ -237,8 +239,9 @@ int CLAS12Analysis::find_mc_scattered_electron(std::vector<part>& vec_mcparticle
     }
     return -1;
 }
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-EVENT CLAS12Analysis::calc_reco_event_variables(std::vector<part> parts){
+void CLAS12Analysis::fill_reco_event_variables(EVENT &event, std::vector<part> parts){
     
     part scattered_electron;
     for(auto p: parts){
@@ -248,23 +251,21 @@ EVENT CLAS12Analysis::calc_reco_event_variables(std::vector<part> parts){
         }
     }
     
+
     // If none was found, print an error message
     if(scattered_electron.is_scattered_electron != 1){
         cout << "ERROR: No rec::scattered electron found..." << endl;
     }
     
-    EVENT event;
     event.Q2=_kin.Q2(_electron_beam_energy,scattered_electron.E,
                _kin.cth(scattered_electron.px,scattered_electron.py,scattered_electron.pz));
     event.y=_kin.y(_electron_beam_energy,scattered_electron.E);     
     event.nu=_kin.nu(_electron_beam_energy,scattered_electron.E);
     event.W=_kin.W(event.Q2,Mp,event.nu);
     event.x=_kin.x(event.Q2,s,event.y);
-
-    return event;
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-EVENT CLAS12Analysis::calc_mc_event_variables(std::vector<part> parts){
+void CLAS12Analysis::fill_mc_event_variables(EVENT &event, std::vector<part> parts){
     
     part scattered_electron;
     for(auto p: parts){
@@ -279,18 +280,62 @@ EVENT CLAS12Analysis::calc_mc_event_variables(std::vector<part> parts){
         cout << "ERROR: No mc::scattered electron found..." << endl;
     }
     
-    EVENT event;
     event.trueQ2=_kin.Q2(_electron_beam_energy,scattered_electron.trueE,
                _kin.cth(scattered_electron.truepx,scattered_electron.truepy,scattered_electron.truepz));
     event.truey=_kin.y(_electron_beam_energy,scattered_electron.trueE);     
     event.truenu=_kin.nu(_electron_beam_energy,scattered_electron.trueE);
     event.trueW=_kin.W(event.trueQ2,Mp,event.truenu);
     event.truex=_kin.x(event.trueQ2,s,event.truey);
-    
-    return event;
+
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void CLAS12Analysis::fill_mc_reco_dihadron_variables(EVENT &mc_event, EVENT &reco_event, TLorentzVector q, TLorentzVector trueq, TLorentzVector electron , TLorentzVector trueelectron, std::vector<part> vec_particles, std::vector<int> dihadron_idx, int pid_h1, int pid_h2){
+void CLAS12Analysis::clear_dihadron_variables(EVENT &event){
+    event.i = -1;
+    event.ii = -1;
+    event.j = -1;
+    event.jj = -1;
+    
+    event.MCmatch = 0;
+    event.MC_2h_match = 0;
+    
+    event.Mh = -999;
+    event.phi_h = -999;
+    event.pT1 = -999;
+    event.pT2 = -999;
+    event.pTtot = -999;
+    event.phi_R0 = -999;
+    event.phi_R1 = -999;
+    event.th = -999;
+    event.xF1 = -999;
+    event.xF2 = -999;
+    event.xF = -999;
+    event.z1 = -999;
+    event.z2 = -999;
+    event.z = -999;
+    event.Mx = -999;
+
+    event.trueMh = -999;
+    event.truephi_h = -999;
+    event.truepT1 = -999;
+    event.truepT2 = -999;
+    event.truepTtot = -999;
+    event.truephi_R0 = -999;
+    event.truephi_R1 = -999;
+    event.trueth = -999;
+    event.truexF1 = -999;
+    event.truexF2 = -999;
+    event.truexF = -999;
+    event.truez1 = -999;
+    event.truez2 = -999;
+    event.truez = -999;
+    event.trueMx = -999;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void CLAS12Analysis::fill_mc_reco_dihadron_variables(EVENT &event, TLorentzVector q, TLorentzVector trueq, TLorentzVector electron , TLorentzVector trueelectron, std::vector<part> vec_particles, std::vector<int> dihadron_idx, int pid_h1, int pid_h2){
+    
+    clear_dihadron_variables(event);
+    
     int i=0;
     int ii=0;
     int j=0;
@@ -313,10 +358,10 @@ void CLAS12Analysis::fill_mc_reco_dihadron_variables(EVENT &mc_event, EVENT &rec
         j=dihadron_idx.at(1);
     }
 
-    mc_event.i=i; reco_event.i=i;
-    mc_event.ii=ii; reco_event.ii=ii;
-    mc_event.j=j; reco_event.j=j;
-    mc_event.jj=jj; reco_event.jj=jj;
+    event.i=i;
+    event.ii=ii;
+    event.j=j;
+    event.jj=jj;
     
     TLorentzVector h1;
     TLorentzVector trueh1;
@@ -373,45 +418,49 @@ void CLAS12Analysis::fill_mc_reco_dihadron_variables(EVENT &mc_event, EVENT &rec
     truedihadron = trueh1+trueh2;
     // fill results
 
-    reco_event.Mh = dihadron.M();
-    reco_event.phi_h = _kin.phi_h(q,init_electron,h1,h2);
-    reco_event.pT1 = _kin.Pt(q,h1,target);
-    reco_event.pT2 = _kin.Pt(q,h2,target);
-    reco_event.pTtot = _kin.Pt(q,dihadron,target);
-    reco_event.phi_R0 = _kin.phi_R(q,init_electron,h1,h2,0);
-    reco_event.phi_R1 = _kin.phi_R(q,init_electron,h1,h2,1);
-    reco_event.th     = _kin.com_th(h1,h2);
-    reco_event.xF1 = _kin.xF(q,h1,target,reco_event.W);
-    reco_event.xF2 = _kin.xF(q,h2,target,reco_event.W);
-    reco_event.xF     = _kin.xF(q,dihadron,target,reco_event.W);
-    reco_event.z1 = _kin.z(target,h1,q);
-    reco_event.z2 = _kin.z(target,h2,q);
-    reco_event.z = reco_event.z1+reco_event.z2;
-    reco_event.Mx = (init_electron+target-electron-dihadron).M();
+    event.Mh = dihadron.M();
+    event.phi_h = _kin.phi_h(q,init_electron,h1,h2);
+    event.pT1 = _kin.Pt(q,h1,target);
+    event.pT2 = _kin.Pt(q,h2,target);
+    event.pTtot = _kin.Pt(q,dihadron,target);
+    event.phi_R0 = _kin.phi_R(q,init_electron,h1,h2,0);
+    event.phi_R1 = _kin.phi_R(q,init_electron,h1,h2,1);
+    event.th     = _kin.com_th(h1,h2);
+    event.xF1 = _kin.xF(q,h1,target,event.W);
+    event.xF2 = _kin.xF(q,h2,target,event.W);
+    event.xF     = _kin.xF(q,dihadron,target,event.W);
+    event.z1 = _kin.z(target,h1,q);
+    event.z2 = _kin.z(target,h2,q);
+    event.z = event.z1+event.z2;
+    event.Mx = (init_electron+target-electron-dihadron).M();
 
-    mc_event.trueMh = truedihadron.M();
-    mc_event.truephi_h = _kin.phi_h(trueq,init_electron,trueh1,trueh2);
-    mc_event.truepT1 = _kin.Pt(trueq,trueh1,target);
-    mc_event.truepT2 = _kin.Pt(trueq,trueh2,target);
-    mc_event.truepTtot = _kin.Pt(trueq,truedihadron,target);
-    mc_event.truephi_R0 = _kin.phi_R(trueq,init_electron,trueh1,trueh2,0);
-    mc_event.truephi_R1 = _kin.phi_R(trueq,init_electron,trueh1,trueh2,1);
-    mc_event.trueth     = _kin.com_th(trueh1,trueh2);
-    mc_event.truexF1 = _kin.xF(trueq,trueh1,target,mc_event.trueW);
-    mc_event.truexF2 = _kin.xF(trueq,trueh2,target,mc_event.trueW);
-    mc_event.truexF     = _kin.xF(trueq,truedihadron,target,mc_event.trueW);
-    mc_event.truez1 = _kin.z(target,trueh1,trueq);
-    mc_event.truez2 = _kin.z(target,trueh2,trueq);
-    mc_event.truez = mc_event.truez1+mc_event.truez2;
-    mc_event.trueMx = (init_electron+target-trueelectron-truedihadron).M();
+    event.trueMh = truedihadron.M();
+    event.truephi_h = _kin.phi_h(trueq,init_electron,trueh1,trueh2);
+    event.truepT1 = _kin.Pt(trueq,trueh1,target);
+    event.truepT2 = _kin.Pt(trueq,trueh2,target);
+    event.truepTtot = _kin.Pt(trueq,truedihadron,target);
+    event.truephi_R0 = _kin.phi_R(trueq,init_electron,trueh1,trueh2,0);
+    event.truephi_R1 = _kin.phi_R(trueq,init_electron,trueh1,trueh2,1);
+    event.trueth     = _kin.com_th(trueh1,trueh2);
+    event.truexF1 = _kin.xF(trueq,trueh1,target,event.trueW);
+    event.truexF2 = _kin.xF(trueq,trueh2,target,event.trueW);
+    event.truexF     = _kin.xF(trueq,truedihadron,target,event.trueW);
+    event.truez1 = _kin.z(target,trueh1,trueq);
+    event.truez2 = _kin.z(target,trueh2,trueq);
+    event.truez = event.truez1+event.truez2;
+    event.trueMx = (init_electron+target-trueelectron-truedihadron).M();
     
-    if(trueelectron.E()>0&&trueh1.E()>0&&trueh2.E()>0) mc_event.MCmatch=1;
-    else mc_event.MCmatch = 0;
+    if(trueelectron.E()>0&&trueh1.E()>0&&trueh2.E()>0) event.MCmatch=1;
+    else event.MCmatch = 0;
     
-    
+    if(trueh1.E()>0&&trueh2.E()>0) event.MC_2h_match=1;
+    else event.MC_2h_match = 0;
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void CLAS12Analysis::fill_reco_dihadron_variables(EVENT &reco_event, TLorentzVector q, TLorentzVector electron ,  std::vector<part> vec_particles, std::vector<int> dihadron_idx, int pid_h1, int pid_h2){
+void CLAS12Analysis::fill_reco_dihadron_variables(EVENT &event, TLorentzVector q, TLorentzVector electron ,  std::vector<part> vec_particles, std::vector<int> dihadron_idx, int pid_h1, int pid_h2){
+    
+    clear_dihadron_variables(event);
+    
     int i=0;
     int ii=0;
     int j=0;
@@ -434,10 +483,10 @@ void CLAS12Analysis::fill_reco_dihadron_variables(EVENT &reco_event, TLorentzVec
         j=dihadron_idx.at(1);
     }
 
-    reco_event.i=i;
-    reco_event.ii=ii;
-    reco_event.j=j;
-    reco_event.jj=jj;
+    event.i=i;
+    event.ii=ii;
+    event.j=j;
+    event.jj=jj;
     
     TLorentzVector h1;
     TLorentzVector h2;
@@ -475,21 +524,21 @@ void CLAS12Analysis::fill_reco_dihadron_variables(EVENT &reco_event, TLorentzVec
     dihadron = h1+h2;
     // fill results
 
-    reco_event.Mh = dihadron.M();
-    reco_event.phi_h = _kin.phi_h(q,init_electron,h1,h2);
-    reco_event.pT1 = _kin.Pt(q,h1,target);
-    reco_event.pT2 = _kin.Pt(q,h2,target);
-    reco_event.pTtot = _kin.Pt(q,dihadron,target);
-    reco_event.phi_R0 = _kin.phi_R(q,init_electron,h1,h2,0);
-    reco_event.phi_R1 = _kin.phi_R(q,init_electron,h1,h2,1);
-    reco_event.th     = _kin.com_th(h1,h2);
-    reco_event.xF1 = _kin.xF(q,h1,target,reco_event.W);
-    reco_event.xF2 = _kin.xF(q,h2,target,reco_event.W);
-    reco_event.xF     = _kin.xF(q,dihadron,target,reco_event.W);
-    reco_event.z1 = _kin.z(target,h1,q);
-    reco_event.z2 = _kin.z(target,h2,q);
-    reco_event.z = reco_event.z1+reco_event.z2;
-    reco_event.Mx = (init_electron+target-electron-dihadron).M();
+    event.Mh = dihadron.M();
+    event.phi_h = _kin.phi_h(q,init_electron,h1,h2);
+    event.pT1 = _kin.Pt(q,h1,target);
+    event.pT2 = _kin.Pt(q,h2,target);
+    event.pTtot = _kin.Pt(q,dihadron,target);
+    event.phi_R0 = _kin.phi_R(q,init_electron,h1,h2,0);
+    event.phi_R1 = _kin.phi_R(q,init_electron,h1,h2,1);
+    event.th     = _kin.com_th(h1,h2);
+    event.xF1 = _kin.xF(q,h1,target,event.W);
+    event.xF2 = _kin.xF(q,h2,target,event.W);
+    event.xF     = _kin.xF(q,dihadron,target,event.W);
+    event.z1 = _kin.z(target,h1,q);
+    event.z2 = _kin.z(target,h2,q);
+    event.z = event.z1+event.z2;
+    event.Mx = (init_electron+target-electron-dihadron).M();
     
     
 }

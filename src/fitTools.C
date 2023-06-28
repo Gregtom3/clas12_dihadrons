@@ -1,3 +1,5 @@
+#include "Constants.h"
+
 // Precomputed Legendre polynomials
 unordered_map<string, string> precomputed_polynomials = {
     {"0_0", "1"},
@@ -32,21 +34,22 @@ string legendre_polynomial(int l, int m) {
 
 
 float get_polarization(std::string version){
-  float _polarization=1.0;
-  if(version=="Fall2018_RGA_inbending"){
-    _polarization=0.8592;
-  }
-  else if(version=="Fall2018_RGA_outbending"){
-    _polarization=0.8922;
-  }
-  else if(version=="Spring2019_RGA_inbending"){
-    _polarization=0.8453;
-  }
-  else{
-      cout << "Unknown version " << version << "...Setting polarization to 1..." << endl;
-      _polarization=1.0;
-  } 
-  return _polarization;
+    return runPolarization(version);
+//   float _polarization=1.0;
+//   if(version=="Fall2018_RGA_inbending"){
+//     _polarization=0.8592;
+//   }
+//   else if(version=="Fall2018_RGA_outbending"){
+//     _polarization=0.8922;
+//   }
+//   else if(version=="Spring2019_RGA_inbending"){
+//     _polarization=0.8453;
+//   }
+//   else{
+//       cout << "Unknown version " << version << "...Setting polarization to 1..." << endl;
+//       _polarization=1.0;
+//   } 
+//   return _polarization;
 }
 
 pair<vector<string>, vector<string>> get_azi_modulations(int L, std::string version, std::string hel="hel"){

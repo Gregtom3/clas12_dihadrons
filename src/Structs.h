@@ -141,6 +141,7 @@ struct EVENT {
     int trueparentparentid_2=-999;
     
     int MCmatch=0;
+    int MC_2h_match=0;
     int isGoodEventWithoutML=0;
     int is_CFR_1=0;
     int is_CFR_2=0;
@@ -149,6 +150,11 @@ struct EVENT {
     double p_12=-999;
     double p_21=-999;
     double p_22=-999;
+    
+    int i = -999; // dihadron indices
+    int ii = -999;
+    int j = -999;
+    int jj = -999;
 };
 
 struct part{

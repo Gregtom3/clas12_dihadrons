@@ -6,6 +6,7 @@ const float PI=3.14159265;
 const double Mp = 0.938272;
 const double Me = 0.000511;
 
+
 inline string runPeriod(int run){
       if     (run>= 5032 && run<= 5332) return "Fall2018_RGA_inbending";
       else if(run>= 5333 && run<= 5666) return "Fall2018_RGA_outbending";
@@ -51,6 +52,29 @@ inline float runPolarization(int run, bool v=true){
     return 0.0;
   };
 };
+
+
+inline float runPolarization(const string& period) {
+    int run = -1; // Default value if the run period is unknown
+
+    if (period == "Fall2018_RGA_inbending") run = 5032;
+    else if (period == "Fall2018_RGA_outbending") run = 5333;
+    else if (period == "Spring2019_RGA_inbending") run = 6616;
+    else if (period == "Fall2018Spring2019_RGA_inbending") run = 5032; // Set the polarization to the RGA fall2018
+    else if (period == "Spring2019_RGB_inbending") run = 6156;
+    else if (period == "Fall2019_RGB_outbending") run = 11093;
+    else if (period == "Fall2019_RGB_BAND_inbending") run = 11284;
+    else if (period == "Spring2020_RGB_inbending") run = 11323;
+    else if (period == "MC_RGA_outbending") run = 11;
+    else if (period == "MC_RGA_inbending") run = -11;
+    else if (period == "MC_RGB_outbending") run = 22;
+    else if (period == "MC_RGB_inbending") run = -22;
+    else {
+        cout << "Unknown run period: " << period << "...returning -1" << endl;
+    }
+
+    return runPolarization(run);
+}
 
 // Returns beam energy based on run
 inline float runBeamEnergy(int run){

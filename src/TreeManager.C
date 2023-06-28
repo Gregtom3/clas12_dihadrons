@@ -166,7 +166,7 @@ class EventTree : public BaseTree {
             tree->Branch("nphe_htcc", nphe_htcc, "nphe_htcc[Nmax]/D");
         }
     
-    void FillTree(std::vector<part> vec_particles, EVENT &event, EVENT &tevent, EVENT_INFO &event_info){
+    void FillTree(std::vector<part> vec_particles, EVENT &event, EVENT_INFO &event_info){
         A = event_info.A;
         evnum = event_info.evnum;
         uID = event_info.uID;
@@ -179,11 +179,11 @@ class EventTree : public BaseTree {
         nu = event.nu;
         W = event.W;
         Pol = event_info.Pol;
-        truex = tevent.truex;
-        truey = tevent.truey;
-        trueQ2 = tevent.trueQ2;
-        truenu = tevent.truenu;
-        trueW = tevent.trueW;
+        truex = event.truex;
+        truey = event.truey;
+        trueQ2 = event.trueQ2;
+        truenu = event.truenu;
+        trueW = event.trueW;
 
         Nmax = vec_particles.size();
         for( int i = 0 ; i < Nmax; i++){

@@ -7,7 +7,11 @@ double Kinematics::Q2(double E1, double E2, double cth){
 }
 
 double Kinematics::x(double Q2, double s, double y){
-  return Q2/s/y;
+  return Q2/(s-0.938272*0.938272)/y;
+}
+
+double Kinematics::x(double Q2, TLorentzVector q, TLorentzVector p){
+  return Q2/(2*p*q);
 }
 
 double Kinematics::Mx(double px, double py, double pz, double E, double protonMass, double eBeam){
