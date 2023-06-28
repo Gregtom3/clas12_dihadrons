@@ -23,8 +23,6 @@ int dihadronBuilder(const char *input_file="hipo2tree.root",
     std::string particleNames ="";
     // Determine the pids from the file (see function)
     getPIDs(string(input_file),pid_h1,pid_h2,particleNames);
-    pid_h1=211;
-    pid_h2=-211;
     // Read the TFile
     TFile *f = new TFile(input_file,"UPDATE");
     // Read the TTree
@@ -91,9 +89,14 @@ int dihadronBuilder(const char *input_file="hipo2tree.root",
     double M1,M2,Mh,phi_h,phi_R0,phi_R1,th,z1,z2,xF1,xF2,z,xF,Mx,phi_h1,phi_h2,delta_phi_h,pT_1,pT_2,pT_tot,P_1,P_2,P_tot;
     double  trueM1,trueM2,trueMh,truephi_h,truephi_R0,truephi_R1,trueth,truez1,truez2,truexF1,truexF2,truez,truexF,trueMx,truephi_h1,truephi_h2,truedelta_phi_h,truepT_1,truepT_2,truepT_tot,trueP_1,trueP_2,trueP_tot;
     int truepid_1,truepid_2,trueparentpid_1,trueparentpid_2,trueparentid_1,trueparentid_2,trueparentparentpid_1,trueparentparentpid_2,trueparentparentid_1,trueparentparentid_2;
+    double E_11, E_12, E_21, E_22;
+    double th_11, th_12, th_21, th_22;
+    double phi_11, phi_12, phi_21, phi_22;
+
     int is_CFR_1, is_CFR_2;
     int MCmatch; // MCmatch --> 1 if all particles have Monte Carlo pairing
     int isGoodEventWithoutML;
+    int isGoodEventWithML;
     int truepid_11, truepid_12, truepid_21, truepid_22; // For photon pairs
     double trueM12, M12; // addition of M1 M2
     double fgID=0; //uniqueID for each dihadron
@@ -111,6 +114,7 @@ int dihadronBuilder(const char *input_file="hipo2tree.root",
     outtree->Branch("hel", &hel, "hel/I");
     outtree->Branch("MCmatch", &MCmatch, "MCmatch/I");
     outtree->Branch("isGoodEventWithoutML", &isGoodEventWithoutML, "isGoodEventWithoutML/I");
+    outtree->Branch("isGoodEventWithML", &isGoodEventWithML, "isGoodEventWithML/I");
     outtree->Branch("is_CFR_1",&is_CFR_1, "is_CFR_1/I");
     outtree->Branch("is_CFR_2",&is_CFR_2, "is_CFR_2/I");
     outtree->Branch("x", &x, "x/D");
@@ -183,6 +187,18 @@ int dihadronBuilder(const char *input_file="hipo2tree.root",
     outtree->Branch("trueparentparentpid_2", &trueparentparentpid_2, "trueparentparentpid_2/I");
     outtree->Branch("trueparentparentid_1", &trueparentparentid_1, "trueparentparentid_1/I");
     outtree->Branch("trueparentparentid_2", &trueparentparentid_2, "trueparentparentid_2/I");
+    outtree->Branch("E_11", &E_11, "E_11/D");
+    outtree->Branch("E_12", &E_12, "E_12/D");
+    outtree->Branch("E_21", &E_21, "E_21/D");
+    outtree->Branch("E_22", &E_22, "E_22/D");
+    outtree->Branch("th_11", &th_11, "th_11/D");
+    outtree->Branch("th_12", &th_12, "th_12/D");
+    outtree->Branch("th_21", &th_21, "th_21/D");
+    outtree->Branch("th_22", &th_22, "th_22/D");
+    outtree->Branch("phi_11", &phi_11, "phi_11/D");
+    outtree->Branch("phi_12", &phi_12, "phi_12/D");
+    outtree->Branch("phi_21", &phi_21, "phi_21/D");
+    outtree->Branch("phi_22", &phi_22, "phi_22/D");
     outtree->Branch("p_11", &p_11,"p_11/D");
     outtree->Branch("p_12", &p_12,"p_12/D");
     outtree->Branch("p_21", &p_21,"p_21/D");
@@ -280,6 +296,12 @@ int dihadronBuilder(const char *input_file="hipo2tree.root",
             if(pid_h1==111){
                 p_11 = weight[i];
                 p_12 = weight[ii];
+		E_11 = E[i];
+		E_12 = E[ii];
+		th_11 = theta[i];
+		th_12 = theta[ii];
+		phi_11 = phi[i];
+		phi_12 = phi[ii];
                 h1.SetPxPyPzE(px[i]+px[ii],py[i]+py[ii],pz[i]+pz[ii],E[i]+E[ii]);
                 trueh1.SetPxPyPzE(truepx[i]+truepx[ii],truepy[i]+truepy[ii],truepz[i]+truepz[ii],trueE[i]+trueE[ii]);
                 truepid_11=truepid[i];
@@ -298,7 +320,13 @@ int dihadronBuilder(const char *input_file="hipo2tree.root",
                    is_CFR_1=-999;
                 }
             }else{
-                h1.SetPxPyPzE(px[i],py[i],pz[i],E[i]);
+	      E_11 = E[i];
+	      E_12 = -999;
+	      th_11 = theta[i];
+	      th_12 = -999;
+	      phi_11 = phi[i];
+	      phi_12 = -999;
+	      h1.SetPxPyPzE(px[i],py[i],pz[i],E[i]);
                 trueh1.SetPxPyPzE(truepx[i],truepy[i],truepz[i],trueE[i]);
                 truepid_1=truepid[i];
                 trueparentid_1=parentID[i];
@@ -310,6 +338,12 @@ int dihadronBuilder(const char *input_file="hipo2tree.root",
             if(pid_h2==111){
                 p_21 = weight[j];
                 p_22 = weight[jj];
+		E_21 = E[j];
+		E_22 = E[jj];
+		th_21 = theta[j];
+		th_22 = theta[jj];
+		phi_21 = phi[j];
+		phi_22 = phi[jj];
                 h2.SetPxPyPzE(px[j]+px[jj],py[j]+py[jj],pz[j]+pz[jj],E[j]+E[jj]);
                 trueh2.SetPxPyPzE(truepx[j]+truepx[jj],truepy[j]+truepy[jj],truepz[j]+truepz[jj],trueE[j]+trueE[jj]);
                 truepid_21=truepid[j];
@@ -329,6 +363,13 @@ int dihadronBuilder(const char *input_file="hipo2tree.root",
                 }
             }
             else{
+	      E_21 = E[j];
+	      E_22 = -999;
+	      th_21 = theta[j];
+	      th_22 = -999;
+	      phi_21 = phi[j];
+	      phi_22 = -999;
+	      
                 h2.SetPxPyPzE(px[j],py[j],pz[j],E[j]);
                 trueh2.SetPxPyPzE(truepx[j],truepy[j],truepz[j],trueE[j]);
                 truepid_2=truepid[j];
@@ -351,7 +392,13 @@ int dihadronBuilder(const char *input_file="hipo2tree.root",
                     trueh1=truetemp;
                     std::swap(p_11,p_21);
                     std::swap(p_12,p_22);
-                    std::swap(truepid_11,truepid_21);
+		    std::swap(E_11, E_21);
+		    std::swap(E_12, E_22);
+		    std::swap(th_11, th_21);
+		    std::swap(th_12, th_22);
+		    std::swap(phi_11, phi_21);
+		    std::swap(phi_12, phi_22);
+		    std::swap(truepid_11,truepid_21);
                     std::swap(truepid_12,truepid_22);
                     std::swap(truepid_1,truepid_2);
                     std::swap(trueparentid_1,trueparentid_2);
@@ -457,12 +504,19 @@ int dihadronBuilder(const char *input_file="hipo2tree.root",
             if(pid_h1==111){
                 fill_clone*=(p_11>0.9&&p_12>0.9);
             }
+	    // Set isGoodEventWithoutML up to this point
+	    isGoodEventWithoutML*=fill_clone;
+	    // Now set the fill_clone if the ML cut passes
             if(pid_h2==111){
                 fill_clone*=(p_21>0.9&&p_22>0.9);
             }
+	    // Set isGoodEventWithML to fill_clone
+	    isGoodEventWithML = fill_clone;
+	    // Fill the cloned, abrigded tree
             if(fill_clone){
                 outtree_clone->Fill();
             }
+	    // Fill the larger, main tree without cuts
             outtree->Fill();
             fgID++;
         } // end dihadron loop

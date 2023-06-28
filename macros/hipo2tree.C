@@ -17,7 +17,7 @@ int hipo2tree(
               const double _electron_beam_energy = 10.6041,
               const int pid_h1=211,
               const int pid_h2=-211,
-              const int maxEvents = 500000000,
+              const int maxEvents = 50000,
               bool hipo_is_mc = false)
 {
 
@@ -73,8 +73,7 @@ int hipo2tree(
   std::vector<part> vec_particles;
   std::vector<part> vec_mcparticles;
   EVENT_INFO event_info;
-  EVENT reco_event;
-  EVENT   mc_event;
+  EVENT event;
 
     
   int whileidx=0;
@@ -119,8 +118,8 @@ int hipo2tree(
     if(idx_scattered_ele==-1)
       continue; // No scattered electron found
     vec_particles[idx_scattered_ele].is_scattered_electron=1;
-    reco_event = clas12ana.calc_reco_event_variables(vec_particles);
-    if(reco_event.y > 0.8)
+    clas12ana.fill_reco_event_variables(event, vec_particles);
+    if(event.y > 0.8 || event.Q2 < 1)
       continue; // Maximum y cut
     vec_particles = _cm.filter_particles(vec_particles); // Apply Cuts
     if(clas12ana.reco_event_contains_final_state(vec_particles,fs)==false)
@@ -137,14 +136,14 @@ int hipo2tree(
       
     if(hipo_is_mc){
         vec_mcparticles = clas12ana.load_mc_particles(_c12);
-        mc_event = clas12ana.calc_mc_event_variables(vec_mcparticles);
+        clas12ana.fill_mc_event_variables(event,vec_mcparticles);
         clas12ana.match_mc_to_reco(vec_particles, vec_mcparticles);
     }
       
     // 
     //
     // *******************************************************************
-    tree->FillTree(vec_particles,reco_event,mc_event,event_info);
+    tree->FillTree(vec_particles,event,event_info);
 
     _ievent++;
   }

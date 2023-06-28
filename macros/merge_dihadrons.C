@@ -95,7 +95,7 @@ bool shouldKeepFile(const std::string &filename, int runNumber, const std::strin
 
 
 int merge_dihadrons(
-	   const char * rootdir = "/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas12_dihadrons/projects/ana_v0/data/pi0_pi0",
+	   const char * rootdir = "/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas12_dihadrons/projects/ana_v0/data/piplus_pi0",
 	   const char * version       = "Fall2018Spring2019_RGA_inbending"
 	   )
 
