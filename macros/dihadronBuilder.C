@@ -88,7 +88,9 @@ int dihadronBuilder(const char *input_file="hipo2tree.root",
     
     double M1,M2,Mh,phi_h,phi_R0,phi_R1,th,z1,z2,xF1,xF2,z,xF,Mx,phi_h1,phi_h2,delta_phi_h,pT_1,pT_2,pT_tot,P_1,P_2,P_tot;
     double  trueM1,trueM2,trueMh,truephi_h,truephi_R0,truephi_R1,trueth,truez1,truez2,truexF1,truexF2,truez,truexF,trueMx,truephi_h1,truephi_h2,truedelta_phi_h,truepT_1,truepT_2,truepT_tot,trueP_1,trueP_2,trueP_tot;
-    int truepid_1,truepid_2,trueparentpid_1,trueparentpid_2,trueparentid_1,trueparentid_2,trueparentparentpid_1,trueparentparentpid_2,trueparentparentid_1,trueparentparentid_2;
+    int truepid_e;
+    double E_e, th_e, phi_e;
+    int truepid_1,truepid_2,trueparentpid_1,trueparentpid_2,trueparentid_1,trueparentid_2,trueparentparentpid_1,trueparentparentpid_2,trueparentparentid_1,trueparentparentid_2, trueparentpid_11, trueparentpid_12, trueparentpid_21, trueparentpid_22;
     double E_11, E_12, E_21, E_22;
     double th_11, th_12, th_21, th_22;
     double phi_11, phi_12, phi_21, phi_22;
@@ -136,6 +138,9 @@ int dihadronBuilder(const char *input_file="hipo2tree.root",
     outtree->Branch("z", &z, "z/D");
     outtree->Branch("xF", &xF, "xF/D");
     outtree->Branch("Mx", &Mx, "Mx/D");
+    outtree->Branch("E_e", &E_e, "E_e/D");
+    outtree->Branch("th_e", &th_e, "th_e/D");
+    outtree->Branch("phi_e", &phi_e, "phi_e/D");
     outtree->Branch("phi_h1", &phi_h1, "phi_h1/D");
     outtree->Branch("phi_h2", &phi_h2, "phi_h2/D");
     outtree->Branch("delta_phi_h", &delta_phi_h, "delta_phi_h/D");
@@ -173,6 +178,7 @@ int dihadronBuilder(const char *input_file="hipo2tree.root",
     outtree->Branch("trueP1", &trueP_1, "trueP1/D");
     outtree->Branch("trueP2", &trueP_2, "trueP2/D");
     outtree->Branch("truePtot", &trueP_tot, "truePtot/D");
+    outtree->Branch("truepid_e",&truepid_e, "truepid_e/I");
     outtree->Branch("truepid_1", &truepid_1, "truepid_1/I");
     outtree->Branch("truepid_2", &truepid_2, "truepid_2/I");
     outtree->Branch("truepid_11", &truepid_11, "truepid_11/I");
@@ -181,6 +187,10 @@ int dihadronBuilder(const char *input_file="hipo2tree.root",
     outtree->Branch("truepid_22", &truepid_22, "truepid_22/I");
     outtree->Branch("trueparentpid_1", &trueparentpid_1, "trueparentpid_1/I");
     outtree->Branch("trueparentpid_2", &trueparentpid_2, "trueparentpid_2/I");
+    outtree->Branch("trueparentpid_11", &trueparentpid_11, "trueparentpid_11/I");
+    outtree->Branch("trueparentpid_12", &trueparentpid_12, "trueparentpid_12/I");
+    outtree->Branch("trueparentpid_21", &trueparentpid_21, "trueparentpid_21/I");
+    outtree->Branch("trueparentpid_22", &trueparentpid_22, "trueparentpid_22/I");
     outtree->Branch("trueparentid_1", &trueparentid_1, "trueparentid_1/I");
     outtree->Branch("trueparentid_2", &trueparentid_2, "trueparentid_2/I");
     outtree->Branch("trueparentparentpid_1", &trueparentparentpid_1, "trueparentparentpid_1/I");
@@ -256,6 +266,10 @@ int dihadronBuilder(const char *input_file="hipo2tree.root",
         
         electron.SetPxPyPzE(px[idx_e],py[idx_e],pz[idx_e],E[idx_e]);
         trueelectron.SetPxPyPzE(truepx[idx_e],truepy[idx_e],truepz[idx_e],trueE[idx_e]);
+        truepid_e=truepid[idx_e];
+        E_e=electron.E();
+        th_e=electron.Theta();
+        phi_e=electron.Phi();
         q=init_electron-electron;
         trueq=init_electron-trueelectron;
         
@@ -306,6 +320,8 @@ int dihadronBuilder(const char *input_file="hipo2tree.root",
                 trueh1.SetPxPyPzE(truepx[i]+truepx[ii],truepy[i]+truepy[ii],truepz[i]+truepz[ii],trueE[i]+trueE[ii]);
                 truepid_11=truepid[i];
                 truepid_12=truepid[i];
+                trueparentpid_11=parentPID[i];
+                trueparentpid_12=parentPID[ii];
                 if(parentID[i]==parentID[ii] && parentID[i]!=-999){
                     trueparentid_1=parentID[i];
                     trueparentpid_1=parentPID[i];
@@ -333,6 +349,8 @@ int dihadronBuilder(const char *input_file="hipo2tree.root",
                 trueparentpid_1=parentPID[i];
                 trueparentparentid_1=parentparentID[i];
                 trueparentparentpid_1=parentparentPID[i];
+                trueparentpid_11=parentPID[i];
+                trueparentpid_12=parentPID[i];
                 is_CFR_1=is_CFR[i];
             }
             if(pid_h2==111){
@@ -348,6 +366,8 @@ int dihadronBuilder(const char *input_file="hipo2tree.root",
                 trueh2.SetPxPyPzE(truepx[j]+truepx[jj],truepy[j]+truepy[jj],truepz[j]+truepz[jj],trueE[j]+trueE[jj]);
                 truepid_21=truepid[j];
                 truepid_22=truepid[j];
+                trueparentpid_21=parentPID[j];
+                trueparentpid_22=parentPID[jj];
                 if(parentID[j]==parentID[jj] && parentID[j]!=-999){
                     trueparentid_2=parentID[j];
                     trueparentpid_2=parentPID[j];
@@ -377,6 +397,8 @@ int dihadronBuilder(const char *input_file="hipo2tree.root",
                 trueparentpid_2=parentPID[j];
                 trueparentparentid_2=parentparentID[j];
                 trueparentparentpid_2=parentparentPID[j];
+                trueparentpid_21=parentPID[j];
+                trueparentpid_22=parentPID[j];
                 is_CFR_2=is_CFR[j];
             }
             
