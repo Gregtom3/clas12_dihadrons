@@ -45,6 +45,7 @@ class CutManager{
   // Private member variables
   int _run=0;
   int _torusBending=0;
+  bool _is_MC=false;
   RUN_PERIOD _run_period=RGA;
         
 };

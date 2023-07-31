@@ -55,6 +55,44 @@ std::string getVersion2(const char *c =""){
     return prefix;
 }
 
+// Input --> "/path/to/file/nSidis_RGA_5032.root"
+// Output --> "5032"
+int extractRunNumberFromDataFile(const char *c) {
+    std::string filepath(c);
+    
+    // find the last _ in the string
+    size_t underscorePos = filepath.rfind("_");
+
+    if (underscorePos == std::string::npos) {
+        std::cerr << "Invalid filepath: " << filepath << std::endl;
+        return -1;
+    }
+
+    // find the .root extension in the string
+    size_t rootPos = filepath.rfind(".root");
+
+    if (rootPos == std::string::npos) {
+        std::cerr << "Invalid filepath: " << filepath << std::endl;
+        return -1;
+    }
+
+    // make sure the number is left of the .root
+    if (underscorePos > rootPos) {
+        std::cerr << "Invalid filepath: " << filepath << std::endl;
+        return -1;
+    }
+
+    // Start of the number
+    size_t startPos = underscorePos + 1;
+
+
+    // get the substring that represents the number
+    std::string numberStr = filepath.substr(startPos, rootPos - startPos);
+
+    // convert the number string to an integer and return
+    return std::stoi(numberStr);
+}
+
 
 std::string get_dir_from_binstruct_idx(YAMLbinstruct binStruct, int binnum){
     std::string dir="";

@@ -149,11 +149,11 @@ double Kinematics::phi_R(TLorentzVector Q, TLorentzVector L, TLorentzVector p1, 
   TVector3 Rperp;
   // Different methods for defining Rperp
   switch(method){
-  case 0:   // -- HERMES 0803.2367 angle
+  case 0:   // -- HERMES 0803.2367 angle "RT"
     Rperp=R-(q*R)/(q*q)*q;
     break;
   case 1: // -- HERMES 0803.2367 angle, but used Matevosyan et al 1707.04999
-          //    to obtain R_T vector
+          //    to obtain R_perp vector
     TLorentzVector init_target;
     init_target.SetPxPyPzE(0,0,0,0.938272);
     double z1 = (init_target*p1)/(init_target*Q);

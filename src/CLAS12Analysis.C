@@ -27,11 +27,11 @@ void CLAS12Analysis::set_run_config(const std::unique_ptr<clas12::clas12reader>&
     _itorus = _c12->getBankOrder(_idx_RUNconfig,"torus");
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-EVENT_INFO CLAS12Analysis::get_event_info(const std::unique_ptr<clas12::clas12reader>& _c12){
+void CLAS12Analysis::get_event_info(const std::unique_ptr<clas12::clas12reader>& _c12, EVENT_INFO &event_info){
     
     auto event = _c12->event(); // to get helicity
     
-    EVENT_INFO event_info;
+    int prev_run = event_info.run;
     event_info.run = _c12->getBank(_idx_RUNconfig)->getInt(_irun,0);
     event_info.torus = _c12->getBank(_idx_RUNconfig)->getFloat(_itorus,0);
     if(event_info.run==11){
@@ -43,8 +43,12 @@ EVENT_INFO CLAS12Analysis::get_event_info(const std::unique_ptr<clas12::clas12re
         event_info.hel*=-1;
     
     event_info.Pol = runPolarization(event_info.run);
-    
-    return event_info;
+    if (event_info.run >= 16082 && event_info.run <= 17738 && event_info.run!=prev_run){ // RGC, fill this info whenever a new run appears
+        event_info.tPol = get_RGC_Tpol(event_info.run);
+        event_info.hwp = get_RGC_HWP(event_info.run);
+        event_info.tSign = get_RGC_TpolSign(event_info.run);
+        event_info.target = get_RGC_target(event_info.run);
+    }
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void CLAS12Analysis::set_beams(TLorentzVector eIn, TLorentzVector pIn){

@@ -24,7 +24,7 @@ public:
     bool reco_event_contains_final_state(std::vector<part>, FS);
     bool reco_event_contains_scattered_electron(std::vector<part>);
     
-    EVENT_INFO get_event_info(const std::unique_ptr<clas12::clas12reader>&);
+    void get_event_info(const std::unique_ptr<clas12::clas12reader>&, EVENT_INFO &event_info);
     void fill_reco_event_variables(EVENT &, std::vector<part>);
     void fill_mc_event_variables(EVENT &, std::vector<part>);
     

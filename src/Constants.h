@@ -45,13 +45,16 @@ inline float runPolarization(int run, bool v=true){
   else if(run>=11323 && run<=11334) return v? 0.87135 : 0.01464; // rgb_wi20
   else if(run>=11335 && run<=11387) return v? 0.85048 : 0.01530;
   else if(run>=11389 && run<=11571) return v? 0.84262 : 0.01494; // NOTE: table last updated 1/15/2020, but run ended on 1/30
+  else if(run>=16082&&run<=17738) return v? 0.80: 0.02; // RGC
   /* MC */
   else if(run==11 || run==-11) return v? 0.86 : 0.0; // MC
+  else if(run==50326616) return v? 0.8516: 0.01; 
   else {
     fprintf(stderr,"ERROR: RundepPolarization unknown for run %d\n",run);
     return 0.0;
   };
 };
+
 
 
 inline float runPolarization(const string& period) {
@@ -60,7 +63,7 @@ inline float runPolarization(const string& period) {
     if (period == "Fall2018_RGA_inbending") run = 5032;
     else if (period == "Fall2018_RGA_outbending") run = 5333;
     else if (period == "Spring2019_RGA_inbending") run = 6616;
-    else if (period == "Fall2018Spring2019_RGA_inbending") run = 5032; // Set the polarization to the RGA fall2018
+    else if (period == "Fall2018Spring2019_RGA_inbending") run = 50326616; // Set the polarization to the RGA inbending weighted average
     else if (period == "Spring2019_RGB_inbending") run = 6156;
     else if (period == "Fall2019_RGB_outbending") run = 11093;
     else if (period == "Fall2019_RGB_BAND_inbending") run = 11284;
@@ -485,5 +488,100 @@ bool sampFracInfo(int _runNumber, double (&sfMu)[3][6], double (&sfSigma)[3][6])
     
   return true;
 }
+
+
+
+
+
+std::map<int, Row> read_rgc_csv(const std::string &filename) {
+    std::map<int, Row> data;
+    std::ifstream file(filename);
+
+    if (!file.is_open()) {
+        throw std::runtime_error("Could not open file");
+    }
+
+    std::string line;
+    std::getline(file, line); // skip header line
+    while (std::getline(file, line)) {
+
+        std::stringstream ss(line);
+        Row row;
+
+        // read and parse each field, separated by a comma
+        std::string field;
+
+        std::getline(ss, field, ',');
+        row.Run = std::stoi(field);  // assuming Run is an integer
+
+        std::getline(ss, row.Target, ',');  // Target is a string
+
+        std::getline(ss, field, ',');
+        row.Nevents = std::stof(field);  // assuming Nevents is a float
+
+        std::getline(ss, field, ',');
+        row.HWP = std::stof(field);  // assuming HWP is a float
+
+        std::getline(ss, field, ',');
+        row.TpolSign = std::stof(field);  // assuming TpolSign is a float
+
+        std::getline(ss, field, ',');
+        row.Tpol = std::stof(field);  // assuming Tpol is a float
+
+        // store row in data
+        data[row.Run] = row;
+    }
+    file.close();
+
+    return data;
+}
+
+inline int get_RGC_target(const int run){
+    auto data = read_rgc_csv("/work/clas12/users/gmat/clas12/clas12_dihadrons/utils/rgc_lookup_table.csv");
+    if (data.find(run) == data.end()){
+        cout << "Error: Could not find run " << run << " in the RG-C lookup table...Returning -1..." << endl;
+        return -1;
+    }
+    std::string target = data[run].Target;
+    // Here we define a custom target int for each possible target
+    if(target=="NH3") return 0;
+    else if(target=="ND3") return 1;
+    else if(target=="C") return 2;
+    else if(target=="CH2") return 3;
+    else if(target=="CD2") return 4;
+    else if(target=="Empty") return 5;
+    else {
+        cout << "Unknown target in run " << run << "...returning -1"<<endl;
+        return -1;
+    }
+}
+
+inline int get_RGC_HWP(const int run){
+    auto data = read_rgc_csv("/work/clas12/users/gmat/clas12/clas12_dihadrons/utils/rgc_lookup_table.csv");
+    if (data.find(run) == data.end()){
+        cout << "Error: Could not find run " << run << " in the RG-C lookup table...Returning -1..." << endl;
+        return -1;
+    }
+    return int(data[run].HWP);
+}
+
+inline int get_RGC_TpolSign(const int run){
+    auto data = read_rgc_csv("/work/clas12/users/gmat/clas12/clas12_dihadrons/utils/rgc_lookup_table.csv");
+    if (data.find(run) == data.end()){
+        cout << "Error: Could not find run " << run << " in the RG-C lookup table...Returning -1..." << endl;
+        return -1;
+    }
+    return int(data[run].TpolSign);
+}
+
+inline double get_RGC_Tpol(const int run){
+    auto data = read_rgc_csv("/work/clas12/users/gmat/clas12/clas12_dihadrons/utils/rgc_lookup_table.csv");
+    if (data.find(run) == data.end()){
+        cout << "Error: Could not find run " << run << " in the RG-C lookup table...Returning -1..." << endl;
+        return -1;
+    }
+    return double(data[run].Tpol);
+}
+
 
 #endif

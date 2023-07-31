@@ -1,9 +1,59 @@
 #include "../src/Constants.h"
-#include "../src/HipoBankInterface.C"
-#include "../src/CLAS12Analysis.C"
 #include "../src/Kinematics.C"
 #include "../src/ParseBinYAML.C"
 #include "../src/ParseText.C"
+
+void generate_combinations(std::vector<int>& input, int num, int start_idx, std::vector<int>& curr_combination, std::vector<std::vector<int>>& result) {
+    if (num == 0) {
+        result.push_back(curr_combination);
+        return;
+    }
+    for (int i = start_idx; i <= input.size() - num; i++) {
+        curr_combination.push_back(input[i]);
+        generate_combinations(input, num - 1, i + 1, curr_combination, result);
+        curr_combination.pop_back();
+    }
+}
+
+std::vector<std::vector<int>> unique_combinations(std::vector<int> input, int num) {
+    std::vector<std::vector<int>> result;
+    std::vector<int> curr_combination;
+    std::sort(input.begin(), input.end());
+
+    generate_combinations(input, num, 0, curr_combination, result);
+    return result;
+}
+
+std::vector<std::vector<int>> remove_duplicates(std::vector<std::vector<int>> input) {
+    std::vector<std::vector<int>> output;
+
+    // Store the original indices and sort each inner vector based on the values
+    std::vector<std::vector<size_t>> indices(input.size());
+    for (size_t i = 0; i < input.size(); ++i) {
+        indices[i].resize(input[i].size());
+        std::iota(indices[i].begin(), indices[i].end(), 0);
+
+        std::sort(indices[i].begin(), indices[i].end(),
+                  [&](size_t a, size_t b) { return input[i][a] < input[i][b]; });
+        std::sort(input[i].begin(), input[i].end());
+    }
+
+    // Sort and remove duplicates from the outer vector
+    std::sort(input.begin(), input.end());
+    input.erase(std::unique(input.begin(), input.end()), input.end());
+
+    // Restore the original order of the inner vectors
+    for (size_t i = 0; i < input.size(); ++i) {
+        std::vector<int> temp(input[i].size());
+        for (size_t j = 0; j < input[i].size(); ++j) {
+            temp[indices[i][j]] = input[i][j];
+        }
+        input[i] = temp;
+    }
+
+    return input;
+}
+
 
 // This program reads in a root file containing data from CLAS12 collisions and the corresponding particles produced. 
 // It then uses the information to construct dihadrons (two hadrons) from the particles. 
@@ -13,7 +63,7 @@
 // The program uses the input_file name to determine what hadrons to build. If pi0's are built, then the "weight_branch" tells the program which machine learning model
 // is to be used to save photon classification values. The "weight_branch" in the "EventTree" is created by the program "machine_learning/photonID/predict.py"
 
-int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
+int dihadronBuilder(const char *input_file="hipo2tree.root",
                     const char *weight_branch="none"){
     
 
@@ -23,8 +73,6 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
     std::string particleNames ="";
     // Determine the pids from the file (see function)
     getPIDs(string(input_file),pid_h1,pid_h2,particleNames);
-    pid_h1 = 211;
-    pid_h2 = -211;
     // Read the TFile
     TFile *f = new TFile(input_file,"UPDATE");
     // Read the TTree
@@ -32,8 +80,8 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
     // Declare important branches
     //declare all necessary variables
     double x, Q2, W, Pol,y;
-    double truex, trueQ2, trueW, truey,tPol;
-    int hel,run,A,_evnum,hwp,tSign,target;
+    double truex, trueQ2, trueW, truey;
+    int hel,run,A,_evnum;
     int Nmax=100;
     double px[Nmax], py[Nmax], pz[Nmax], E[Nmax], vz[Nmax], chi2[Nmax], theta[Nmax], eta[Nmax], phi[Nmax];
     double truepx[Nmax] , truepy[Nmax] , truepz[Nmax], trueE[Nmax], truetheta[Nmax], trueeta[Nmax], truephi[Nmax];
@@ -46,10 +94,6 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
     EventTree->SetBranchAddress("evnum",&_evnum);
     EventTree->SetBranchAddress("run",&run);
     EventTree->SetBranchAddress("Pol",&Pol);
-    EventTree->SetBranchAddress("tPol",&tPol);
-    EventTree->SetBranchAddress("target",&target);
-    EventTree->SetBranchAddress("tSign",&tSign);
-    EventTree->SetBranchAddress("hwp",&hwp);
     EventTree->SetBranchAddress("hel",&hel);
     EventTree->SetBranchAddress("trueparentid", &parentID);
     EventTree->SetBranchAddress("trueparentpid", &parentPID);
@@ -94,17 +138,10 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
     
     double M1,M2,Mh,phi_h,phi_R0,phi_R1,th,z1,z2,xF1,xF2,z,xF,Mx,phi_h1,phi_h2,delta_phi_h,pT_1,pT_2,pT_tot,P_1,P_2,P_tot;
     double  trueM1,trueM2,trueMh,truephi_h,truephi_R0,truephi_R1,trueth,truez1,truez2,truexF1,truexF2,truez,truexF,trueMx,truephi_h1,truephi_h2,truedelta_phi_h,truepT_1,truepT_2,truepT_tot,trueP_1,trueP_2,trueP_tot;
-    int truepid_e;
-    double E_e, th_e, phi_e;
-    int truepid_1,truepid_2,trueparentpid_1,trueparentpid_2,trueparentid_1,trueparentid_2,trueparentparentpid_1,trueparentparentpid_2,trueparentparentid_1,trueparentparentid_2, trueparentpid_11, trueparentpid_12, trueparentpid_21, trueparentpid_22;
-    double E_11, E_12, E_21, E_22;
-    double th_11, th_12, th_21, th_22;
-    double phi_11, phi_12, phi_21, phi_22;
-
+    int truepid_1,truepid_2,trueparentpid_1,trueparentpid_2,trueparentid_1,trueparentid_2,trueparentparentpid_1,trueparentparentpid_2,trueparentparentid_1,trueparentparentid_2;
     int is_CFR_1, is_CFR_2;
     int MCmatch; // MCmatch --> 1 if all particles have Monte Carlo pairing
     int isGoodEventWithoutML;
-    int isGoodEventWithML;
     int truepid_11, truepid_12, truepid_21, truepid_22; // For photon pairs
     double trueM12, M12; // addition of M1 M2
     double fgID=0; //uniqueID for each dihadron
@@ -119,14 +156,9 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
     outtree->Branch("fgID", &fgID, "fgID/D");
     outtree->Branch("run", &run, "run/I");
     outtree->Branch("Pol", &Pol, "Pol/D");
-    outtree->Branch("tPol", &tPol, "tPol/D");
     outtree->Branch("hel", &hel, "hel/I");
-    outtree->Branch("tSign", &tSign, "tSign/I");
-    outtree->Branch("hwp", &hwp, "hwp/I");
-    outtree->Branch("target", &target, "target/I");
     outtree->Branch("MCmatch", &MCmatch, "MCmatch/I");
     outtree->Branch("isGoodEventWithoutML", &isGoodEventWithoutML, "isGoodEventWithoutML/I");
-    outtree->Branch("isGoodEventWithML", &isGoodEventWithML, "isGoodEventWithML/I");
     outtree->Branch("is_CFR_1",&is_CFR_1, "is_CFR_1/I");
     outtree->Branch("is_CFR_2",&is_CFR_2, "is_CFR_2/I");
     outtree->Branch("x", &x, "x/D");
@@ -148,9 +180,6 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
     outtree->Branch("z", &z, "z/D");
     outtree->Branch("xF", &xF, "xF/D");
     outtree->Branch("Mx", &Mx, "Mx/D");
-    outtree->Branch("E_e", &E_e, "E_e/D");
-    outtree->Branch("th_e", &th_e, "th_e/D");
-    outtree->Branch("phi_e", &phi_e, "phi_e/D");
     outtree->Branch("phi_h1", &phi_h1, "phi_h1/D");
     outtree->Branch("phi_h2", &phi_h2, "phi_h2/D");
     outtree->Branch("delta_phi_h", &delta_phi_h, "delta_phi_h/D");
@@ -188,7 +217,6 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
     outtree->Branch("trueP1", &trueP_1, "trueP1/D");
     outtree->Branch("trueP2", &trueP_2, "trueP2/D");
     outtree->Branch("truePtot", &trueP_tot, "truePtot/D");
-    outtree->Branch("truepid_e",&truepid_e, "truepid_e/I");
     outtree->Branch("truepid_1", &truepid_1, "truepid_1/I");
     outtree->Branch("truepid_2", &truepid_2, "truepid_2/I");
     outtree->Branch("truepid_11", &truepid_11, "truepid_11/I");
@@ -197,28 +225,12 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
     outtree->Branch("truepid_22", &truepid_22, "truepid_22/I");
     outtree->Branch("trueparentpid_1", &trueparentpid_1, "trueparentpid_1/I");
     outtree->Branch("trueparentpid_2", &trueparentpid_2, "trueparentpid_2/I");
-    outtree->Branch("trueparentpid_11", &trueparentpid_11, "trueparentpid_11/I");
-    outtree->Branch("trueparentpid_12", &trueparentpid_12, "trueparentpid_12/I");
-    outtree->Branch("trueparentpid_21", &trueparentpid_21, "trueparentpid_21/I");
-    outtree->Branch("trueparentpid_22", &trueparentpid_22, "trueparentpid_22/I");
     outtree->Branch("trueparentid_1", &trueparentid_1, "trueparentid_1/I");
     outtree->Branch("trueparentid_2", &trueparentid_2, "trueparentid_2/I");
     outtree->Branch("trueparentparentpid_1", &trueparentparentpid_1, "trueparentparentpid_1/I");
     outtree->Branch("trueparentparentpid_2", &trueparentparentpid_2, "trueparentparentpid_2/I");
     outtree->Branch("trueparentparentid_1", &trueparentparentid_1, "trueparentparentid_1/I");
     outtree->Branch("trueparentparentid_2", &trueparentparentid_2, "trueparentparentid_2/I");
-    outtree->Branch("E_11", &E_11, "E_11/D");
-    outtree->Branch("E_12", &E_12, "E_12/D");
-    outtree->Branch("E_21", &E_21, "E_21/D");
-    outtree->Branch("E_22", &E_22, "E_22/D");
-    outtree->Branch("th_11", &th_11, "th_11/D");
-    outtree->Branch("th_12", &th_12, "th_12/D");
-    outtree->Branch("th_21", &th_21, "th_21/D");
-    outtree->Branch("th_22", &th_22, "th_22/D");
-    outtree->Branch("phi_11", &phi_11, "phi_11/D");
-    outtree->Branch("phi_12", &phi_12, "phi_12/D");
-    outtree->Branch("phi_21", &phi_21, "phi_21/D");
-    outtree->Branch("phi_22", &phi_22, "phi_22/D");
     outtree->Branch("p_11", &p_11,"p_11/D");
     outtree->Branch("p_12", &p_12,"p_12/D");
     outtree->Branch("p_21", &p_21,"p_21/D");
@@ -228,19 +240,25 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
     TTree *outtree_clone = outtree->CloneTree(-1, "fast");
     outtree_clone->SetName("dihadron_cuts");
     
-    // Kinematics/CLAS12Analysis Object
+    // Kinematics Object
     Kinematics kin;
-    CLAS12Analysis clas12ana = CLAS12Analysis();
-    
+
     // Initial particles
     TLorentzVector init_electron(0,0,0,0); // To be set one run is found
     TLorentzVector init_target(0,0,0,Mp);
     
+    
     // for loop over all events
     int N = EventTree->GetEntries();
+    std::vector<int> h1_idxs;
+    std::vector<int> h2_idxs;
     std::vector<std::vector<int>> dihadron_idxs;    
     for (int ev=0; ev<N; ev++){
 
+        h1_idxs.clear();
+        h2_idxs.clear();
+        dihadron_idxs.clear();
+        
         if((ev+1)%100==0 || ev==N-1){
             if(ev!=N-1){
                 cout << "Progress: " << ev+1 << "/" << N << "\r";
@@ -257,7 +275,6 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
             init_electron.SetE(runBeamEnergy(run));
             init_electron.SetPz(sqrt(init_electron.E()*init_electron.E()-Me*Me));
         }
-        
         //Loop over all particles in the event to find electron
         TLorentzVector electron;
         TLorentzVector trueelectron;
@@ -273,18 +290,50 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
                 }
             }
         }
-        
         electron.SetPxPyPzE(px[idx_e],py[idx_e],pz[idx_e],E[idx_e]);
         trueelectron.SetPxPyPzE(truepx[idx_e],truepy[idx_e],truepz[idx_e],trueE[idx_e]);
-        truepid_e=truepid[idx_e];
-        E_e=electron.E();
-        th_e=electron.Theta();
-        phi_e=electron.Phi();
         q=init_electron-electron;
         trueq=init_electron-trueelectron;
-        
-        dihadron_idxs = clas12ana.dihadron_idxs(pid_h1,pid_h2,pid,Nmax);
-        
+        //Loop over all particles in the event to determine hadron indecies
+
+        for(int i = 0; i<Nmax; i++){
+            if(pid[i]==pid_h1 || (pid[i]==22 && pid_h1==111)) h1_idxs.push_back(i);
+            if(pid[i]==pid_h2 || (pid[i]==22 && pid_h2==111)) h2_idxs.push_back(i);
+        }
+        //Now form all possible dihadron index pairs
+        if(pid_h1==pid_h2 && pid_h1!=111){dihadron_idxs=unique_combinations(h1_idxs,2); }
+        else if(pid_h1==pid_h2 && pid_h1==111){dihadron_idxs=unique_combinations(h1_idxs,4);}
+        else if(pid_h1!=pid_h2 && pid_h1==111 && pid_h2 != 111){
+            for(int i = 0 ; i < h2_idxs.size(); i++){
+                for(int j = 0 ; j < h1_idxs.size(); j++){
+                    for(int k = j+1 ; k < h1_idxs.size(); k++){
+                        std::vector<int> dihadron_idx = {h1_idxs.at(j),h1_idxs.at(k),h2_idxs.at(i)}; // 2 photons at start
+                        dihadron_idxs.push_back(dihadron_idx);
+                    }
+                }
+            }
+        }
+        else if(pid_h1!=pid_h2 && pid_h1!=111 && pid_h2 == 111){
+            for(int i = 0 ; i < h1_idxs.size(); i++){
+                for(int j = 0 ; j < h2_idxs.size(); j++){
+                    for(int k = j+1 ; k < h2_idxs.size(); k++){
+                        std::vector<int> dihadron_idx = {h1_idxs.at(i),h2_idxs.at(j),h2_idxs.at(k)}; // 2 photons at end
+                        dihadron_idxs.push_back(dihadron_idx);
+                    }
+                }
+            }
+        }
+        else{
+            for(int i = 0 ; i < h1_idxs.size(); i++){
+                for(int j = 0 ; j < h2_idxs.size(); j++){
+                    std::vector<int> dihadron_idx = {h1_idxs.at(i), h2_idxs.at(j)};
+                    dihadron_idxs.push_back(dihadron_idx);
+                }
+            }
+        }
+    
+        // Remove any instance of duplicate dihadrons
+        dihadron_idxs = remove_duplicates(dihadron_idxs);
         // Now loop over all dihadrons
         for(int a = 0 ; a < dihadron_idxs.size() ; a++){
             std::vector<int> dihadron_idx = dihadron_idxs.at(a);
@@ -320,18 +369,10 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
             if(pid_h1==111){
                 p_11 = weight[i];
                 p_12 = weight[ii];
-		E_11 = E[i];
-		E_12 = E[ii];
-		th_11 = theta[i];
-		th_12 = theta[ii];
-		phi_11 = phi[i];
-		phi_12 = phi[ii];
                 h1.SetPxPyPzE(px[i]+px[ii],py[i]+py[ii],pz[i]+pz[ii],E[i]+E[ii]);
                 trueh1.SetPxPyPzE(truepx[i]+truepx[ii],truepy[i]+truepy[ii],truepz[i]+truepz[ii],trueE[i]+trueE[ii]);
                 truepid_11=truepid[i];
                 truepid_12=truepid[i];
-                trueparentpid_11=parentPID[i];
-                trueparentpid_12=parentPID[ii];
                 if(parentID[i]==parentID[ii] && parentID[i]!=-999){
                     trueparentid_1=parentID[i];
                     trueparentpid_1=parentPID[i];
@@ -346,38 +387,22 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
                    is_CFR_1=-999;
                 }
             }else{
-	      E_11 = E[i];
-	      E_12 = -999;
-	      th_11 = theta[i];
-	      th_12 = -999;
-	      phi_11 = phi[i];
-	      phi_12 = -999;
-	      h1.SetPxPyPzE(px[i],py[i],pz[i],E[i]);
+                h1.SetPxPyPzE(px[i],py[i],pz[i],E[i]);
                 trueh1.SetPxPyPzE(truepx[i],truepy[i],truepz[i],trueE[i]);
                 truepid_1=truepid[i];
                 trueparentid_1=parentID[i];
                 trueparentpid_1=parentPID[i];
                 trueparentparentid_1=parentparentID[i];
                 trueparentparentpid_1=parentparentPID[i];
-                trueparentpid_11=parentPID[i];
-                trueparentpid_12=parentPID[i];
                 is_CFR_1=is_CFR[i];
             }
             if(pid_h2==111){
                 p_21 = weight[j];
                 p_22 = weight[jj];
-		E_21 = E[j];
-		E_22 = E[jj];
-		th_21 = theta[j];
-		th_22 = theta[jj];
-		phi_21 = phi[j];
-		phi_22 = phi[jj];
                 h2.SetPxPyPzE(px[j]+px[jj],py[j]+py[jj],pz[j]+pz[jj],E[j]+E[jj]);
                 trueh2.SetPxPyPzE(truepx[j]+truepx[jj],truepy[j]+truepy[jj],truepz[j]+truepz[jj],trueE[j]+trueE[jj]);
                 truepid_21=truepid[j];
                 truepid_22=truepid[j];
-                trueparentpid_21=parentPID[j];
-                trueparentpid_22=parentPID[jj];
                 if(parentID[j]==parentID[jj] && parentID[j]!=-999){
                     trueparentid_2=parentID[j];
                     trueparentpid_2=parentPID[j];
@@ -393,13 +418,6 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
                 }
             }
             else{
-	      E_21 = E[j];
-	      E_22 = -999;
-	      th_21 = theta[j];
-	      th_22 = -999;
-	      phi_21 = phi[j];
-	      phi_22 = -999;
-	      
                 h2.SetPxPyPzE(px[j],py[j],pz[j],E[j]);
                 trueh2.SetPxPyPzE(truepx[j],truepy[j],truepz[j],trueE[j]);
                 truepid_2=truepid[j];
@@ -407,8 +425,6 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
                 trueparentpid_2=parentPID[j];
                 trueparentparentid_2=parentparentID[j];
                 trueparentparentpid_2=parentparentPID[j];
-                trueparentpid_21=parentPID[j];
-                trueparentpid_22=parentPID[j];
                 is_CFR_2=is_CFR[j];
             }
             
@@ -424,13 +440,7 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
                     trueh1=truetemp;
                     std::swap(p_11,p_21);
                     std::swap(p_12,p_22);
-		    std::swap(E_11, E_21);
-		    std::swap(E_12, E_22);
-		    std::swap(th_11, th_21);
-		    std::swap(th_12, th_22);
-		    std::swap(phi_11, phi_21);
-		    std::swap(phi_12, phi_22);
-		    std::swap(truepid_11,truepid_21);
+                    std::swap(truepid_11,truepid_21);
                     std::swap(truepid_12,truepid_22);
                     std::swap(truepid_1,truepid_2);
                     std::swap(trueparentid_1,trueparentid_2);
@@ -534,23 +544,14 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
                 fill_clone*=(P_2>1.25);
             }
             if(pid_h1==111){
-                //fill_clone*=(p_11>0.9&&p_12>0.9); 
-                fill_clone*=(p_11>0.78&&p_12>0.78); // Added July 7th 2023 based on FOM analysis
+                fill_clone*=(p_11>0.9&&p_12>0.9);
             }
-	    // Set isGoodEventWithoutML up to this point
-	    isGoodEventWithoutML*=fill_clone;
-	    // Now set the fill_clone if the ML cut passes
             if(pid_h2==111){
-                //fill_clone*=(p_21>0.9&&p_22>0.9);
-                fill_clone*=(p_21>0.78&&p_22>0.78); // Added July 7th 2023 based on FOM analysis
+                fill_clone*=(p_21>0.9&&p_22>0.9);
             }
-	    // Set isGoodEventWithML to fill_clone
-	    isGoodEventWithML = fill_clone;
-	    // Fill the cloned, abrigded tree
             if(fill_clone){
                 outtree_clone->Fill();
             }
-	    // Fill the larger, main tree without cuts
             outtree->Fill();
             fgID++;
         } // end dihadron loop

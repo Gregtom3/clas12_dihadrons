@@ -2,8 +2,8 @@
 
 class BaseTree {
     protected: // common variables
-        int A, evnum, fgId, run, hel,uID;
-        double x,y,Q2,nu,W,Pol;
+        int A, evnum, fgId, run, hel,uID,hwp,target,tSign;
+        double x,y,Q2,nu,W,Pol,tPol;
         double truex,truey,trueQ2,truenu,trueW;
         TTree *tree;
     
@@ -60,6 +60,10 @@ class EventTree : public BaseTree {
             tree->Branch("uID",&uID,"uID/I");
             tree->Branch("run",&run,"run/I");
             tree->Branch("Pol",&Pol,"Pol/D");
+            tree->Branch("tPol",&tPol,"tPol/D");
+            tree->Branch("hwp",&hwp,"hwp/I");
+            tree->Branch("target",&target,"target/I");
+            tree->Branch("tSign",&tSign,"tSign/I");
             tree->Branch("Nmax",&Nmax,"Nmax/I");
             tree->Branch("x", &x, "x/D");
             tree->Branch("y", &y, "y/D");
@@ -172,6 +176,10 @@ class EventTree : public BaseTree {
         uID = event_info.uID;
         fgId = event_info.fgId;
         run = event_info.run;
+        tPol = event_info.tPol;
+        hwp = event_info.hwp;
+        target = event_info.target;
+        tSign = event_info.tSign;
         hel = event_info.hel;
         x = event.x;
         y = event.y;

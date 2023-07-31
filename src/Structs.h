@@ -7,6 +7,16 @@ struct FS{
   int num_h2=0;
 };
 
+// RG-C Lookup Table
+struct Row {
+    int Run;
+    std::string Target;
+    double Nevents;
+    double HWP;
+    double TpolSign;
+    double Tpol;
+};
+
 FS get_FS(int pid_h1, int pid_h2){
   FS fs;
   if(pid_h1==111&&pid_h2==111){ //Pi0Pi0
@@ -61,6 +71,17 @@ struct EVENT_INFO {
     double Pol=0;
     int hel=0;
     int uID=0;
+    int hwp=0;
+    int tSign=0;
+    // Targets
+    // 0 --> NH3
+    // 1 --> ND3
+    // 2 --> C
+    // 3 --> CH2
+    // 4 --> CD2
+    // 5 --> Empty
+    int target=-999;
+    double tPol = 0;
 };
 
 struct EVENT {

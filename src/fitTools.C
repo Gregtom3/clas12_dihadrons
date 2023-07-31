@@ -151,16 +151,32 @@ pair<vector<string>, vector<string>> get_2h_modulations(int L, std::string versi
     
   vector<string> char_vec;
   vector<string> str_vec;
+  for (int l = 0; l <= L; l++)
+    {
+      for (int m = 1; m <= l; m++)
+        {
+	  
+	  string str = string(Form("%f",_polarization))+"*@"+hel+"[]*sin(" + to_string(m) + "*@phi_h[]-" + to_string(m) +"*@phi_R0[])";
+	  str_vec.push_back(str);
+        }
+      for (int m = -l; m <= l; m++)
+        {
+	  string str = string(Form("%f",_polarization))+"*@"+hel+"[]*sin(" + to_string(1-m) +"*@phi_h[]+" + to_string(m) +"*@phi_R0[])";
+	  str_vec.push_back(str);
+        }
+    }
+  
+  // Remove duplicate entries
+  sort(str_vec.begin(), str_vec.end());
+  str_vec.erase(unique(str_vec.begin(), str_vec.end()), str_vec.end());
+    
   for (int l = 1; l <= L; l++)
     {
       string str = string(Form("%f",_polarization))+"*@"+hel+"[]*sin(" + to_string(l) + "*@delta_phi_h[])";
       str_vec.push_back(str);
     }
-    
-  // Remove duplicate entries
-  sort(str_vec.begin(), str_vec.end());
-  str_vec.erase(unique(str_vec.begin(), str_vec.end()), str_vec.end());
-    
+  
+
   // Add the mod line to the front
   for(unsigned int i = 0 ; i < str_vec.size(); i++){
     str_vec.at(i)="mod" + to_string(i) + "=" + str_vec.at(i);
@@ -263,6 +279,8 @@ void process_2h_FM(FitManager &FM, std::string version, std::string hel="hel"){
   vector<string> str_vec = mods.second;
     
   ///////////////////////////////Load Variables
+  FM.SetUp().LoadVariable("phi_h[-3.14159265,3.14159265]");
+  FM.SetUp().LoadVariable("phi_R0[-3.14159265,3.14159265]");
   FM.SetUp().LoadVariable("delta_phi_h[-3.14159265,3.14159265]");
   FM.SetUp().LoadCategory(Form("%s[Polp=1,Polm=-1]",hel.c_str()));
   FM.SetUp().SetIDBranchName("fggID");

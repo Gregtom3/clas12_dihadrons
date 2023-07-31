@@ -10,14 +10,16 @@
 
 
 int hipo2tree(
-	                   const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2018/torus-1/pass1/v1/dst/train/nSidis/nSidis_005036.hipo",
+	      //	      const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2018/torus-1/pass1/v1/dst/train/nSidis/nSidis_005036.hipo",
 	      //const char * hipoFile = "/cache/clas12/rg-a/production/montecarlo/clasdis/fall2018/torus+1/v1/bkg50nA_10604MeV/50nA_OB_job_3313_0.hipo",
 	      //const char * hipoFile = "/cache/clas12/rg-b/production/recon/spring2020/torus-1/pass1/v1/dst/train/sidisdvcs/sidisdvcs_011494.hipo",
+	      const char * hipoFile = "/cache/hallb/scratch/rg-c/dst/train/sidisdvcs/sidisdvcs*.hipo",
+	      //	      const char * hipoFile = "/work/cebaf24gev/sidis/reconstructed/polarized-plus-10.5GeV-proton/hipo/0051.hipo",
               const char * outputFile = "hipo2tree.root",
-              const double _electron_beam_energy = 10.6041,
+              const double _electron_beam_energy = 10.5,
               const int pid_h1=211,
               const int pid_h2=-211,
-              const int maxEvents = 50000,
+              const int maxEvents = 5000000000,
               bool hipo_is_mc = false)
 {
 
@@ -81,12 +83,12 @@ int hipo2tree(
   int badAsym=0;
     
   while(_chain.Next()==true && (whileidx < maxEvents || maxEvents < 0)){
-      
+    
     if(whileidx%10000==0 && whileidx!=0){
       std::cout << whileidx << " events read | " << _ievent*100.0/whileidx << "% passed event selection | " << badAsym << " events skipped from QADB" << std::endl;
     }
       
-    event_info = clas12ana.get_event_info(_c12);
+    clas12ana.get_event_info(_c12,event_info);
     event_info.uID = whileidx;
     whileidx++;
     
@@ -94,7 +96,6 @@ int hipo2tree(
     // -------------------------------------
     _cm.set_run(event_info.run);
     _cm.set_run_period(std::string(hipoFile));
-    
     
     // Skip events that are not ok for asymmetry analysis based on QADB
     if(do_QADB){

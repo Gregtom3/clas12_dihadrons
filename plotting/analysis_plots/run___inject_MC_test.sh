@@ -1,0 +1,1 @@
+python3 asymmetry___inject_MC_brufit.py --infile "/work/clas12/users/gmat/clas12/clas12_dihadrons/projects/pipi0_paper_RGA_only/volatile/data/piplus_pi0/MC_RGA_3051_0.root" --project_name "pipi0_paper_RGA_only"  --n_trials 5 --n_cpus 10 --program "./injection_files/default_v2.txt"
