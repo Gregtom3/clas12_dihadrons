@@ -98,7 +98,7 @@ double Kinematics::phi_h(TLorentzVector Q, TLorentzVector L, TLorentzVector p1, 
 
   double factor1 = (qcrossl*Ph)/abs(qcrossl*Ph);
   double factor2 = (qcrossl*qcrossPh)/qcrossl.Mag()/qcrossPh.Mag();
-
+    
   return factor1*acos(factor2);
 }
 
@@ -114,7 +114,6 @@ double Kinematics::phi_h(TLorentzVector Q, TLorentzVector L, TLorentzVector p){
 
   double factor1 = (qcrossl*Ph)/abs(qcrossl*Ph);
   double factor2 = (qcrossl*qcrossPh)/qcrossl.Mag()/qcrossPh.Mag();
-
   return factor1*acos(factor2);
 }
 

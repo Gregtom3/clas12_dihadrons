@@ -1,5 +1,5 @@
 #include "../src/CutManager.C"
-#include "../src/CLAS12Analysis.C"
+#include "../src/CLAS12Ana.C"
 #include "../src/TreeManager.C"
 #include "../src/HipoBankInterface.C"
 #include "../src/Constants.h"
@@ -10,20 +10,20 @@
 
 
 int hipo2tree(
-	      //	      const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2018/torus-1/pass1/v1/dst/train/nSidis/nSidis_005036.hipo",
+	      const char * hipoFile = "/lustre19/expphy/volatile/clas12/sdiehl/osg_out/clasdis/outb-clasdis_15.hipo",
+	      //const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2018/torus-1/pass1/v1/dst/train/nSidis/nSidis_00503*.hipo",
+	      //const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2018/torus+1/pass1/v1/dst/train/nSidis/nSidis_005455.hipo",
 	      //const char * hipoFile = "/cache/clas12/rg-a/production/montecarlo/clasdis/fall2018/torus+1/v1/bkg50nA_10604MeV/50nA_OB_job_3313_0.hipo",
 	      //const char * hipoFile = "/cache/clas12/rg-b/production/recon/spring2020/torus-1/pass1/v1/dst/train/sidisdvcs/sidisdvcs_011494.hipo",
-	      const char * hipoFile = "/cache/hallb/scratch/rg-c/dst/train/sidisdvcs/sidisdvcs*.hipo",
+	      //const char * hipoFile = "/cache/hallb/scratch/rg-c/dst/train/sidisdvcs/sidisdvcs*.hipo",
 	      //	      const char * hipoFile = "/work/cebaf24gev/sidis/reconstructed/polarized-plus-10.5GeV-proton/hipo/0051.hipo",
               const char * outputFile = "hipo2tree.root",
-              const double _electron_beam_energy = 10.5,
-              const int pid_h1=211,
-              const int pid_h2=-211,
+              const double _electron_beam_energy = 10.6041,
+              const int pid_h1=-211,
+              const int pid_h2=111,
               const int maxEvents = 5000000000,
               bool hipo_is_mc = false)
 {
-
-
 
   // Create a TFile to save the data
   TFile* fOut = new TFile(outputFile, "RECREATE");
@@ -58,7 +58,7 @@ int hipo2tree(
   auto &_c12=_chain.C12ref();
   if(do_QADB)
     _c12->db()->qadb_requireOkForAsymmetry(true);  
-    
+ 
   // Create RCDB Connection
   // -------------------------------------
   clas12::clas12databases::SetRCDBRootConnection("/work/clas12/users/gmat/clas12/clas12_dihadrons/utils/rcdb.root"); 
@@ -67,9 +67,10 @@ int hipo2tree(
   // Add Analysis Objects
   // -------------------------------------
   CutManager _cm = CutManager();
-  CLAS12Analysis clas12ana = CLAS12Analysis(_c12,_electron_beam_energy);
+  CLAS12Ana clas12ana = CLAS12Ana(_c12,_electron_beam_energy);
+
   clas12ana.set_run_config(_c12);
-    
+  
   // Add Analysis Structs
   // -------------------------------------  
   std::vector<part> vec_particles;
@@ -81,9 +82,9 @@ int hipo2tree(
   int whileidx=0;
   int _ievent=0;
   int badAsym=0;
-    
+
   while(_chain.Next()==true && (whileidx < maxEvents || maxEvents < 0)){
-    
+
     if(whileidx%10000==0 && whileidx!=0){
       std::cout << whileidx << " events read | " << _ievent*100.0/whileidx << "% passed event selection | " << badAsym << " events skipped from QADB" << std::endl;
     }

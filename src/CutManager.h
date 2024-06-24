@@ -5,7 +5,8 @@
 enum RUN_PERIOD {
     RGA,
     RGB,
-    RGC
+    RGC,
+    RGK
 };
 
 class CutManager{

@@ -18,8 +18,10 @@ class BaseTree {
         TTree* GetTree() const {
             return tree;
         }
-
+    
+        int GetEntries() { return tree->GetEntries(); }
         void Write() {    tree->Write();    }
+        void Write(const char * c) {    tree->Write(c);    }
 };
 
 
@@ -285,8 +287,10 @@ class EventTree : public BaseTree {
 
 class DihadronTree : public BaseTree {
     private:
+        double gamma,eps,depolA,depolB,depolC,depolV,depolW;
         double Mh, z, M1, M2, M12, phi_h, phi_R0, phi_R1, th, z1, z2, xF1, xF2, xF, Mx, phi_h1, phi_h2, delta_phi_h;
         double pT1, pT2, pTtot, P1, P2, Ptot;
+        double truegamma,trueeps,truedepolA,truedepolB,truedepolC,truedepolV,truedepolW;
         double truex, trueQ2, trueW, truey, trueM1, trueM2, trueM12, trueMh, truephi_h, truephi_R0, truephi_R1, trueth;
         double truez1, truez2, truexF1, truexF2, truez, truexF, trueMx, truephi_h1, truephi_h2, truedelta_phi_h;
         double truepT1, truepT2, truepTtot, trueP1, trueP2, truePtot;
@@ -316,6 +320,13 @@ class DihadronTree : public BaseTree {
             tree->Branch("isGoodEventWithoutML", &isGoodEventWithoutML, "isGoodEventWithoutML/I");
             tree->Branch("is_CFR_1",&is_CFR_1, "is_CFR_1/I");
             tree->Branch("is_CFR_2",&is_CFR_2, "is_CFR_2/I");
+            tree->Branch("gamma",&gamma,"gamma/D");
+            tree->Branch("eps", &eps, "eps/D");
+            tree->Branch("depolA", &depolA, "depolA/D");
+            tree->Branch("depolB", &depolB, "depolB/D");
+            tree->Branch("depolC", &depolC, "depolC/D");
+            tree->Branch("depolV", &depolV, "depolV/D");
+            tree->Branch("depolW", &depolW, "depolW/D");
             tree->Branch("x", &x, "x/D");
             tree->Branch("Q2", &Q2, "Q2/D");
             tree->Branch("W", &W, "W/D");
@@ -411,6 +422,13 @@ class DihadronTree : public BaseTree {
             truenu = tevent.truenu;
             trueW = tevent.trueW;
             
+            gamma = event.gamma;
+            eps = event.eps;
+            depolA = event.depolA;
+            depolB = event.depolB;
+            depolC = event.depolC;
+            depolV = event.depolV;
+            depolW = event.depolW;
             Mh = event.Mh;
             z = event.z;
             M1 = event.M1;

@@ -223,6 +223,7 @@ bool HipoBankInterface::importDataToParticle(part &particle)
   particle.nphe_htcc = _nphe_htcc;
   return true;
 }
+
 int HipoBankInterface::determineSectorDC(float x, float y, float z){
   float phi = 180 / PI * atan2(y / sqrt(pow(x,2) + pow(y,2) + pow(z,2)),
 			       x /sqrt(pow(x,2) + pow(y,2) + pow(z,2)));

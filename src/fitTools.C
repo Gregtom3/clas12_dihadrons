@@ -241,7 +241,18 @@ void process_PW_FM(FitManager &FM, std::string version, std::string hel="hel"){
   auto mods = get_PW_modulations(2,version,hel);
   vector<string> char_vec = mods.first;
   vector<string> str_vec = mods.second;
-    
+
+  
+    cout << "First vector contents:" << endl;
+    for (const auto& str : mods.first) {
+        cout << str << endl;
+    }
+
+    cout << "Second vector contents:" << endl;
+    for (const auto& str : mods.second) {
+        cout << str << endl;
+    }
+
   ///////////////////////////////Load Variables
   FM.SetUp().LoadVariable("phi_h[-3.14159265,3.14159265]");
   FM.SetUp().LoadVariable("phi_R0[-3.14159265,3.14159265]");

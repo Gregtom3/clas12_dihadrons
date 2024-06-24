@@ -91,6 +91,13 @@ struct EVENT {
     double Q2=-999;
     double nu=-999;
     double W=-999;
+    double gamma=-999;
+    double eps=-999;
+    double depolA=-999;
+    double depolB=-999;
+    double depolC=-999;
+    double depolV=-999;
+    double depolW=-999;
     double M1=-999;
     double M2=-999;
     double M12=-999;
@@ -121,6 +128,13 @@ struct EVENT {
     double trueQ2=-999;
     double truenu=-999;
     double trueW=-999;
+    double truegamma=-999;
+    double trueeps=-999;
+    double truedepolA=-999;
+    double truedepolB=-999;
+    double truedepolC=-999;
+    double truedepolV=-999;
+    double truedepolW=-999;
     double trueM1 = -999;
     double trueM2 = -999;
     double trueM12 = -999;

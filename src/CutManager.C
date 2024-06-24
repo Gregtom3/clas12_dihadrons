@@ -25,6 +25,8 @@ void CutManager::set_run_period(std::string infile){
     if(infile.find("/rg-a/") != std::string::npos) _run_period = RGA;
     else if(infile.find("/rg-b/") != std::string::npos) _run_period = RGB;
     else if(infile.find("/rg-c/") != std::string::npos || infile.find("10.5GeV") != std::string::npos) _run_period = RGC;
+    else if(infile.find("/osg_out/") != std::string::npos) _run_period = RGA;
+    else if(infile.find("/rg-k/") != std::string::npos) _run_period = RGK;
     else {
         cout << "Unknown run period from input_file="<<infile<<"...defaulting to RGA"<<endl;
         _run_period=RGA;
@@ -72,8 +74,11 @@ std::vector<part> CutManager::filter_particles(std::vector<part> particles){
     //    pass = true;
 
     // Forward Detector Cut
-    if(particle.theta*180/PI<5 || particle.theta*180/PI>35)
-        pass = false;
+    if(particle.theta*180/PI<5 || particle.theta*180/PI>35){
+        if(particle.pid==22||particle.pid==11||particle.pid==-211||particle.pid==211)
+            pass = false; // Only apply FD cut on electrons, pions, and gammas
+    }
+
     
     if (pass==true)
       filtered_particles.push_back(particle);
@@ -303,7 +308,7 @@ bool CutManager::DC_fiducial_cut_XY(part particle){
 
 // Cut out hadrons with CD status
 bool CutManager::hadronStatus(part particle){
-    if(particle.status>=4000&&particle.status<5000) return false;
+  //    if(particle.status>=4000&&particle.status<5000) return false;
     return true;
 }
 

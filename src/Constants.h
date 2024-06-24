@@ -46,6 +46,8 @@ inline float runPolarization(int run, bool v=true){
   else if(run>=11335 && run<=11387) return v? 0.85048 : 0.01530;
   else if(run>=11389 && run<=11571) return v? 0.84262 : 0.01494; // NOTE: table last updated 1/15/2020, but run ended on 1/30
   else if(run>=16082&&run<=17738) return v? 0.80: 0.02; // RGC
+  else if(run>=5863&&run<=6000)   return v? 0.86: 0.013; // RG-K 6535 MeV (5/15/2024 set as placeholder)
+  else if(run>=5681&&run<=5870)   return v? 0.86: 0.013; // RG-K 7546 MeV (5/15/2024 set as placeholder)
   /* MC */
   else if(run==11 || run==-11) return v? 0.86 : 0.0; // MC
   else if(run==50326616) return v? 0.8516: 0.01; 
@@ -88,6 +90,9 @@ inline float runBeamEnergy(int run){
   else if(run>=11093 && run<=11283) return 10.4096; // rgb fall 19
   else if(run>=11284 && run<=11300) return 4.17179; // rgb fall BAND_FT 19
   else if(run>=11323 && run<=11571) return 10.3894; // rgb winter 20 (RCDB may still be incorrect)
+  else if(run==5863)                return 6.535;   // Odd RG-K hipo file out of place
+  else if(run>=5863&&run<=6000)   return 6.535;     // RG-K 6535 MeV
+  else if(run>=5681&&run<=5870)   return 7.546;     // RG-K 7546 MeV 
   else if(run>=12000) return 10.559; // rgc 
   else if(run==11 || run==-11 || run==22 || run==-22 || run==33 || run==-33)                  return 10.6041; // MC RGA,RGB
   else {
