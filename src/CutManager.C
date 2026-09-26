@@ -22,8 +22,9 @@ void CutManager::set_run(int run){
 }
 
 void CutManager::set_run_period(std::string infile){
-    if(infile.find("/rg-a/") != std::string::npos) _run_period = RGA;
+    if(infile.find("/rg-a/") != std::string::npos || infile.find("/work/cebaf24gev/sidis/reconstructed/clasdis-sd/jan29/") != std::string::npos) _run_period = RGA;
     else if(infile.find("/rg-b/") != std::string::npos) _run_period = RGB;
+    else if(infile.find("/job_9250/") != std::string::npos) _run_period = RGB; // RG-B monte carlo from Harut 06/20/2025
     else if(infile.find("/rg-c/") != std::string::npos || infile.find("10.5GeV") != std::string::npos) _run_period = RGC;
     else if(infile.find("/osg_out/") != std::string::npos) _run_period = RGA;
     else if(infile.find("/rg-k/") != std::string::npos) _run_period = RGK;
@@ -354,7 +355,7 @@ bool CutManager::chi2pid(part particle,int isStrict){
 bool CutManager::EleSampFrac(part particle){
     
   // Require RGA for this fiducial cut
-  // if(_run_period==RGC){return true;}
+  if(_run_period==RGC){return true;}
     
   double p = particle.p;
   double Ele_ECIN_e = particle.ecin_e;
@@ -435,7 +436,7 @@ bool CutManager::VzCut(part particle){
       if(abs(particle.vz+4.358)>2*3.180) return false; 
   }
   else if(particle.pid==11 && _run_period==RGC && !_is_MC){
-      if(abs(particle.vz+3.641)>2*1.901) return false; 
+      if(abs(particle.vz+3.641)>5*1.901) return false; 
   }
   return true;
 }

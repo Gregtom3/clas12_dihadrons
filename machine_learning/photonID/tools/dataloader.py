@@ -177,30 +177,44 @@ def load_files(rootdir="",
                SUBDATA="",
                test=0,
                Nmax=9999):
+    try:
+        if(test==1):
+            return [rootdir+"/MC_3051_0.root"]
     
-    if(test==1):
-        return [rootdir+"/MC_3051_0.root"]
+        fjs = open ('/work/clas12/users/gmat/clas12/clas12_dihadrons/utils/subdata.json', "r")
+        print("ONE")
+        JSON = json.loads(fjs.read())
+        print("TWO")
     
-    fjs = open ('/work/clas12/users/gmat/clas12/clas12_dihadrons/utils/subdata.json', "r")
-    JSON = json.loads(fjs.read())
-    SUBDATA_KEYS=[key for key in JSON.keys()]
-    
-    root_files = []
+        SUBDATA_KEYS=[key for key in JSON.keys()]
+        
+        root_files = []
 
-    for file in os.listdir(rootdir):
-        if (file.endswith(".root")):
-            foundFile=False
-            if(SUBDATA!="all"):
-                for RUN in JSON[SUBDATA]["Runs"]:
-                    if RUN in file:
-                        foundFile=True
-            else:
-                foundFile=True
-            if(foundFile):
-                root_files.append(rootdir+"/"+file)
-            if(len(root_files)==Nmax):
-                break
-                
-    print(len(root_files),"root files found for the ML train/test")
-    
-    return root_files
+        for file in os.listdir(rootdir):
+            if (file.endswith(".root")):
+                foundFile=False
+                if(SUBDATA!="all"):
+                    for RUN in JSON[SUBDATA]["Runs"]:
+                        if RUN in file:
+                            foundFile=True
+                else:
+                    foundFile=True
+                if(foundFile):
+                    root_files.append(rootdir+"/"+file)
+                if(len(root_files)==Nmax):
+                    break
+                    
+        print(len(root_files),"root files found for the ML train/test")
+        return root_files
+        
+    except Exception:
+        # fallback: return up to Nmax .root files containing SUBDATA in their name
+        fallback = []
+        for fname in os.listdir(rootdir):
+            if fname.endswith(".root") and SUBDATA in fname:
+                fallback.append(os.path.join(rootdir, fname))
+                if len(fallback) >= Nmax:
+                    break
+
+        print("Exception encountered; falling back to", len(fallback), "files containing", SUBDATA)
+        return fallback

@@ -1,5 +1,6 @@
 
-int photonML(const char * input_file = "/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas12_dihadrons/projects/ana_v0/data/raw/pi0_pi0/nSidis_5032.root",
+int photonML(const char * input_file = "hipo2tree.root",
+	     //const char * input_file = "/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas12_dihadrons/projects/ana_v0/data/raw/pi0_pi0/nSidis_5032.root",
              int method=0){
 
     // method

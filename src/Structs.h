@@ -213,7 +213,7 @@ struct part{
   double chi2=-999;
   double beta=-999;
   int is_scattered_electron=0;
-    
+  double angleToElectron=-999;
   // MC Lund Info
   double truepx=-999;
   double truepy=-999;

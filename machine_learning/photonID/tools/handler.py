@@ -4,7 +4,7 @@ import random
 import numpy as np
 import pandas as pd
 from catboost import CatBoostClassifier
-from xgboost.sklearn import XGBClassifier
+# from xgboost.sklearn import XGBClassifier
 from sklearn.ensemble import RandomForestClassifier
 
 #This function creates directories in the given output directory.
@@ -73,10 +73,10 @@ def import_model(*args):
         model.load_model(savedir+"/gbt_model_"+suffix)
     
     # Check if model type is XGBoost
-    elif(model_type=="xgb"):
+   # elif(model_type=="xgb"):
         
         # Load model from given directory
-        model = pickle.load(open(savedir+"/xgb_model_"+suffix+".pkl", "rb"))
+        #model = pickle.load(open(savedir+"/xgb_model_"+suffix+".pkl", "rb"))
         
     # Check if model type is Random Forest
     elif(model_type=="rf"):

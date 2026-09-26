@@ -1,6 +1,6 @@
 #include "../src/Constants.h"
 #include "../src/HipoBankInterface.C"
-#include "../src/CLAS12Analysis.C"
+#include "../src/CLAS12Ana.C"
 #include "../src/Kinematics.C"
 #include "../src/ParseBinYAML.C"
 #include "../src/ParseText.C"
@@ -13,7 +13,8 @@
 // The program uses the input_file name to determine what hadrons to build. If pi0's are built, then the "weight_branch" tells the program which machine learning model
 // is to be used to save photon classification values. The "weight_branch" in the "EventTree" is created by the program "machine_learning/photonID/predict.py"
 
-int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
+int dihadronBuilder(const char *input_file="hipo2tree_pass2.root",
+		    //const char *input_file="rgc_7_26_2023.root",
                     const char *weight_branch="none"){
     
 
@@ -23,16 +24,18 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
     std::string particleNames ="";
     // Determine the pids from the file (see function)
     getPIDs(string(input_file),pid_h1,pid_h2,particleNames);
-    pid_h1 = 211;
-    pid_h2 = -211;
+    if(pid_h1==0&&pid_h2==0){
+        pid_h1=211;
+        pid_h2=111;
+    }
     // Read the TFile
     TFile *f = new TFile(input_file,"UPDATE");
     // Read the TTree
     TTree *EventTree = (TTree*)f->Get("EventTree");
     // Declare important branches
     //declare all necessary variables
-    double x, Q2, W, Pol,y;
-    double truex, trueQ2, trueW, truey,tPol;
+    double x, Q2, W, Pol,y,nu;
+    double truex, trueQ2, trueW, truey,tPol,truenu;
     int hel,run,A,_evnum,hwp,tSign,target;
     int Nmax=100;
     double px[Nmax], py[Nmax], pz[Nmax], E[Nmax], vz[Nmax], chi2[Nmax], theta[Nmax], eta[Nmax], phi[Nmax];
@@ -59,6 +62,7 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
     EventTree->SetBranchAddress("Q2",&Q2);
     EventTree->SetBranchAddress("W",&W); 
     EventTree->SetBranchAddress("y",&y); 
+    EventTree->SetBranchAddress("nu",&nu); 
     EventTree->SetBranchAddress("Nmax",&Nmax);
     EventTree->SetBranchAddress("px",px);
     EventTree->SetBranchAddress("py",py);
@@ -72,6 +76,7 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
     EventTree->SetBranchAddress("phi",phi);
     EventTree->SetBranchAddress("truex",&truex);
     EventTree->SetBranchAddress("truey",&truey);
+    EventTree->SetBranchAddress("truenu",&truenu);
     EventTree->SetBranchAddress("trueQ2",&trueQ2);
     EventTree->SetBranchAddress("trueW",&trueW);
     EventTree->SetBranchAddress("trueE",&trueE);
@@ -92,15 +97,35 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
     if (f->Get(treename)) f->Delete("dihadron*;*");
     TTree *outtree = new TTree(treename,"Dihadron-by-Dihadron info");
     
-    double M1,M2,Mh,phi_h,phi_R0,phi_R1,th,z1,z2,xF1,xF2,z,xF,Mx,phi_h1,phi_h2,delta_phi_h,pT_1,pT_2,pT_tot,P_1,P_2,P_tot;
-    double  trueM1,trueM2,trueMh,truephi_h,truephi_R0,truephi_R1,trueth,truez1,truez2,truexF1,truexF2,truez,truexF,trueMx,truephi_h1,truephi_h2,truedelta_phi_h,truepT_1,truepT_2,truepT_tot,trueP_1,trueP_2,trueP_tot;
+    double M1,M2,Mh,phi_h,phi_R0,phi_R1,th,z1,z2,xF1,xF2,z,xF,Mx,phi_h1,phi_h2,delta_phi_h,pT_1,pT_2,pT_tot,P_1,P_2,P_tot,E_tot_over_nu,t;
+    double  trueM1,trueM2,trueMh,truephi_h,truephi_R0,truephi_R1,trueth,truez1,truez2,truexF1,truexF2,truez,truexF,trueMx,truephi_h1,truephi_h2,truedelta_phi_h,truepT_1,truepT_2,truepT_tot,trueP_1,trueP_2,trueP_tot,trueE_tot_over_nu,truet;
     int truepid_e;
     double E_e, th_e, phi_e;
+    double trueE_e, trueth_e, truephi_e;
+    double Mx_p_1=-999;
+    double Mx_p_2=-999;
+    double Mx_p=-999;
+    double Mh_p_1=-999;
+    double Mh_p_2=-999;
+    int N_charged_pi_tracks = 0;
+    int N_p_tracks = 0;
+    double MhMx_p_1=-999; // Invariant Mass of (Missing Nucleon + Hadron 1)
+    double MhMx_p_2=-999; // Invariant Mass of (Missing Nucleon + Hadron 2)
+    double hadron_E_diff=-999;
+    double hadron_p_diff=-999;
+    
     int truepid_1,truepid_2,trueparentpid_1,trueparentpid_2,trueparentid_1,trueparentid_2,trueparentparentpid_1,trueparentparentpid_2,trueparentparentid_1,trueparentparentid_2, trueparentpid_11, trueparentpid_12, trueparentpid_21, trueparentpid_22;
+    int trueparentpid_p=0;
+    int trueparentid_p=0;
     double E_11, E_12, E_21, E_22;
     double th_11, th_12, th_21, th_22;
     double phi_11, phi_12, phi_21, phi_22;
-
+    
+    double trueE_11, trueE_12, trueE_21, trueE_22;
+    double trueth_11, trueth_12, trueth_21, trueth_22;
+    double truephi_11, truephi_12, truephi_21, truephi_22;
+    double depolA,depolB,depolC,depolV,depolW,gamma,eps;
+    double truedepolA,truedepolB,truedepolC,truedepolV,truedepolW,truegamma,trueeps;
     int is_CFR_1, is_CFR_2;
     int MCmatch; // MCmatch --> 1 if all particles have Monte Carlo pairing
     int isGoodEventWithoutML;
@@ -133,10 +158,25 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
     outtree->Branch("Q2", &Q2, "Q2/D");
     outtree->Branch("W", &W, "W/D");
     outtree->Branch("y", &y, "y/D");
+    outtree->Branch("Y", &y, "Y/D");
+    outtree->Branch("t",&t,"t/D");
     outtree->Branch("M1", &M1, "M1/D");
     outtree->Branch("M2", &M2, "M2/D");
     outtree->Branch("M12",&M12,"M12/D");
+    outtree->Branch("gamma",&gamma,"gamma/D");
+    outtree->Branch("eps", &eps, "eps/D");
+    outtree->Branch("depolA", &depolA, "depolA/D");
+    outtree->Branch("depolB", &depolB, "depolB/D");
+    outtree->Branch("depolC", &depolC, "depolC/D");
+    outtree->Branch("depolV", &depolV, "depolV/D");
+    outtree->Branch("depolW", &depolW, "depolW/D");
+    outtree->Branch("N_charged_pi_tracks", &N_charged_pi_tracks, "N_charged_pi_tracks/I");
+    outtree->Branch("N_p_tracks", &N_p_tracks, "N_p_tracks/I");
     outtree->Branch("Mh", &Mh, "Mh/D");
+    outtree->Branch("Mh_p_1", &Mh_p_1, "Mh_p_1/D");
+    outtree->Branch("Mh_p_2", &Mh_p_2, "Mh_p_2/D");
+    outtree->Branch("MhMx_p_1", &MhMx_p_1, "MhMx_p_1/D");
+    outtree->Branch("MhMx_p_2", &MhMx_p_2, "MhMx_p_2/D");
     outtree->Branch("phi_h", &phi_h, "phi_h/D");
     outtree->Branch("phi_R0", &phi_R0, "phi_R0/D");
     outtree->Branch("phi_R1", &phi_R1, "phi_R1/D");
@@ -146,11 +186,21 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
     outtree->Branch("xF1", &xF1, "xF1/D");
     outtree->Branch("xF2", &xF2, "xF2/D");
     outtree->Branch("z", &z, "z/D");
+    outtree->Branch("Z", &z, "Z/D");
     outtree->Branch("xF", &xF, "xF/D");
     outtree->Branch("Mx", &Mx, "Mx/D");
+    outtree->Branch("Mx_p_1", &Mx_p_1, "Mx_p_1/D");
+    outtree->Branch("Mx_p_2", &Mx_p_2, "Mx_p_2/D");
+    outtree->Branch("Mx_p", &Mx_p, "Mx_p/D");
+    outtree->Branch("hadron_E_diff", &hadron_E_diff, "hadron_E_diff/D");
+    outtree->Branch("hadron_p_diff", &hadron_p_diff, "hadron_p_diff/D");
+    outtree->Branch("E_tot_over_nu", &E_tot_over_nu, "E_tot_over_nu/D");
     outtree->Branch("E_e", &E_e, "E_e/D");
     outtree->Branch("th_e", &th_e, "th_e/D");
     outtree->Branch("phi_e", &phi_e, "phi_e/D");
+    outtree->Branch("trueE_e", &trueE_e, "trueE_e/D");
+    outtree->Branch("trueth_e", &trueth_e, "trueth_e/D");
+    outtree->Branch("truephi_e", &truephi_e, "truephi_e/D");
     outtree->Branch("phi_h1", &phi_h1, "phi_h1/D");
     outtree->Branch("phi_h2", &phi_h2, "phi_h2/D");
     outtree->Branch("delta_phi_h", &delta_phi_h, "delta_phi_h/D");
@@ -164,9 +214,17 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
     outtree->Branch("trueQ2", &trueQ2, "trueQ2/D");
     outtree->Branch("trueW", &trueW, "trueW/D");
     outtree->Branch("truey", &truey, "truey/D");
+    outtree->Branch("truet",&truet,"truet/D");
     outtree->Branch("trueM1", &trueM1, "trueM1/D");
     outtree->Branch("trueM2", &trueM2, "trueM2/D");
     outtree->Branch("trueM12",&trueM12,"trueM12/D");
+    outtree->Branch("truegamma",&truegamma,"truegamma/D");
+    outtree->Branch("trueeps", &trueeps, "trueeps/D");
+    outtree->Branch("truedepolA", &truedepolA, "truedepolA/D");
+    outtree->Branch("truedepolB", &truedepolB, "truedepolB/D");
+    outtree->Branch("truedepolC", &truedepolC, "truedepolC/D");
+    outtree->Branch("truedepolV", &truedepolV, "truedepolV/D");
+    outtree->Branch("truedepolW", &truedepolW, "truedepolW/D");
     outtree->Branch("trueMh", &trueMh, "trueMh/D");
     outtree->Branch("truephi_h", &truephi_h, "truephi_h/D");
     outtree->Branch("truephi_R0", &truephi_R0, "truephi_R0/D");
@@ -179,6 +237,7 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
     outtree->Branch("truez", &truez, "truez/D");
     outtree->Branch("truexF", &truexF, "truexF/D");
     outtree->Branch("trueMx", &trueMx, "trueMx/D");
+    outtree->Branch("trueE_tot_over_nu", &trueE_tot_over_nu, "trueE_tot_over_nu/D");
     outtree->Branch("truephi_h1", &truephi_h1, "truephi_h1/D");
     outtree->Branch("truephi_h2", &truephi_h2, "truephi_h2/D");
     outtree->Branch("truedelta_phi_h", &truedelta_phi_h, "truedelta_phi_h/D");
@@ -207,6 +266,8 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
     outtree->Branch("trueparentparentpid_2", &trueparentparentpid_2, "trueparentparentpid_2/I");
     outtree->Branch("trueparentparentid_1", &trueparentparentid_1, "trueparentparentid_1/I");
     outtree->Branch("trueparentparentid_2", &trueparentparentid_2, "trueparentparentid_2/I");
+    outtree->Branch("trueparentid_p", &trueparentid_p, "trueparentid_p/I");
+    outtree->Branch("trueparentpid_p", &trueparentpid_p, "trueparentpid_p/I");
     outtree->Branch("E_11", &E_11, "E_11/D");
     outtree->Branch("E_12", &E_12, "E_12/D");
     outtree->Branch("E_21", &E_21, "E_21/D");
@@ -219,6 +280,19 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
     outtree->Branch("phi_12", &phi_12, "phi_12/D");
     outtree->Branch("phi_21", &phi_21, "phi_21/D");
     outtree->Branch("phi_22", &phi_22, "phi_22/D");
+    
+    outtree->Branch("trueE_11", &trueE_11, "trueE_11/D");
+    outtree->Branch("trueE_12", &trueE_12, "trueE_12/D");
+    outtree->Branch("trueE_21", &trueE_21, "trueE_21/D");
+    outtree->Branch("trueE_22", &trueE_22, "trueE_22/D");
+    outtree->Branch("trueth_11", &trueth_11, "trueth_11/D");
+    outtree->Branch("trueth_12", &trueth_12, "trueth_12/D");
+    outtree->Branch("trueth_21", &trueth_21, "trueth_21/D");
+    outtree->Branch("trueth_22", &trueth_22, "trueth_22/D");
+    outtree->Branch("truephi_11", &truephi_11, "truephi_11/D");
+    outtree->Branch("truephi_12", &truephi_12, "truephi_12/D");
+    outtree->Branch("truephi_21", &truephi_21, "truephi_21/D");
+    outtree->Branch("truephi_22", &truephi_22, "truephi_22/D");
     outtree->Branch("p_11", &p_11,"p_11/D");
     outtree->Branch("p_12", &p_12,"p_12/D");
     outtree->Branch("p_21", &p_21,"p_21/D");
@@ -228,9 +302,20 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
     TTree *outtree_clone = outtree->CloneTree(-1, "fast");
     outtree_clone->SetName("dihadron_cuts");
     
-    // Kinematics/CLAS12Analysis Object
+    // Clone the outtree to only fill it if the cuts pass
+    TTree *outtree_clone_exclusive = outtree->CloneTree(-1, "fast");
+    outtree_clone_exclusive->SetName("dihadron_exclusive_cuts");
+
+    // Clone the outtree to only fill it if the cuts pass
+    TTree* legacyTree = outtree->CloneTree(0);
+    legacyTree->SetName("dihadron_legacy_cuts");
+
+    TTree *outtree_clone_noPmin = outtree->CloneTree(-1, "fast");
+    outtree_clone_noPmin->SetName("dihadron_cuts_noPmin");
+    
+    // Kinematics/CLAS12Ana Object
     Kinematics kin;
-    CLAS12Analysis clas12ana = CLAS12Analysis();
+    CLAS12Ana clas12ana = CLAS12Ana();
     
     // Initial particles
     TLorentzVector init_electron(0,0,0,0); // To be set one run is found
@@ -261,16 +346,30 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
         //Loop over all particles in the event to find electron
         TLorentzVector electron;
         TLorentzVector trueelectron;
+        TLorentzVector proton;
         TLorentzVector q; // virtual photon
         TLorentzVector trueq;
         int idx_e=-1;
+        int idx_p=-1;
         double max_e=-1;
+        N_charged_pi_tracks = 0;
+        N_p_tracks = 0;
         for (int i=0; i<Nmax; i++){
             if(pid[i]==11){
                 if(E[i]>max_e){
                     idx_e=i;
                     max_e=E[i];
                 }
+            }
+            if(pid[i]==2212 && idx_p==-1){
+                idx_p = i; // Find the proton if possible
+                proton.SetPxPyPzE(px[idx_p],py[idx_p],pz[idx_p],E[idx_p]);
+            }
+            if(pid[i]==211||pid[i]==-211){
+                N_charged_pi_tracks++;
+            }
+            if(pid[i]==2212){
+                N_p_tracks++;
             }
         }
         
@@ -280,6 +379,9 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
         E_e=electron.E();
         th_e=electron.Theta();
         phi_e=electron.Phi();
+        trueE_e=trueelectron.E();
+        trueth_e=trueelectron.Theta();
+        truephi_e=trueelectron.Phi();
         q=init_electron-electron;
         trueq=init_electron-trueelectron;
         
@@ -326,6 +428,12 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
 		th_12 = theta[ii];
 		phi_11 = phi[i];
 		phi_12 = phi[ii];
+        trueE_11 = trueE[i];
+		trueE_12 = trueE[ii];
+		trueth_11 = truetheta[i];
+		trueth_12 = truetheta[ii];
+		truephi_11 = truephi[i];
+		truephi_12 = truephi[ii];
                 h1.SetPxPyPzE(px[i]+px[ii],py[i]+py[ii],pz[i]+pz[ii],E[i]+E[ii]);
                 trueh1.SetPxPyPzE(truepx[i]+truepx[ii],truepy[i]+truepy[ii],truepz[i]+truepz[ii],trueE[i]+trueE[ii]);
                 truepid_11=truepid[i];
@@ -352,6 +460,12 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
 	      th_12 = -999;
 	      phi_11 = phi[i];
 	      phi_12 = -999;
+          trueE_11 = trueE[i];
+	      trueE_12 = -999;
+	      trueth_11 = truetheta[i];
+	      trueth_12 = -999;
+	      truephi_11 = truephi[i];
+	      truephi_12 = -999;
 	      h1.SetPxPyPzE(px[i],py[i],pz[i],E[i]);
                 trueh1.SetPxPyPzE(truepx[i],truepy[i],truepz[i],trueE[i]);
                 truepid_1=truepid[i];
@@ -372,6 +486,12 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
 		th_22 = theta[jj];
 		phi_21 = phi[j];
 		phi_22 = phi[jj];
+        trueE_21 = trueE[j];
+		trueE_22 = trueE[jj];
+		trueth_21 = truetheta[j];
+		trueth_22 = truetheta[jj];
+		truephi_21 = truephi[j];
+		truephi_22 = truephi[jj];
                 h2.SetPxPyPzE(px[j]+px[jj],py[j]+py[jj],pz[j]+pz[jj],E[j]+E[jj]);
                 trueh2.SetPxPyPzE(truepx[j]+truepx[jj],truepy[j]+truepy[jj],truepz[j]+truepz[jj],trueE[j]+trueE[jj]);
                 truepid_21=truepid[j];
@@ -399,7 +519,12 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
 	      th_22 = -999;
 	      phi_21 = phi[j];
 	      phi_22 = -999;
-	      
+          trueE_21 = trueE[j];
+	      trueE_22 = -999;
+	      trueth_21 = truetheta[j];
+	      trueth_22 = -999;
+	      truephi_21 = truephi[j];
+	      truephi_22 = -999;
                 h2.SetPxPyPzE(px[j],py[j],pz[j],E[j]);
                 trueh2.SetPxPyPzE(truepx[j],truepy[j],truepz[j],trueE[j]);
                 truepid_2=truepid[j];
@@ -445,10 +570,20 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
             dihadron = h1+h2;
             truedihadron = trueh1+trueh2;
             // fill results
+            gamma = 2*Mp*x/sqrt(Q2);
+            eps=(1-y-pow(y*gamma,2)/4)/(1-y+pow(y,2)/2+pow(y*gamma,2)/4);
+            depolA = pow(y,2)/(2*(1-eps));
+            depolB = depolA * eps;
+            depolC = depolA * sqrt(1-eps*eps);
+            depolV = depolA*sqrt(2*eps*(1+eps));
+            depolW = depolA*sqrt(2*eps*(1-eps));
+            t = ((electron+dihadron-init_electron)).M2();
             M1 = h1.M();
             M2 = h2.M();
             M12 = M1+M2;
             Mh = dihadron.M();
+            MhMx_p_1 = (init_electron+init_target-electron-dihadron+h1).M();
+            MhMx_p_2 = (init_electron+init_target-electron-dihadron+h2).M();
             phi_h = kin.phi_h(q,init_electron,h1,h2);
             phi_h1 = kin.phi_h(q,init_electron,h1);
             phi_h2 = kin.phi_h(q,init_electron,h2);
@@ -474,8 +609,16 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
             z2 = kin.z(init_target,h2,q);
             z = z1+z2;
             Mx = (init_electron+init_target-electron-dihadron).M();
-
-
+	    E_tot_over_nu = dihadron.E()/nu;
+            hadron_E_diff = h1.E()-h2.E();
+            hadron_p_diff = h1.P()-h2.P();
+            truegamma = 2*Mp*truex/sqrt(trueQ2);
+            trueeps=(1-truey-pow(truey*truegamma,2)/4)/(1-truey+pow(truey,2)/2+pow(truey*truegamma,2)/4);
+            truedepolA = pow(truey,2)/(2*(1-trueeps));
+            truedepolB = truedepolA * trueeps;
+            truedepolC = truedepolA * sqrt(1-trueeps*trueeps);
+            truedepolV = truedepolA*sqrt(2*trueeps*(1+trueeps));
+            truedepolW = truedepolA*sqrt(2*trueeps*(1-trueeps));
             trueM1 = trueh1.M();
             trueM2 = trueh2.M();
             trueM12 = trueM1+trueM2;
@@ -505,6 +648,8 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
             truez2 = kin.z(init_target,trueh2,trueq);
             truez = truez1+truez2;
             trueMx = (init_electron+init_target-trueelectron-truedihadron).M();
+	    trueE_tot_over_nu = truedihadron.E()/truenu;
+            truet = ((trueelectron+truedihadron-init_electron)).M2();
             MCmatch=0;
             if(trueelectron.E()>0&&trueh1.E()>0&&trueh2.E()>0) MCmatch=1;
             
@@ -519,36 +664,74 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
                 isGoodEventWithoutML*=(E[j]>0.6);
                 isGoodEventWithoutML*=(E[jj]>0.6);
             }
-            
             // Determine if we should fill the cloned TTree if it passes our cuts
             bool fill_clone = true;
+            bool fill_exclusive_clone = true;
+            bool fill_clone_noPmin = true;
             fill_clone*=(z<0.95);
             fill_clone*=(xF1>0&&xF2>0);
-            if((pid_h1==211&&pid_h2==-211)||(pid_h1==211&&pid_h2==111)){
+            if((pid_h1==211&&pid_h2==-211)||(pid_h1==211&&pid_h2==111)||(pid_h1==-211&&pid_h2==111)){
                 fill_clone*=(Mx>1.5);
             }
+            fill_exclusive_clone*=(Mx<1.2);
+            fill_clone_noPmin = fill_clone;
             if(pid_h1==211||pid_h1==-211){
                 fill_clone*=(P_1>1.25);
             }
             if(pid_h2==211||pid_h2==-211){
                 fill_clone*=(P_2>1.25);
             }
+            // Set isGoodEventWithoutML up to this point
+            isGoodEventWithoutML*=fill_clone;
             if(pid_h1==111){
-                //fill_clone*=(p_11>0.9&&p_12>0.9); 
-                fill_clone*=(p_11>0.78&&p_12>0.78); // Added July 7th 2023 based on FOM analysis
+                fill_clone*=(p_11>0.78&&p_12>0.78);// Added July 7th 2023 based on FOM analysis
+                fill_exclusive_clone*=(p_11>0.78&&p_12>0.78);
+                fill_clone_noPmin*=(p_11>0.78&&p_12>0.78);
             }
-	    // Set isGoodEventWithoutML up to this point
-	    isGoodEventWithoutML*=fill_clone;
+
 	    // Now set the fill_clone if the ML cut passes
             if(pid_h2==111){
-                //fill_clone*=(p_21>0.9&&p_22>0.9);
                 fill_clone*=(p_21>0.78&&p_22>0.78); // Added July 7th 2023 based on FOM analysis
+                fill_exclusive_clone*=(p_21>0.78&&p_22>0.78);
+                fill_clone_noPmin*=(p_21>0.78&&p_22>0.78);
             }
 	    // Set isGoodEventWithML to fill_clone
 	    isGoodEventWithML = fill_clone;
 	    // Fill the cloned, abrigded tree
             if(fill_clone){
                 outtree_clone->Fill();
+            }
+            if(fill_exclusive_clone){
+                outtree_clone_exclusive->Fill();
+            }
+            if (isGoodEventWithoutML) {
+                legacyTree->Fill();
+            }
+            if (fill_clone_noPmin) {
+                outtree_clone_noPmin->Fill();
+            }
+            // Check if we found a proton. If so, set additional missing mass quantities
+            if(idx_p!=-1){
+                Mx_p_1 = (init_electron+init_target-electron-h1-proton).M();
+                Mx_p_2 = (init_electron+init_target-electron-h2-proton).M();
+                Mx_p = (init_electron+init_target-electron-h1-h2-proton).M();
+                
+                Mh_p_1 = (h1+proton).M();
+                Mh_p_2 = (h2+proton).M();
+                
+                trueparentpid_p = parentPID[idx_p];
+                trueparentid_p  = parentID[idx_p];
+            }
+            else{
+                Mx_p_1 = -999;
+                Mx_p_2 = -999;
+                Mx_p   = -999;
+                
+                Mh_p_1 = -999;
+                Mh_p_2 = -999;
+                
+                trueparentpid_p = 0;
+                trueparentid_p = 0;
             }
 	    // Fill the larger, main tree without cuts
             outtree->Fill();
@@ -559,8 +742,12 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
    
     cout << "Writing Total TTree with " << outtree->GetEntries() << " entries" << endl;
     cout << "Writing Cut TTree with " << outtree_clone->GetEntries() << " entries" << endl;
+    cout << "Writing No-Pmin Cut TTree with " << outtree_clone_noPmin->GetEntries() << " entries" << endl;
+    outtree_clone_noPmin->Write();
     outtree->Write();
     outtree_clone->Write();
+    outtree_clone_exclusive->Write();
+    legacyTree->Write();
     f->Close();
     cout << "Done" << endl;
     return 0;

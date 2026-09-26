@@ -94,7 +94,6 @@ std::vector<part> CLAS12Ana::load_reco_particles(const std::unique_ptr<clas12::c
       partstruct.vz = particle->par()->getVz();
       partstruct.status = particle->getStatus();
       partstruct.E = _kin.E(partstruct.m,partstruct.p);
-    
       // Ensure hadrons are not in CD
       if (partstruct.pid == 2212 || partstruct.pid == -2212 ||
         partstruct.pid == 2112 ||
@@ -209,6 +208,8 @@ int CLAS12Ana::find_reco_scattered_electron(std::vector<part>& vec_particles){
     // --> Check if the status of the maximum energy electron is in FD
     // -->   Skip if not (i.e. always skip events if the max energy electron was not in FD)
     // --> Set that particle as the scattered electron
+    theScatteredElectron.SetPxPyPzE(0,0,0,Me); // Reset 
+    
     int idx_e=-1;
     double max_energy = -1; 
     for (int i = 0; i < vec_particles.size(); i++) {
@@ -231,6 +232,13 @@ int CLAS12Ana::find_reco_scattered_electron(std::vector<part>& vec_particles){
     
     if((vec_particles[idx_e].status <= -3000 || vec_particles[idx_e].status > -2000))
             return -1;
+
+    theScatteredElectron.SetPxPyPzE(vec_particles[idx_e].px, vec_particles[idx_e].py, vec_particles[idx_e].pz, vec_particles[idx_e].E); 
+    for (int i = 0; i < vec_particles.size(); i++) {
+      TLorentzVector tmp;
+      tmp.SetPxPyPzE(vec_particles[i].px,vec_particles[i].py,vec_particles[i].pz,vec_particles[i].E);
+      vec_particles[i].angleToElectron = tmp.Vect().Angle(theScatteredElectron.Vect());
+    }
     
     return idx_e;
 }

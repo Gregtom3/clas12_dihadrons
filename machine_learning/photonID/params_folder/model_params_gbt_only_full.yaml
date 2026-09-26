@@ -4,5 +4,5 @@ gbt_0:
   percent: 1
   learning_rate: 0.1
   depth: 10
-  iterations: 1000
+  iterations: 10000
   min_data_in_leaf: 5

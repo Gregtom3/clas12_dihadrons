@@ -30,12 +30,12 @@ mkdir_green () {
 
 PYTHON_VERSION=$(python3 --version) 
 
-if [[ "$PYTHON_VERSION" != "Python 3.9.7" ]]; then
-    printblue "Your python3 version is not 3.9.7."
-    echo -e "Please run...\n\t module unload root\n\t module unload python\n\t module load root"
-    echo "This program requires the latest version of ROOT on ifarm (6.26.10)"
-    echo "WARNING"
-fi
+# if [[ "$PYTHON_VERSION" != "Python 3.9.7" ]]; then
+#     printblue "Your python3 version is not 3.9.7."
+#     echo -e "Please run...\n\t module unload root\n\t module unload python\n\t module load root"
+#     echo "This program requires the latest version of ROOT on ifarm (6.26.10)"
+#     echo "WARNING"
+# fi
 
 # Assign the variable PWD the value of the current working directory
 PWD=`pwd`
@@ -229,12 +229,7 @@ for pion_pair in ${pion_pairs[@]}; do
 #SBATCH --time=24:00:00
 #SBATCH --output=$FARMOUT_DIR/log/predict_photonML_${pion_pair}_${dataset}.out
 #SBATCH --error=$FARMOUT_DIR/err/predict_photonML_${pion_pair}_${dataset}.err
-source /etc/profile.d/modules.sh
-module unload root
-module unload python
-module load python3/3.9.7
-module load root
-/apps/python3/3.9.7/bin/python3 $PWD/machine_learning/photonID/predict.py "${DATA_DIR}/${pion_pair}" "$dataset" "$model"
+python3 $PWD/machine_learning/photonID/predict.py "${DATA_DIR}/${pion_pair}" "$dataset" "$model"
 EOF
                 echo "Submitting slurm job for ${pion_pair} , ${dataset}, ${model}"
                 sbatch --quiet $slurmslurm

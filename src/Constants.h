@@ -8,13 +8,15 @@ const double Me = 0.000511;
 
 
 inline string runPeriod(int run){
-      if     (run>= 5032 && run<= 5332) return "Fall2018_RGA_inbending";
-      else if(run>= 5333 && run<= 5666) return "Fall2018_RGA_outbending";
+      if     (run>= 5032 && run<= 5421) return "Fall2018_RGA_inbending";
+      else if(run>= 5422 && run<= 5666) return "Fall2018_RGA_outbending";
       else if(run>= 6616 && run<= 6783) return "Spring2019_RGA_inbending";
       else if(run>= 6156 && run<= 6603) return "Spring2019_RGB_inbending";
       else if(run>= 11093 && run<=11283) return "Fall2019_RGB_outbending";
       else if(run>=11284 && run<=11300) return "Fall2019_RGB_BAND_inbending";
       else if(run>=11323 && run<=11571) return "Spring2020_RGB_inbending";
+      else if(run>=16089 && run<=16772) return "Summer2022_RGC";
+      else if(run>=16843 && run<=17408) return "Fall2022_RGC";
       else if(run==11) return "MC_RGA_outbending";
       else if(run==-11) return "MC_RGA_inbending";
       else if(run==22) return "MC_RGB_outbending";
@@ -28,8 +30,8 @@ inline string runPeriod(int run){
 // Returns run polarization error if "v" is false
 inline float runPolarization(int run, bool v=true){
   /* RGA */
-  if     (run>= 5032 && run<= 5332) return v? 0.8592 : 0.01290; // rga_fa18, before Wien angle change
-  else if(run>= 5333 && run<= 5666) return v? 0.8922 : 0.02509; // rga_fa18, after Wien angle change
+  if     (run>= 5032 && run<= 5421) return v? 0.8592 : 0.01290; // rga_fa18, before Wien angle change
+  else if(run>= 5422 && run<= 5666) return v? 0.8922 : 0.02509; // rga_fa18, after Wien angle change
   else if(run>= 6616 && run<= 6783) return v? 0.8453 : 0.01474; // rga_sp19 https://logbooks.jlab.org/entry/3677077
   /* RGB */
   else if(run>= 6142 && run<= 6149) return v? 0.81132 : 0.01505; // rgb_sp19
@@ -63,7 +65,7 @@ inline float runPolarization(const string& period) {
     int run = -1; // Default value if the run period is unknown
 
     if (period == "Fall2018_RGA_inbending") run = 5032;
-    else if (period == "Fall2018_RGA_outbending") run = 5333;
+    else if (period == "Fall2018_RGA_outbending") run = 5422;
     else if (period == "Spring2019_RGA_inbending") run = 6616;
     else if (period == "Fall2018Spring2019_RGA_inbending") run = 50326616; // Set the polarization to the RGA inbending weighted average
     else if (period == "Spring2019_RGB_inbending") run = 6156;

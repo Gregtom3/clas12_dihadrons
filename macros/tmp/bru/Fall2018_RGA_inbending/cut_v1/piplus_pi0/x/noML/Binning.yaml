@@ -1,0 +1,8 @@
+name: x_binned
+numDimensions: 1
+nBins: 1
+dimensionNames: x 
+binEdges: 0.13 0.16 | 
+injectName: linear
+injectsigFuncs: 0.0*x 0.5*x 0.5*x 0.0*x 0.0*x 0.0*x 0.0*x 
+injectbgFuncs: 0.0*x 0.0*x 0.0*x 0.0*x 0.0*x 0.0*x 0.0*x 

@@ -44,6 +44,7 @@ public:
     private:
         // Private member variables
         TLorentzVector init_electron, target;
+        TLorentzVector theScatteredElectron;
         HipoBankInterface hipoBankInterface;
         Kinematics _kin;
         double _electron_beam_energy;

@@ -31,7 +31,7 @@ class EventTree : public BaseTree {
         const static int kNmax = 100;
         int Nmax;
         int pindex[kNmax], status[kNmax], pid[kNmax], truepid[kNmax], trueparentid[kNmax], trueparentpid[kNmax], trueparentparentid[kNmax], trueparentparentpid[kNmax];
-        double px[kNmax], py[kNmax], pz[kNmax], p[kNmax], E[kNmax],m[kNmax];
+        double px[kNmax], py[kNmax], pz[kNmax], p[kNmax], E[kNmax],m[kNmax], angleToElectron[kNmax];
         double vx[kNmax], vy[kNmax], vz[kNmax], chi2[kNmax], beta[kNmax];
         double truepx[kNmax], truepy[kNmax], truepz[kNmax], truep[kNmax], trueE[kNmax];
         int is_CFR[kNmax];
@@ -91,6 +91,7 @@ class EventTree : public BaseTree {
             tree->Branch("pz", pz, "pz[Nmax]/D");
             tree->Branch("p", p, "p[Nmax]/D");
             tree->Branch("E", E, "E[Nmax]/D");
+            tree->Branch("angleToElectron", angleToElectron, "angleToElectron[Nmax]/D");
             tree->Branch("pid", pid, "pid[Nmax]/I");
             tree->Branch("vx", vx, "vx[Nmax]/D");
             tree->Branch("vy", vy, "vy[Nmax]/D");
@@ -206,6 +207,7 @@ class EventTree : public BaseTree {
             pz[i] = par.pz;
             p[i] = par.p;
             E[i] = par.E;
+            angleToElectron[i] = par.angleToElectron;
             pid[i] = par.pid;
             vx[i] = par.vx;
             vy[i] = par.vy;

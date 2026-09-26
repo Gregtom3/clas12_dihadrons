@@ -10,18 +10,20 @@
 
 
 int hipo2tree(
-	      const char * hipoFile = "/lustre19/expphy/volatile/clas12/sdiehl/osg_out/clasdis/outb-clasdis_15.hipo",
-	      //const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2018/torus-1/pass1/v1/dst/train/nSidis/nSidis_00503*.hipo",
-	      //const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2018/torus+1/pass1/v1/dst/train/nSidis/nSidis_005455.hipo",
+	      // const char * hipoFile = "/cache/clas12/rg-c/production/summer22/pass1/10.5gev/NH3/dst/train/sidisdvcs/sidisdvcs_016164.hipo",
+            //const char * hipoFile = "/cache/clas12/rg-a/production/montecarlo/clasdis_pass1/fall2018/torus-1/v1/bkg45nA_10604MeV/45nA_job_3051_0.hipo",
+            //const char * hipoFile = "/cache/clas12/rg-a/production/montecarlo/clasdis_pass2/fa18_inb/clasdis_rga_fa18_inb_50nA_10604MeV-0069.hipo",
+	      //	        const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2018/torus-1/pass1/v1/dst/train/nSidis/nSidis_005032.hipo",
+	      const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2018/torus-1/pass1/v1/dst/train/nSidis/nSidis_005032.hipo",
 	      //const char * hipoFile = "/cache/clas12/rg-a/production/montecarlo/clasdis/fall2018/torus+1/v1/bkg50nA_10604MeV/50nA_OB_job_3313_0.hipo",
 	      //const char * hipoFile = "/cache/clas12/rg-b/production/recon/spring2020/torus-1/pass1/v1/dst/train/sidisdvcs/sidisdvcs_011494.hipo",
 	      //const char * hipoFile = "/cache/hallb/scratch/rg-c/dst/train/sidisdvcs/sidisdvcs*.hipo",
 	      //	      const char * hipoFile = "/work/cebaf24gev/sidis/reconstructed/polarized-plus-10.5GeV-proton/hipo/0051.hipo",
-              const char * outputFile = "hipo2tree.root",
+              const char * outputFile = "hipo2tree_pass1_with_cuts.root",
               const double _electron_beam_energy = 10.6041,
-              const int pid_h1=-211,
+              const int pid_h1=211,
               const int pid_h2=111,
-              const int maxEvents = 5000000000,
+              const int maxEvents = 1000,
               bool hipo_is_mc = false)
 {
 
@@ -50,14 +52,14 @@ int hipo2tree(
   // -------------------------------------
   FS fs = get_FS(pid_h1,pid_h2);
   _config_c12->addAtLeastPid(11,1);     // At least 1 electron
-  if(fs.pid_h1!=0)    _config_c12->addAtLeastPid(fs.pid_h1,fs.num_h1);
-  if(fs.pid_h2!=0)    _config_c12->addAtLeastPid(fs.pid_h2,fs.num_h2); // Doesn't run if duplicate final state
+  //  if(fs.pid_h1!=0)    _config_c12->addAtLeastPid(fs.pid_h1,fs.num_h1);
+  //  if(fs.pid_h2!=0)    _config_c12->addAtLeastPid(fs.pid_h2,fs.num_h2); // Doesn't run if duplicate final state
 
   // Establish CLAS12 event parser
   // -------------------------------------
   auto &_c12=_chain.C12ref();
-  if(do_QADB)
-    _c12->db()->qadb_requireOkForAsymmetry(true);  
+  //  if(do_QADB)
+  //      _c12->db()->qadb_requireOkForAsymmetry(true);  
  
   // Create RCDB Connection
   // -------------------------------------
@@ -99,12 +101,12 @@ int hipo2tree(
     _cm.set_run_period(std::string(hipoFile));
     
     // Skip events that are not ok for asymmetry analysis based on QADB
-    if(do_QADB){
+    /*    if(do_QADB){
         if(!_c12->db()->qa()->isOkForAsymmetry(event_info.run,event_info.evnum)){
             badAsym++;
             continue;
         }
-    }
+	}*/
 
     // Skip helicity==0 events
     // -------------------------------------
@@ -123,9 +125,11 @@ int hipo2tree(
     clas12ana.fill_reco_event_variables(event, vec_particles);
     if(event.y > 0.8 || event.Q2 < 1)
       continue; // Maximum y cut
+    
     vec_particles = _cm.filter_particles(vec_particles); // Apply Cuts
-    if(clas12ana.reco_event_contains_final_state(vec_particles,fs)==false)
-      continue; // Missing final state particles needed for event
+      
+    //if(clas12ana.reco_event_contains_final_state(vec_particles,fs)==false)
+    //  continue; // Missing final state particles needed for event
 
     //
     //
@@ -146,7 +150,7 @@ int hipo2tree(
     //
     // *******************************************************************
     tree->FillTree(vec_particles,event,event_info);
-
+    //    cout << whileidx << endl;
     _ievent++;
   }
   fOut->cd();

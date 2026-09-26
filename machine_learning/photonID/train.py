@@ -5,7 +5,7 @@ from tools.handler import *
 from tools.plotter import *
 from random_forest.train import train as rf_train
 from gbt.train import train as gbt_train
-from xgb.train import train as xgb_train
+#from xgb.train import train as xgb_train
 
 # ML imports
 # from catboost import CatBoostClassifier, Pool, metrics, cv
@@ -83,12 +83,12 @@ def train(rootdir = "/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas1
                       savedir,
                       SUBDATA)
         
-        elif(model_type=="xgb"):
-            xgb_train(tpool,
-                      vpool,
-                      model_params,
-                      savedir,
-                      SUBDATA)
+#         elif(model_type=="xgb"):
+#             xgb_train(tpool,
+#                       vpool,
+#                       model_params,
+#                       savedir,
+#                       SUBDATA)
         
         elif(model_type=="rf"):
             rf_train(tpool,

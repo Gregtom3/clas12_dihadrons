@@ -1,0 +1,25 @@
+binningStructures:
+
+
+  - name: x_binned
+    numDimensions: 1
+    dimensionNames: [x]
+    binEdges:
+      - [0.13,0.16]
+    injectLabel: linear
+    inject_sigfuncs:
+        - "0.0*x"
+        - "0.5*x"
+        - "0.5*x"
+        - "0.0*x"
+        - "0.0*x"
+        - "0.0*x"
+        - "0.0*x"
+    inject_bgfuncs:
+        - "0.0*x"
+        - "0.0*x"
+        - "0.0*x"
+        - "0.0*x"
+        - "0.0*x"
+        - "0.0*x"
+        - "0.0*x"

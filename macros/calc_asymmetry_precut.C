@@ -23,7 +23,7 @@ void asym(const char * infile, const char * brudir, std::string version, YAMLbin
 
 int calc_asymmetry_precut(//const char * infile = "/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas12_dihadrons/projects/ana_v0/data/piplus_piminus/MC_RGA_inbending_merged.root",
                    //const char * infile = "./MC_RGA_inbending_merged.root",
-		   const char * infile = "/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas12_dihadrons/projects/ana_v1/data/piminus_piminus/Fall2018_RGA_inbending_merged_cuts.root",
+		   const char * infile = "/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas12_dihadrons/projects/pipi0_paper_RGAB_pass2_v0/data/piplus_piminus/Fall2018_RGA_inbending_merged_cuts.root",
 		   const char * binfile = "/work/clas12/users/gmat/clas12/clas12_dihadrons/utils/binning_files/Binning_1d_only_pw.yaml",
 		   //                   std::string brudir  = "/work/clas12/users/gmat/clas12/clas12_dihadrons/projects/ana_v0/asym",
 		   std::string brudir  = "./bru",
@@ -102,7 +102,7 @@ int calc_asymmetry_precut(//const char * infile = "/volatile/clas12/users/gmat/c
     
     // For loop over dihadron asym approaches
     //std::vector<ASYM_TYPE> asym_types = {AZI,TWOH,PW};
-    std::vector<ASYM_TYPE> asym_types = {AZI};
+    std::vector<ASYM_TYPE> asym_types = {PW};
     for(ASYM_TYPE asym_type: asym_types){
         
         // Create subdirectories for each of the asymmetry types

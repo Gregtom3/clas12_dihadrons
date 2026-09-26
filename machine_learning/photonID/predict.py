@@ -7,12 +7,12 @@ from tqdm import tqdm
 from tools.dataloader import *
 from tools.handler import *
 from catboost import CatBoostClassifier
-from xgboost.sklearn import XGBClassifier
+# from xgboost.sklearn import XGBClassifier
 from sklearn.ensemble import RandomForestClassifier
 
-def predict(rootdir="/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas12_dihadrons/projects/ana_v0/data/pi0_pi0",
-            SUBDATA="Fall2018_RGA_inbending",
-            model_path="/work/clas12/users/gmat/clas12/clas12_dihadrons/projects/ana_test/models/photonID/piplus_pi0/calo/gbt_0"):
+def predict(rootdir="/work/clas12/users/gmat/clas12/clas12_dihadrons/trihadrons/macros/",
+            SUBDATA="all",
+            model_path="/work/clas12/users/gmat/clas12/clas12_dihadrons/projects/pipi0_paper_RGA_only/models/photonID/piplus_pi0/calo/gbt_0"):
     
     # Load in rootfiles for analysis
     rootfiles = load_files(rootdir=rootdir,
