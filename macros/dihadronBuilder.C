@@ -58,14 +58,18 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
     double x, Q2, W, Pol,y;
     double truex, trueQ2, trueW, truey,tPol;
     int hel,run,A,_evnum,hwp,tSign,target;
-    const int Nmax=100;
-    int Nmax_tree=100;
-    double px[Nmax], py[Nmax], pz[Nmax], E[Nmax], vz[Nmax], chi2[Nmax], theta[Nmax], eta[Nmax], phi[Nmax];
-    double truepx[Nmax] , truepy[Nmax] , truepz[Nmax], trueE[Nmax], truetheta[Nmax], trueeta[Nmax], truephi[Nmax];
-    double weight[Nmax];
-    int parentID[Nmax],parentPID[Nmax],parentparentID[Nmax],parentparentPID[Nmax];
-    int is_CFR[Nmax];
-    int pid[Nmax], truepid[Nmax];
+    // kNmax is the array capacity (TreeManager writes at most this many particles).
+    // Nmax is the number of particles in the current event, read from the tree.
+    // ROOT only overwrites the first Nmax slots of each array, so every particle
+    // loop must stop at Nmax: the slots beyond it still hold earlier events.
+    const int kNmax=100;
+    int Nmax=0;
+    double px[kNmax], py[kNmax], pz[kNmax], E[kNmax], vz[kNmax], chi2[kNmax], theta[kNmax], eta[kNmax], phi[kNmax];
+    double truepx[kNmax] , truepy[kNmax] , truepz[kNmax], trueE[kNmax], truetheta[kNmax], trueeta[kNmax], truephi[kNmax];
+    double weight[kNmax];
+    int parentID[kNmax],parentPID[kNmax],parentparentID[kNmax],parentparentPID[kNmax];
+    int is_CFR[kNmax];
+    int pid[kNmax], truepid[kNmax];
     //link the TBranches to the variables
     EventTree->SetBranchAddress("A",&A);
     EventTree->SetBranchAddress("evnum",&_evnum);
@@ -84,7 +88,7 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
     EventTree->SetBranchAddress("Q2",&Q2);
     EventTree->SetBranchAddress("W",&W); 
     EventTree->SetBranchAddress("y",&y); 
-    EventTree->SetBranchAddress("Nmax",&Nmax_tree);
+    EventTree->SetBranchAddress("Nmax",&Nmax);
     EventTree->SetBranchAddress("px",px);
     EventTree->SetBranchAddress("py",py);
     EventTree->SetBranchAddress("pz",pz);
