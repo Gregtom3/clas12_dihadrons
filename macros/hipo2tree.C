@@ -7,19 +7,21 @@
 #include "../src/Kinematics.C"
 #include "../src/ParseBinYAML.C"
 #include "../src/ParseText.C"
+#include "QADB.h"
+using namespace QA;
 
 
 int hipo2tree(
-	      const char * hipoFile = "/lustre19/expphy/volatile/clas12/sdiehl/osg_out/clasdis/outb-clasdis_15.hipo",
+	      const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2018/torus-1/pass2/main/train/nSidis/nSidis_005038.hipo",
 	      //const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2018/torus-1/pass1/v1/dst/train/nSidis/nSidis_00503*.hipo",
 	      //const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2018/torus+1/pass1/v1/dst/train/nSidis/nSidis_005455.hipo",
 	      //const char * hipoFile = "/cache/clas12/rg-a/production/montecarlo/clasdis/fall2018/torus+1/v1/bkg50nA_10604MeV/50nA_OB_job_3313_0.hipo",
 	      //const char * hipoFile = "/cache/clas12/rg-b/production/recon/spring2020/torus-1/pass1/v1/dst/train/sidisdvcs/sidisdvcs_011494.hipo",
 	      //const char * hipoFile = "/cache/hallb/scratch/rg-c/dst/train/sidisdvcs/sidisdvcs*.hipo",
 	      //	      const char * hipoFile = "/work/cebaf24gev/sidis/reconstructed/polarized-plus-10.5GeV-proton/hipo/0051.hipo",
-              const char * outputFile = "hipo2tree.root",
+              const char * outputFile = "nSidis_005038.root",
               const double _electron_beam_energy = 10.6041,
-              const int pid_h1=-211,
+              const int pid_h1=211,
               const int pid_h2=111,
               const int maxEvents = 5000000000,
               bool hipo_is_mc = false)
@@ -33,18 +35,35 @@ int hipo2tree(
     
   // Configure CLAS12 Reader and HipoChain
   // -------------------------------------
+  std::cout << "Configuring CLAS12 Reader and HipoChain." << std::endl;
   clas12root::HipoChain _chain;
-  clas12::clas12reader *_config_c12{nullptr};
+  // clas12::clas12reader *_config_c12{nullptr};
 
   _chain.Add(hipoFile);
-  _config_c12=_chain.GetC12Reader();
+  auto _config_c12=_chain.GetC12Reader();
 
+  std::cout << "HipoChain initialized with " << _chain.GetNFiles() << " files." << std::endl;
   // If not monte carlo, enforce QADB
   // -------------------------------------
   bool do_QADB=(hipo_is_mc==false && std::string(hipoFile).find("/rg-c/")==std::string::npos);
-  if(!do_QADB)
-    _config_c12->db()->turnOffQADB();
-
+  
+  std::cout << "Enabling QADB." << std::endl;
+  QADB * qa = new QADB("pass2");
+  qa->CheckForDefect("TotalOutlier");     // these choices match the criteria of `OkForAsymmetry`
+  qa->CheckForDefect("TerminalOutlier");
+  qa->CheckForDefect("MarginalOutlier");
+  qa->CheckForDefect("SectorLoss");
+  qa->CheckForDefect("Misc");
+  for(int run : { // list of runs with `Misc` defect that are allowed by `OkForAsymmetry`
+    5046, 5047, 5051, 5128, 5129, 5130, 5158, 5159,
+    5160, 5163, 5165, 5166, 5167, 5168, 5169, 5180,
+    5181, 5182, 5183, 5400, 5448, 5495, 5496, 5505,
+    5567, 5610, 5617, 5621, 5623, 6736, 6737, 6738,
+    6739, 6740, 6741, 6742, 6743, 6744, 6746, 6747,
+    6748, 6749, 6750, 6751, 6753, 6754, 6755, 6756,
+    6757})
+  qa->AllowMiscBit(run);
+  
 
   // Configure PIDs for final state
   // -------------------------------------
@@ -56,11 +75,10 @@ int hipo2tree(
   // Establish CLAS12 event parser
   // -------------------------------------
   auto &_c12=_chain.C12ref();
-  if(do_QADB)
-    _c12->db()->qadb_requireOkForAsymmetry(true);  
  
   // Create RCDB Connection
   // -------------------------------------
+  std::cout << "Setting RCDB root connection." << std::endl;
   clas12::clas12databases::SetRCDBRootConnection("/work/clas12/users/gmat/clas12/clas12_dihadrons/utils/rcdb.root"); 
   clas12::clas12databases db;
   
@@ -100,11 +118,11 @@ int hipo2tree(
     
     // Skip events that are not ok for asymmetry analysis based on QADB
     if(do_QADB){
-        if(!_c12->db()->qa()->isOkForAsymmetry(event_info.run,event_info.evnum)){
+        if(!qa->Pass(event_info.run,event_info.evnum)) {
             badAsym++;
             continue;
+          }
         }
-    }
 
     // Skip helicity==0 events
     // -------------------------------------

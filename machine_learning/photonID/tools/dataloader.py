@@ -126,7 +126,7 @@ def load_data(rootfiles=[""],
     # If the dataframe is empty, return -1
     if(df.empty):
         return -1
-
+    
     # Create dataset for training/evaluation
     X = df.drop("flag",axis=1)
     if(version=="predict"):

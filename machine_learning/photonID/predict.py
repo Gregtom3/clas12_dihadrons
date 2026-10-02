@@ -12,24 +12,31 @@ from sklearn.ensemble import RandomForestClassifier
 
 def predict(rootdir="/volatile/clas12/users/gmat/clas12analysis.sidis.data/clas12_dihadrons/projects/ana_v0/data/pi0_pi0",
             SUBDATA="Fall2018_RGA_inbending",
-            model_path="/work/clas12/users/gmat/clas12/clas12_dihadrons/projects/ana_test/models/photonID/piplus_pi0/calo/gbt_0"):
+            model_path="/w/hallb-scshelf2102/clas12/users/tjhellst/Exclusive-Rho-Analysis-Pipeline/src/gbt/models/model_rga_pass2_inbending"):
     
     # Load in rootfiles for analysis
     rootfiles = load_files(rootdir=rootdir,
                            SUBDATA=SUBDATA)
     
     # Import the trained model
-    model = import_model(model_path)
+    # model = import_model(model_path)
+    model = CatBoostClassifier()
+            
+    # Load model from given directory
+    model.load_model(model_path)
     
     # Determine the branch name for the classifier output
-    branchname = get_branchname(model_path)
-    print("Branchname -->",branchname)
+    # branchname = get_branchname(model_path)
+    # print("Branchname -->",branchname)
+    branchname = "p_gamma"
     
     # Determine the ttree containing the MLInput based on the model
     if("/calo/" in model_path):
         ttree="MLInput_calo"
     elif("/track/" in model_path):
         ttree="MLInput_track"
+
+    ttree="MLInput_calo"
     
     # For loop over each file
     for ifile,rootfile in enumerate(tqdm(rootfiles)):

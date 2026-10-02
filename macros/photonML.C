@@ -7,9 +7,12 @@ int photonML(const char * input_file = "/volatile/clas12/users/gmat/clas12analys
     // 1 --> use the particle tracks to determine "R"
     
     //Define the variables "m_g" , "m_ch" , "m_nh" 
-    int m_g = 2; // Number of neighboring gammas
-    int m_ch = 1; // Number of neighboring charged hadrons (protons, pions, kaons)
-    int m_nh = 1; // Number of neighboring neutral hadrons (neutrons)
+    const int m_g = 3; // Number of neighboring gammas
+    int m_g_tree = 3;
+    const int m_ch = 2; // Number of neighboring charged hadrons (protons, pions, kaons)
+    int m_ch_tree = 2;
+    const int m_nh = 2; // Number of neighboring neutral hadrons (neutrons)
+    int m_nh_tree = 2;
 
     //Read the TFile
     TFile *f = new TFile(input_file,"UPDATE");
@@ -69,9 +72,9 @@ int photonML(const char * input_file = "/volatile/clas12/users/gmat/clas12analys
     // Removing relative energy for the photons
     
     MLInput->Branch("flag",&flag,"flag/I");
-    MLInput->Branch("m_g",&m_g,"m_g/I");
-    MLInput->Branch("m_ch",&m_ch,"m_ch/I");
-    MLInput->Branch("m_nh",&m_nh,"m_nh/I");
+    MLInput->Branch("m_g",&m_g_tree,"m_g/I");
+    MLInput->Branch("m_ch",&m_ch_tree,"m_ch/I");
+    MLInput->Branch("m_nh",&m_nh_tree,"m_nh/I");
     
     MLInput->Branch("gE",&gE,"gE/D");
     MLInput->Branch("gEpcal",&gEpcal,"gEpcal/D");
@@ -80,29 +83,29 @@ int photonML(const char * input_file = "/volatile/clas12/users/gmat/clas12analys
     MLInput->Branch("gm2v",&gm2v,"gm2v/D");
     
     MLInput->Branch("R_e",&R_e,"R_e/D");
-    //    MLInput->Branch("dE_e",&dE_e,"dE_e/D");
+    MLInput->Branch("dE_e",&dE_e,"dE_e/D");
     
     MLInput->Branch("R_gamma",R_gamma,"R_gamma[m_g]/D");
-    // MLInput->Branch("dE_gamma",dE_gamma,"dE_gamma[m_g]/D");
+    MLInput->Branch("dE_gamma",dE_gamma,"dE_gamma[m_g]/D");
     MLInput->Branch("Epcal_gamma",Epcal_gamma,"Epcal_gamma[m_g]/D");
     MLInput->Branch("m2u_gamma",m2u_gamma,"m2u_gamma[m_g]/D");
     MLInput->Branch("m2v_gamma",m2v_gamma,"m2v_gamma[m_g]/D");
     
     MLInput->Branch("R_ch",R_ch,"R_ch[m_ch]/D");
-    //    MLInput->Branch("dE_ch",dE_ch,"dE_ch[m_ch]/D");
-    //    MLInput->Branch("Epcal_ch",Epcal_ch,"Epcal_ch[m_ch]/D");
-    //    MLInput->Branch("m2u_ch",m2u_ch,"m2u_ch[m_ch]/D");
-    //    MLInput->Branch("m2v_ch",m2v_ch,"m2v_ch[m_ch]/D");
+    MLInput->Branch("dE_ch",dE_ch,"dE_ch[m_ch]/D");
+    MLInput->Branch("Epcal_ch",Epcal_ch,"Epcal_ch[m_ch]/D");
+    MLInput->Branch("m2u_ch",m2u_ch,"m2u_ch[m_ch]/D");
+    MLInput->Branch("m2v_ch",m2v_ch,"m2v_ch[m_ch]/D");
     
     MLInput->Branch("R_nh",R_nh,"R_nh[m_nh]/D");
-    //    MLInput->Branch("dE_nh",dE_nh,"dE_nh[m_nh]/D");
-    //    MLInput->Branch("Epcal_nh",Epcal_nh,"Epcal_nh[m_nh]/D");
-    //    MLInput->Branch("m2u_nh",m2u_nh,"m2u_nh[m_nh]/D");
-    //    MLInput->Branch("m2v_nh",m2v_nh,"m2v_nh[m_nh]/D");
+    MLInput->Branch("dE_nh",dE_nh,"dE_nh[m_nh]/D");
+    MLInput->Branch("Epcal_nh",Epcal_nh,"Epcal_nh[m_nh]/D");
+    MLInput->Branch("m2u_nh",m2u_nh,"m2u_nh[m_nh]/D");
+    MLInput->Branch("m2v_nh",m2v_nh,"m2v_nh[m_nh]/D");
     
-    //    MLInput->Branch("num_photons_0_1",&num_photons_0_1,"num_photons_0_1/D");
-    //    MLInput->Branch("num_photons_0_2",&num_photons_0_2,"num_photons_0_2/D");
-    // MLInput->Branch("num_photons_0_35",&num_photons_0_35,"num_photons_0_35/D");
+    MLInput->Branch("num_photons_0_1",&num_photons_0_1,"num_photons_0_1/D");
+    MLInput->Branch("num_photons_0_2",&num_photons_0_2,"num_photons_0_2/D");
+    MLInput->Branch("num_photons_0_35",&num_photons_0_35,"num_photons_0_35/D");
     
     //Define variables to read from EventTree
     const int kNmax = 500;
@@ -136,6 +139,9 @@ int photonML(const char * input_file = "/volatile/clas12/users/gmat/clas12analys
     //Loop over the events in EventTree
     for (int iEvent=0; iEvent<EventTree->GetEntries(); ++iEvent) {
       EventTree->GetEntry(iEvent);
+      if (iEvent % 50000 == 0){
+        std::cout << "Event: " << iEvent << std::endl;
+      }
       //Loop over the particles in the event
       for (int ipart=0; ipart<Nmax; ++ipart) {
         //Check if the particle is a photon

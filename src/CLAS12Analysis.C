@@ -2,6 +2,7 @@
 #include "Constants.h"
 
 CLAS12Analysis::CLAS12Analysis(){}
+CLAS12Analysis::~CLAS12Analysis(){}
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 CLAS12Analysis::CLAS12Analysis(const std::unique_ptr<clas12::clas12reader>& _c12, TLorentzVector eIn, TLorentzVector pIn){
  

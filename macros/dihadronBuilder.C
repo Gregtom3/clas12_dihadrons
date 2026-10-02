@@ -1,7 +1,30 @@
+// Standard C++
+#include <iostream>
+#include <map>
+#include <string>
+#include <vector>
+#include <numeric>   // std::iota
+#include <TFile.h>   // complete definition of TFile
+#include <TTree.h> 
+
+// ROOT types required by Kinematics.h
+#include <TLorentzVector.h>
+#include <TVector3.h>
+
+#include "clas12reader.h"
+// #include "HipoChain.h"
+
+// Project declarations must precede implementations
+#include "../src/HipoBankInterface.h"
+
+// Project implementation files
 #include "../src/Constants.h"
 #include "../src/HipoBankInterface.C"
 #include "../src/CLAS12Analysis.C"
 #include "../src/Kinematics.C"
+
+// Other builder dependencies
+#include "../src/Structs.h"
 #include "../src/ParseBinYAML.C"
 #include "../src/ParseText.C"
 
@@ -24,7 +47,8 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
     // Determine the pids from the file (see function)
     getPIDs(string(input_file),pid_h1,pid_h2,particleNames);
     pid_h1 = 211;
-    pid_h2 = -211;
+    pid_h2 = 111;
+    std::cout << "Building dihadrons with pids: " << pid_h1 << " and " << pid_h2 << std::endl;
     // Read the TFile
     TFile *f = new TFile(input_file,"UPDATE");
     // Read the TTree
@@ -34,7 +58,8 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
     double x, Q2, W, Pol,y;
     double truex, trueQ2, trueW, truey,tPol;
     int hel,run,A,_evnum,hwp,tSign,target;
-    int Nmax=100;
+    const int Nmax=100;
+    int Nmax_tree=100;
     double px[Nmax], py[Nmax], pz[Nmax], E[Nmax], vz[Nmax], chi2[Nmax], theta[Nmax], eta[Nmax], phi[Nmax];
     double truepx[Nmax] , truepy[Nmax] , truepz[Nmax], trueE[Nmax], truetheta[Nmax], trueeta[Nmax], truephi[Nmax];
     double weight[Nmax];
@@ -59,7 +84,7 @@ int dihadronBuilder(const char *input_file="rgc_7_26_2023.root",
     EventTree->SetBranchAddress("Q2",&Q2);
     EventTree->SetBranchAddress("W",&W); 
     EventTree->SetBranchAddress("y",&y); 
-    EventTree->SetBranchAddress("Nmax",&Nmax);
+    EventTree->SetBranchAddress("Nmax",&Nmax_tree);
     EventTree->SetBranchAddress("px",px);
     EventTree->SetBranchAddress("py",py);
     EventTree->SetBranchAddress("pz",pz);
